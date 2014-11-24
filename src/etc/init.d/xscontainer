@@ -1,0 +1,74 @@
+#! /bin/bash
+#
+# xscontainer-monitor     Start/Stop the xscontainer-monitor
+#
+# chkconfig: 2345 17 83
+# description: XenServer Container Monitor
+# processname: xscontainer-monitor
+# pidfile: /var/run/xscontainer-monitor.pid
+
+# Source function library.
+. /etc/init.d/functions
+
+# names
+FULL_NAME="the XenServer Container Monitor"
+NAME="xscontainer"
+
+# executable command:
+CMD="/usr/local/bin/xscontainer-monitor"
+
+start() {
+        echo -n $"Starting ${FULL_NAME}: "
+        APID=$(pidof -x "/usr/local/bin/xscontainer-monitor")
+        if [ $? -eq 0 ]; then
+                echo -n $"cannot start ${NAME}: already running."
+                failure $"cannot start ${NAME}: already running."
+                echo
+                return 1
+        fi
+
+        nohup ${CMD} > /dev/null 2>&1 &
+        success
+        echo
+        return 0
+}
+
+stop() {
+        echo -n $"Stopping ${FULL_NAME}: "
+
+        APID=$(pidof -x "/usr/local/bin/xscontainer-monitor")
+        if [ $? -eq 0 ]; then
+                echo
+        else
+                echo -n $"cannot stop ${NAME}: daemon is not running."
+                failure $"cannot stop ${NAME}: daemon is not running."
+                echo
+                return 1;
+        fi
+
+        kill "$APID"
+        RETVAL=$?
+        echo
+        return $RETVAL
+}
+
+restart() {
+        stop
+        start
+}
+
+case "$1" in
+        start)
+                start
+                ;;
+        stop)
+                stop
+                ;;
+        restart)
+                restart
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop|restart}"
+                exit 1
+esac
+

@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+import XenAPIPlugin
+import sys
+# ToDo: hack for building on Fedora
+sys.path.append('/usr/local/lib/python2.7/dist-packages/')
+import xscontainer.Docker as Docker
+import xscontainer.CoreOs as CoreOs
+
+def check_args(reqs, args):
+    for req in reqs:
+        if req not in args:
+            raise Exception('INVALID_ARGUMENTS')
+
+def install_vm(session, args):
+    check_args(['url', 'sruuid'],  args)
+    return CoreOs.install_vm(session, args['url'], args['sruuid'])
+
+def create_config_drive(session, args):
+    check_args(['vmuuid', 'sruuid', 'configuration'], args)
+    configuration = args['configuration'].replace("%BR%", "\r\n")
+    return CoreOs.create_config_drive_xml(session, args['vmuuid'],
+                                          args['sruuid'],
+                                          configuration)
+
+def get_config_drive_default(session, args):
+    check_args(['templateuuid'], args)
+    return CoreOs.CLOUDCONFIG
+
+"""
+def get_config_drive_configuration(session, args):
+    check_args(['vdiuuid'], args)
+    return "configuration"
+"""
+
+def get_version(session, args):
+    check_args(['vmuuid'], args)
+    return Docker.get_version_xml(session, args['vmuuid'])
+
+
+def get_info(session, args):
+    check_args(['vmuuid'], args)
+    return Docker.get_info_xml(session, args['vmuuid'])
+
+
+def passthrough(session, args):
+    check_args(['vmuuid', 'command'], args)
+    return Docker.passthrough(session, args['vmuuid'], args['command'])
+
+if __name__ == "__main__":
+    """
+    # ToDo: Ensure that VM specific operations are run on the right slave
+    if 'vmuuid' in args:
+        vmrecord = XenApi.get_vm_record_by_uuid(vmuuid)
+        hostref = vmrecord['resident-on']
+        if hostref != get_this_host_ref():
+            print XenAPIPlugin.call_plugin(session, hostref, 'docker', args)
+            exit(0)
+    """
+
+    XenAPIPlugin.dispatch({
+        'install_vm': install_vm,
+        'get_config_drive_default': get_config_drive_default,
+        'create_config_drive': create_config_drive,
+        #"get_config_drive_configuration": get_config_drive_configuration,
+        'get_info': get_info,
+        'get_version': get_version,
+        'passthrough': passthrough,})
