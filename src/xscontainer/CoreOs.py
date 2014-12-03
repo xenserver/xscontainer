@@ -30,17 +30,6 @@ coreos:
 
         [DHCP]
         UseRoutes=false
-    - name: dont-route-via-hi-network.service
-      command: start
-      runtime: true
-      content: |
-        [Unit]
-        Description=Avoid host internal network default route
-
-        [Service]
-        Type=oneshot
-        ExecStartPrep=/usr/bin/sleep 2
-        ExecStart=/usr/bin/ip route del default via 169.254.0.1
   etcd:
     name: %XSVMTOHOST%
     # generate a new token for each unique cluster at https://discovery.etcd.io/new
