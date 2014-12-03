@@ -7,7 +7,7 @@ xscontainer: all
 
 all: build
 
-build:
+build: clean
 	python setup.py bdist_rpm --install-script install.spec
 ifdef MY_OUTPUT_DIR
 	mkdir -p $(MY_OUTPUT_DIR)/SRPMS

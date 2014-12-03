@@ -4,7 +4,6 @@ import pprint
 import re
 import tempfile
 
-
 import XenApi
 import Util
 
@@ -169,6 +168,7 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     vdirecord = session.xenapi.VDI.get_record(vdiref)
     vbdrecord = session.xenapi.VBD.get_record(vbdref)
     return {'vdiuuid': vdirecord['uuid'], 'vbduuid': vbdrecord['uuid'], 'userdata': userdata}
+
 
 def create_config_drive_xml(session, vmuuid, sruuid, userdata):
     return Util.converttoxml({'config_drive':

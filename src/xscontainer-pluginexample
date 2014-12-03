@@ -7,6 +7,7 @@ SRUUID=$(xe pool-list params=default-SR --minimal)
 HOSTUUID=$(cat /etc/xensource-inventory  | grep INSTALLATION_UUID | awk -F\' '{print $2}')
 TEMPLATEUUID=$(xe template-list name-label=CoreOS\ \(experimental\) --minimal)
 echo "For demo purposes - beyond the commited-scope, we can fake up a CoreOs VM that would otherwise be installed manually using XC."
+echo "Best to download http://beta.release.core-os.net/amd64-usr/current/coreos_production_xen_image.vhd.bz2 and cache locally."
 VMUUID=$(xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=install_vm args:url="http://10.80.3.229/coreos_production_xen_image.vhd.bz2" args:sruuid="$SRUUID")
 
 echo "Now get the default config drive template that customers optionally can choose to modify."
@@ -18,17 +19,34 @@ xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=create_config_dr
 
 echo "Now let's start the VM"
 xe vm-start uuid=$VMUUID
-sleep 15
+sleep 20
 echo "Once up and running we can query the versions - that should be displayed on the general-tab of CoreOS VM as a table, the keys can change."
 xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_version args:vmuuid="$VMUUID"
 echo "And also a lot more interesting information about Docker - that should be displayed on the general-tab of the CoreOS VM as a table, the keys can change."
 xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_info args:vmuuid="$VMUUID"
 
 echo "For demo purposes - beyond the commited-scope, we can control CoreOs VMs from the xscontainer plugin. E.g. we can run multiple containers"
-COMMAND='docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"'
-xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=passthrough args:vmuuid="$VMUUID" args:command="$COMMAND"
+COMMAND='docker run -d --name angle busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"'
 xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=passthrough args:vmuuid="$VMUUID" args:command="$COMMAND"
 
 echo "After a moment, we can see the running Container in the VM.other-onfig:docker_ps - these should be listed as entries in the treeview under the corresponding CoreOS VM"
 sleep 11
 xe vm-param-get uuid="$VMUUID" param-name=other-config
+
+echo "It's also possible to query information about a particular container - that should be displayed on the general-tab of a container"
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_inspect args:vmuuid="$VMUUID" args:object="angle"
+echo "As well as to perform some simple lifecycle operations"
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=start args:vmuuid="$VMUUID" args:container="angle"
+sleep 1
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=restart args:vmuuid="$VMUUID" args:container="angle"
+sleep 1
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=pause args:vmuuid="$VMUUID" args:container="angle"
+sleep 1
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=unpause args:vmuuid="$VMUUID" args:container="angle"
+sleep 1
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=stop args:vmuuid="$VMUUID" args:container="angle"
+sleep 1
+
+# But let's start another container so something is running
+COMMAND='docker run -d --name keeper busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"'
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=passthrough args:vmuuid="$VMUUID" args:command="$COMMAND"

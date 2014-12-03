@@ -4,8 +4,11 @@ from distutils.core import setup
 import os
 
 def datapath(path):
+    # ToDo: Get rid of this workaround for building in the build system
     if 'HOME' in os.environ:
-        path = os.path.join(os.environ['HOME'], path)
+        newpath = os.path.join(os.environ['HOME'], path)
+        if os.path.exists(newpath):
+            path=path
     return path
 
 setup(name='xscontainer',

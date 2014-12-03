@@ -20,20 +20,26 @@ def main():
     #sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = CoreOs.install_vm(session, url, sruuid)
     vmuuid = '56e20d0b-85c8-3a8f-20f7-124caa1d972e'
-    #Docker.passthrough(session, vmuuid,
+    # Docker.passthrough(session, vmuuid,
     #                   'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')
     #vmref = XenApi.get_vm_ref_by_uuid(session, vmuuid)
     #CoreOs.create_config_drive(session, vmuuid, sruuid, CoreOs.CLOUDCONFIG)
     #session.xenapi.VM.start(vmref, False, True)
     #time.sleep( 20 )
-    #print Docker.get_ps_xml(session, vmuuid)
+    print Docker.get_ps_xml(session, vmuuid)
     container = Docker.get_ps_dict(session, vmuuid)
-    #pprint.pprint(container[0])
-    #print Docker.get_info_xml(session, vmuuid)
-    #print Docker.get_version_xml(session, vmuuid)
+    # pprint.pprint(container[0])
+    print Docker.get_info_xml(session, vmuuid)
+    print Docker.get_version_xml(session, vmuuid)
     print Docker.monitor_host(returninstantly=True)
-    print Docker.get_inspect_xml(session, vmuuid, container[0]['entry']['container'])
-    # docker run -d --name hello busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"
+    container = container[0]['entry']['container']
+    print Docker.get_inspect_xml(session, vmuuid, container)
+    Docker.start(session, vmuuid, container)
+    Docker.restart(session, vmuuid, container)
+    Docker.pause(session, vmuuid, container)
+    Docker.unpause(session, vmuuid, container)
+    Docker.stop(session, vmuuid, container)
+    Docker.start(session, vmuuid, container)
 
 if __name__ == "__main__":
     main()

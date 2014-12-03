@@ -2,6 +2,7 @@ import XenApi
 import Util
 import thread
 import time
+import simplejson
 import pprint
 
 import XenAPI
@@ -14,7 +15,7 @@ def _execute_cmd_on_vm(session, vmuuid, cmd):
 
 
 def get_ps_dict(session, vmuuid):
-    cmd = ['docker', 'ps']
+    cmd = ['docker', 'ps', '--no-trunc=true', '--all=true']
     result = _execute_cmd_on_vm(session, vmuuid, cmd)
     # The ugly part - converting the text table to a dict
     linebyline = result.strip().split('\n')
@@ -61,13 +62,15 @@ def get_info_xml(session, vmuuid):
 
 def get_version_xml(session, vmuuid):
     result = {'docker_version': get_stateorversion_dict(session, vmuuid,
-                                                             'version')}
+                                                        'version')}
     return Util.converttoxml(result)
+
 
 def passthrough(session, vmuuid, command):
     cmd = [command]
     result = _execute_cmd_on_vm(session, vmuuid, cmd)
     return result
+
 
 def monitor_vm(session, vmuuid):
     # ToDo: must make this so much more efficient!
@@ -127,9 +130,9 @@ def monitor_host(returninstantly=False):
                                  % (vmrecord['name_label'], vmrecord['uuid']))
                         session.xenapi.VM.remove_from_other_config(
                             vmref, 'docker_ps')
-                        #session.xenapi.VM.remove_from_other_config(vmref,
+                        # session.xenapi.VM.remove_from_other_config(vmref,
                         #    'docker_info')
-                        #session.xenapi.VM.remove_from_other_config(vmref,
+                        # session.xenapi.VM.remove_from_other_config(vmref,
                         #    'docker_version')
                     if vmrecord['uuid'] in vmuuidstomonitor:
                         vmuuidstomonitor.remove(vmrecord['uuid'])
@@ -148,11 +151,38 @@ def monitor_host(returninstantly=False):
 def _get_inspect_dict(session, vmuuid, container):
     cmd = ['docker', 'inspect', container]
     result = _execute_cmd_on_vm(session, vmuuid, cmd)
-    return result
+    result = simplejson.loads(result)
+    newresult = []
+    for key, value in result[0].iteritems():
+        newresult.append({'property': {'name': key, 'value': value}})
+    return newresult
 
 
 def get_inspect_xml(session, vmuuid, container):
     result = _get_inspect_dict(session, vmuuid, container)
-    return  Util.converttoxml({'get_inspect': result})
+    return Util.converttoxml({'docker_inspect': result})
 
 
+def _simplecommand(session, vmuuid, container, command):
+    cmd = ['docker', command, container]
+    return _execute_cmd_on_vm(session, vmuuid, cmd)
+
+
+def start(session, vmuuid, container):
+    return _simplecommand(session, vmuuid, container, 'start')
+
+
+def stop(session, vmuuid, container):
+    return _simplecommand(session, vmuuid, container, 'stop')
+
+
+def restart(session, vmuuid, container):
+    return _simplecommand(session, vmuuid, container, 'restart')
+
+
+def pause(session, vmuuid, container):
+    return _simplecommand(session, vmuuid, container, 'pause')
+
+
+def unpause(session, vmuuid, container):
+    return _simplecommand(session, vmuuid, container, 'unpause')

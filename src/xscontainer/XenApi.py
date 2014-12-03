@@ -167,6 +167,7 @@ def get_default_sr(session):
     default_sr = session.xenapi.pool.get_default_SR(pool)
     return default_sr
 
+
 def update_vm_other_config(session, vmref, name, value):
     session.xenapi.VM.remove_from_other_config(vmref, name)
     session.xenapi.VM.add_to_other_config(vmref, name, value)
