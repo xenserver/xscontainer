@@ -1,26 +1,20 @@
-ifdef B_BASE
-include $(B_BASE)/common.mk
-include $(B_BASE)/rpmbuild.mk
-endif
+VERSION ?= 0.1
+RELEASE ?= 1
+MY_OUTPUT_DIR ?= dist/
 
-xscontainer: all
+all:
+	ptyhon setup build
 
-all: build
+bdist_rpm:
+	python setup.py bdist_rpm --forceversion=$(VERSION) --release=$(RELEASE) \
+		--install-script install.spec --dist-dir $(MY_OUTPUT_DIR)
 
-build: clean
-	python setup.py bdist_rpm --install-script install.spec
-ifdef MY_OUTPUT_DIR
-	mkdir -p $(MY_OUTPUT_DIR)/SRPMS
-	cp dist/*.noarch.rpm $(MY_OUTPUT_DIR)
-	cp dist/*.src.rpm $(MY_OUTPUT_DIR)/SRPMS
-endif
+install:
+	python setup.py install
 
 clean:
 	python setup.py clean
-	if [ -d "build" ]; then \
-		rm -rf build; \
-	fi
-	if [ -d "dist" ]; then \
-		rm -rf dist; \
-	fi
-	exit 0
+	rm -rf build
+
+test:
+	python setup.py test

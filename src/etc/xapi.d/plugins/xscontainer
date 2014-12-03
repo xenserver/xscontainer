@@ -84,13 +84,15 @@ def passthrough(session, args):
 
 if __name__ == "__main__":
     """
-    # ToDo: Ensure that VM specific operations are run on the right slave
-    if 'vmuuid' in args:
-        vmrecord = XenApi.get_vm_record_by_uuid(vmuuid)
-        hostref = vmrecord['resident-on']
-        if hostref != get_this_host_ref():
-            print XenAPIPlugin.call_plugin(session, hostref, 'docker', args)
-            exit(0)
+    # Ensure that VM specific operations are run on the right slave
+    for arg in sys.argv:
+        if arg.startswith('args:vmuuid='):
+            vmuuid=arg.replace('args:vmuuid=', '')
+            vmrecord = XenApi.get_vm_record_by_uuid(vmuuid)
+            hostref = vmrecord['resident-on']
+            if hostref != get_this_host_ref():
+                print XenAPIPlugin.call_plugin(session, hostref, 'docker', args)
+                exit(0)
     """
 
     XenAPIPlugin.dispatch({
