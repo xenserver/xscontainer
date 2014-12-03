@@ -8,10 +8,10 @@ HOSTUUID=$(cat /etc/xensource-inventory  | grep INSTALLATION_UUID | awk -F\' '{p
 TEMPLATEUUID=$(xe template-list name-label=CoreOS\ \(experimental\) --minimal)
 echo "For demo purposes - beyond the commited-scope, we can fake up a CoreOs VM that would otherwise be installed manually using XC."
 echo "Best to download http://beta.release.core-os.net/amd64-usr/current/coreos_production_xen_image.vhd.bz2 and cache locally."
-VMUUID=$(xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=install_vm args:url="http://10.80.3.229/coreos_production_xen_image.vhd.bz2" args:sruuid="$SRUUID")
+VMUUID=$(xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=install_vm args:url="http://10.80.3.229/coreos_production_xen_image.vhd.bz2" args:sruuid="$SRUUID" | sed 's/True//g')
 
 echo "Now get the default config drive template that customers optionally can choose to modify."
-CONFIGURATION=$(xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_config_drive_default args:templateuuid="$TEMPLATEUUID")
+CONFIGURATION=$(xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_config_drive_default args:templateuuid="$TEMPLATEUUID" | sed 's/True//g')
 echo "Unfortunately XAPI plugins do not like new lines. Work around to replace these with %BR% before proceeding"
 CONFIGURATION=$(echo "$CONFIGURATION" | sed ':a;N;$!ba;s/\n/%BR%/g')
 echo "If the user chooses to have config drive, the following call will set it up."
@@ -19,9 +19,12 @@ xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=create_config_dr
 
 echo "Now let's start the VM"
 xe vm-start uuid=$VMUUID
-sleep 20
+
 echo "Once up and running we can query the versions - that should be displayed on the general-tab of CoreOS VM as a table, the keys can change."
-xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_version args:vmuuid="$VMUUID"
+until xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_version args:vmuuid="$VMUUID"
+do
+    echo "VM not up, retrying"
+done
 echo "And also a lot more interesting information about Docker - that should be displayed on the general-tab of the CoreOS VM as a table, the keys can change."
 xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_info args:vmuuid="$VMUUID"
 
