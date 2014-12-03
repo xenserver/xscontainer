@@ -159,6 +159,23 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     return {'vdiuuid': vdirecord['uuid'], 'vbduuid': vbdrecord['uuid'], 'userdata': userdata}
 
 
+def get_config_drive_configuration(session, vdiuuid):
+    filename = XenApi.export_disk(session, vdiuuid)
+    tempdir = tempfile.mkdtemp()
+    # ToDo: is this always safe?
+    cmd = ['mount', '-o', 'loop', '-t', 'iso9660', filename, tempdir]
+    Util.runlocal(cmd)
+    userdatapath = os.path.join(tempdir, 'openstack', 'latest', 'user_data')
+    filehandle = open(userdatapath)
+    content = filehandle.read()
+    filehandle.close()
+    cmd = ['umount', tempdir]
+    Util.runlocal(cmd)
+    os.rmdir(tempdir)
+    os.remove(filename)
+    return content
+
+
 def create_config_drive_xml(session, vmuuid, sruuid, userdata):
     return Util.converttoxml({'config_drive':
                               create_config_drive(session, vmuuid, sruuid,

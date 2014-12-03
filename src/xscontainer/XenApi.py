@@ -1,4 +1,5 @@
 import os
+import tempfile
 import Util
 import XenAPI
 
@@ -160,6 +161,14 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
            % (session._session, vdiuuid, fileformat)]
     Util.runlocal(cmd)
     return vdiref
+
+def export_disk(session, vdiuuid):
+    filename = tempfile.mkstemp(suffix='.raw')[1]
+    cmd = ['curl', '-k', '-o', filename,
+           'https://localhost/export_raw_vdi?session_id=%s&vdi=%s&format=raw'
+           % (session._session, vdiuuid)]
+    Util.runlocal(cmd)
+    return filename
 
 
 def get_default_sr(session):

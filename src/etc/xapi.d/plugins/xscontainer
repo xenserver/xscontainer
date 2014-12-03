@@ -36,11 +36,12 @@ def get_config_drive_default(session, args):
     check_args(['templateuuid'], args)
     return prepare_output(CoreOs.CLOUDCONFIG)
 
-"""
+
 def get_config_drive_configuration(session, args):
     check_args(['vdiuuid'], args)
-    return "configuration"
-"""
+    return  prepare_output(CoreOs.get_config_drive_configuration(session,
+                                                                args['vdiuuid']
+                                                               ))
 
 
 def get_version(session, args):
@@ -109,9 +110,9 @@ if __name__ == "__main__":
 
     XenAPIPlugin.dispatch({
         'install_vm': install_vm,
-        'get_config_drive_default': get_config_drive_default,
         'create_config_drive': create_config_drive,
-        #"get_config_drive_configuration": get_config_drive_configuration,
+        'get_config_drive_default': get_config_drive_default,
+        'get_config_drive_configuration': get_config_drive_configuration,
         'get_info': get_info,
         'get_version': get_version,
         'get_inspect': get_inspect,

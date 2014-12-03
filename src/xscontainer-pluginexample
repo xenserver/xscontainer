@@ -15,7 +15,9 @@ CONFIGURATION=$(xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=
 echo "Unfortunately XAPI plugins do not like new lines. Work around to replace these with %BR% before proceeding"
 CONFIGURATION=$(echo "$CONFIGURATION" | sed ':a;N;$!ba;s/\n/%BR%/g')
 echo "If the user chooses to have config drive, the following call will set it up."
-xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=create_config_drive args:vmuuid="$VMUUID" args:sruuid="$SRUUID" args:configuration="$CONFIGURATION"
+VDIUUID=$(xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=create_config_drive args:vmuuid="$VMUUID" args:sruuid="$SRUUID" args:configuration="$CONFIGURATION" | sed 's/True//g')
+echo "If we later need to know how this config drive was configured, the following call can be used"
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_config_drive_configuration args:vdiuuid="$VDIUUID" | sed 's/True//g' | cat
 
 echo "Now let's start the VM"
 xe vm-start uuid=$VMUUID
