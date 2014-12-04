@@ -90,7 +90,7 @@ def execute_ssh(host, cmd):
            '-o', 'StrictHostKeyChecking=no',
            '-o', 'PasswordAuthentication=no',
            '-o', 'LogLevel=quiet',
-           '-o', 'ConnectTimeout=20',
+           '-o', 'ConnectTimeout=10',
            '-i', IDRSAPATH, 'core@%s' % (host)] + cmd
     (rcode, stdout, stderr) = runlocal(cmd)
     return str(stdout)
