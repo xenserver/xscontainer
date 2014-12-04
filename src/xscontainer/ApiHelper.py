@@ -162,6 +162,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
     Util.runlocal(cmd)
     return vdiref
 
+
 def export_disk(session, vdiuuid):
     filename = tempfile.mkstemp(suffix='.raw')[1]
     cmd = ['curl', '-k', '-o', filename,

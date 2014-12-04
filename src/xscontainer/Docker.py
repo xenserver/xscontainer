@@ -1,4 +1,4 @@
-import XenApi
+import ApiHelper
 import Util
 import thread
 import time
@@ -9,7 +9,7 @@ import XenAPI
 
 
 def _execute_cmd_on_vm(session, vmuuid, cmd):
-    host = XenApi.get_hi_mgmtnet_ip(session, vmuuid)
+    host = ApiHelper.get_hi_mgmtnet_ip(session, vmuuid)
     result = Util.execute_ssh(host, cmd)
     return result
 
@@ -75,13 +75,13 @@ def passthrough(session, vmuuid, command):
 def monitor_vm(session, vmuuid):
     # ToDo: must make this so much more efficient!
     Util.log("Monitor %s" % vmuuid)
-    vmref = XenApi.get_vm_ref_by_uuid(session, vmuuid)
-    # XenApi.update_vm_other_config(
+    vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
+    # ApiHelper.update_vm_other_config(
     #    session, vmref, 'docker_version', get_version(session, vmuuid))
     # ToDo: maintain connection to a VM
-    # XenApi.update_vm_other_config(
+    # ApiHelper.update_vm_other_config(
     #    session, vmref, 'docker_info', get_info(session, vmuuid))
-    XenApi.update_vm_other_config(
+    ApiHelper.update_vm_other_config(
         session, vmref, 'docker_ps', get_ps_xml(session, vmuuid))
 
 
@@ -100,8 +100,8 @@ def monitor_host(returninstantly=False):
         vmrecords = None
         try:
             if session == None:
-                session = XenApi.get_local_api_session()
-            vmrecords = XenApi.get_vm_records(session)
+                session = ApiHelper.get_local_api_session()
+            vmrecords = ApiHelper.get_vm_records(session)
         except Exception, e:
             # Something is seriously wrong, let's re-connect to XAPI
             if None != session:

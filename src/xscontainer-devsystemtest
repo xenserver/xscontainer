@@ -19,27 +19,27 @@ def main():
     #srref = XenApi.get_default_sr(session)
     #sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = CoreOs.install_vm(session, url, sruuid)
-    vmuuid = '98f337fe-9da4-cce4-9ab1-c8d593c67dd5'
+    vmuuid = '4503c7ec-9b20-0b6d-0171-b18642a5d37e'
     # Docker.passthrough(session, vmuuid,
     #                   'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')
     #vmref = XenApi.get_vm_ref_by_uuid(session, vmuuid)
     #CoreOs.create_config_drive(session, vmuuid, sruuid, CoreOs.CLOUDCONFIG)
     #session.xenapi.VM.start(vmref, False, True)
     #time.sleep( 20 )
-    #print Docker.get_ps_xml(session, vmuuid)
+    # print Docker.get_ps_xml(session, vmuuid)
     container = Docker.get_ps_dict(session, vmuuid)
     container = container[0]['entry']['container']
     print Docker.get_info_xml(session, vmuuid)
     print Docker.get_version_xml(session, vmuuid)
-    print CoreOs.get_config_drive_configuration(session, 'd8c6d05d-8015-4c73-9d2e-355f4eef441c')
-    #print Docker.monitor_host(returninstantly=True)
-    #print Docker.get_inspect_xml(session, vmuuid, container)
-    #Docker.start(session, vmuuid, container)
-    #Docker.restart(session, vmuuid, container)
-    #Docker.pause(session, vmuuid, container)
-    #Docker.unpause(session, vmuuid, container)
-    #Docker.stop(session, vmuuid, container)
-    #Docker.start(session, vmuuid, container)
+    #print CoreOs.get_config_drive_configuration(session, '')
+    print Docker.monitor_host(returninstantly=True)
+    print Docker.get_inspect_xml(session, vmuuid, container)
+    Docker.start(session, vmuuid, container)
+    Docker.restart(session, vmuuid, container)
+    Docker.pause(session, vmuuid, container)
+    Docker.unpause(session, vmuuid, container)
+    Docker.stop(session, vmuuid, container)
+    Docker.start(session, vmuuid, container)
 
 if __name__ == "__main__":
     main()

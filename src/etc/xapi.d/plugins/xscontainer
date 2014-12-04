@@ -13,8 +13,10 @@ def check_args(reqs, args):
         if req not in args:
             raise Exception('INVALID_ARGUMENTS')
 
+
 def prepare_output(output):
-    return "True%s" %(output)
+    return "True%s" % (output)
+
 
 def install_vm(session, args):
     check_args(['url', 'sruuid'],  args)
@@ -39,9 +41,9 @@ def get_config_drive_default(session, args):
 
 def get_config_drive_configuration(session, args):
     check_args(['vdiuuid'], args)
-    return  prepare_output(CoreOs.get_config_drive_configuration(session,
+    return prepare_output(CoreOs.get_config_drive_configuration(session,
                                                                 args['vdiuuid']
-                                                               ))
+                                                                ))
 
 
 def get_version(session, args):
@@ -101,7 +103,7 @@ if __name__ == "__main__":
     for arg in sys.argv:
         if arg.startswith('args:vmuuid='):
             vmuuid=arg.replace('args:vmuuid=', '')
-            vmrecord = XenApi.get_vm_record_by_uuid(vmuuid)
+            vmrecord = ApiHelper.get_vm_record_by_uuid(vmuuid)
             hostref = vmrecord['resident-on']
             if hostref != get_this_host_ref():
                 print XenAPIPlugin.call_plugin(session, hostref, 'docker', args)
