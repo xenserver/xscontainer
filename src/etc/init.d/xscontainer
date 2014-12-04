@@ -15,11 +15,11 @@ FULL_NAME="the XenServer Container Monitor"
 NAME="xscontainer"
 
 # executable command:
-CMD="/usr/local/bin/xscontainer-monitor"
+CMD="xscontainer-monitor"
 
 start() {
         echo -n $"Starting ${FULL_NAME}: "
-        APID=$(pidof -x "/usr/local/bin/xscontainer-monitor")
+        APID=$(pidof -x ${CMD})
         if [ $? -eq 0 ]; then
                 echo -n $"cannot start ${NAME}: already running."
                 failure $"cannot start ${NAME}: already running."
@@ -28,22 +28,31 @@ start() {
         fi
 
         nohup ${CMD} > /dev/null 2>&1 &
-        success
-        echo
-        return 0
+
+        APID=$(pidof -x ${CMD})
+        if [ $? -eq 0 ]; then
+               success
+               echo
+               return 0
+        else
+               echo -n $"cannot start ${NAME}: daemon not running after start."
+               failure $"cannot start ${NAME}: daemon not running after start."
+               echo
+               return 1
+        fi
 }
 
 stop() {
         echo -n $"Stopping ${FULL_NAME}: "
 
-        APID=$(pidof -x "/usr/local/bin/xscontainer-monitor")
+        APID=$(pidof -x ${CMD})
         if [ $? -eq 0 ]; then
                 echo
         else
                 echo -n $"cannot stop ${NAME}: daemon is not running."
                 failure $"cannot stop ${NAME}: daemon is not running."
                 echo
-                return 1;
+                return 1
         fi
 
         kill "$APID"
