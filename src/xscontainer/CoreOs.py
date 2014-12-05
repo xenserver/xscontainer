@@ -117,10 +117,8 @@ def create_config_drive_iso(session, userdata, vmuuid):
     latestfolder = os.path.join(openstackfolder, 'latest')
     os.makedirs(latestfolder)
     userdatafile = os.path.join(latestfolder, 'user_data')
-    userdatafilehandle = open(userdatafile, 'w')
     userdata = customize_userdata(session, userdata, vmuuid)
-    userdatafilehandle.write(userdata)
-    userdatafilehandle.close()
+    Util.write_file(userdatafile, userdata)
     cmd = ['mkisofs', '-R', '-V', 'config-2', '-o', tempisofile, tempisodir]
     Util.runlocal(cmd)
     os.remove(userdatafile)
@@ -166,9 +164,7 @@ def get_config_drive_configuration(session, vdiuuid):
     cmd = ['mount', '-o', 'loop', '-t', 'iso9660', filename, tempdir]
     Util.runlocal(cmd)
     userdatapath = os.path.join(tempdir, 'openstack', 'latest', 'user_data')
-    filehandle = open(userdatapath)
-    content = filehandle.read()
-    filehandle.close()
+    content = Util.read_file(userdatapath)
     cmd = ['umount', tempdir]
     Util.runlocal(cmd)
     os.rmdir(tempdir)

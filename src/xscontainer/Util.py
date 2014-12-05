@@ -67,7 +67,6 @@ def converttoxml(node, parentelement=None, dom=None):
             element = dom.createElement(xml.sax.saxutils.escape(key))
             parentelement.appendChild(element)
             converttoxml(value, parentelement=element, dom=dom)
-            pass
 
 
 def ensure_idrsa():
@@ -78,11 +77,19 @@ def ensure_idrsa():
 
 def get_idrsa_pub():
     ensure_idrsa()
-    filehandler = open("%s.pub" % (IDRSAPATH), 'r')
-    contents = filehandler.read().split(' ')[1]
-    filehandler.close()
-    return contents
+    return read_file(os.path.join(IDRSAPATH, "%s.pub"))
 
+
+def read_file(filepath):
+    filehandle = open(filepath, 'r')
+    content = filehandle.read()
+    filehandle.close()
+    return content
+
+def write_file(filepath, content):
+    filehandle = open(filepath, 'w')
+    content = filehandle.write()
+    filehandle.close()
 
 def execute_ssh(host, cmd):
     ensure_idrsa()
