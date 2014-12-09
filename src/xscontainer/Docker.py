@@ -169,20 +169,30 @@ def _simplecommand(session, vmuuid, container, command):
 
 
 def start(session, vmuuid, container):
-    return _simplecommand(session, vmuuid, container, 'start')
+    result = _simplecommand(session, vmuuid, container, 'start')
+    monitor_vm(session, vmuuid)
+    return result
 
 
 def stop(session, vmuuid, container):
-    return _simplecommand(session, vmuuid, container, 'stop')
+    result = _simplecommand(session, vmuuid, container, 'stop')
+    monitor_vm(session, vmuuid)
+    return result
 
 
 def restart(session, vmuuid, container):
-    return _simplecommand(session, vmuuid, container, 'restart')
+    result = _simplecommand(session, vmuuid, container, 'restart')
+    monitor_vm(session, vmuuid)
+    return result
 
 
 def pause(session, vmuuid, container):
-    return _simplecommand(session, vmuuid, container, 'pause')
+    result = _simplecommand(session, vmuuid, container, 'pause')
+    monitor_vm(session, vmuuid)
+    return result
 
 
 def unpause(session, vmuuid, container):
-    return _simplecommand(session, vmuuid, container, 'unpause')
+    result = _simplecommand(session, vmuuid, container, 'unpause')
+    monitor_vm(session, vmuuid)
+    return result

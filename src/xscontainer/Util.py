@@ -86,10 +86,12 @@ def read_file(filepath):
     filehandle.close()
     return content
 
+
 def write_file(filepath, content):
     filehandle = open(filepath, 'w')
     content = filehandle.write()
     filehandle.close()
+
 
 def execute_ssh(host, cmd):
     ensure_idrsa()
