@@ -15,7 +15,7 @@ FULL_NAME="the XenServer Container Monitor"
 NAME="xscontainer"
 
 # executable command:
-CMD="xscontainer-monitor"
+CMD="/usr/local/bin/xscontainer-monitor"
 
 start() {
         echo -n $"Starting ${FULL_NAME}: "

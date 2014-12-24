@@ -5,7 +5,7 @@ import time
 import simplejson
 import pprint
 
-import XenAPI
+import ApiHelper
 
 
 def _execute_cmd_on_vm(session, vmuuid, cmd):
@@ -103,9 +103,8 @@ def monitor_host(returninstantly=False):
                 session = ApiHelper.get_local_api_session()
             vmrecords = ApiHelper.get_vm_records(session)
         except Exception, e:
-            # Something is seriously wrong, let's re-connect to XAPI
             if None != session:
-                # Soemthing is seriously wrong, let's re-connect to XAPI
+                # Something is seriously wrong, let's re-connect to XAPI
                 try:
                     session.xenapi.session.__logout()
                 except Exception, e:

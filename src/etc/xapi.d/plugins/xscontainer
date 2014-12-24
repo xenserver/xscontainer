@@ -28,10 +28,10 @@ def install_vm(session, args):
 def create_config_drive(session, args):
     check_args(['vmuuid', 'sruuid', 'configuration'], args)
     configuration = args['configuration'].replace("%BR%", "\r\n")
-    return prepare_output(CoreOs.create_config_drive_xml(session,
-                                                         args['vmuuid'],
-                                                         args['sruuid'],
-                                                         configuration))
+    return prepare_output(CoreOs.create_config_drive(session,
+                                                     args['vmuuid'],
+                                                     args['sruuid'],
+                                                     configuration))
 
 
 def get_config_drive_default(session, args):

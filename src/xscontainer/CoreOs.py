@@ -1,6 +1,7 @@
 import xml.dom.minidom
 import os
 import pprint
+import random
 import re
 import tempfile
 
@@ -47,7 +48,8 @@ def remove_disks_from_vm_provisioning(session, vm_ref):
 # Todo: update template name label
 
 
-def install_vm(session, urlvhdbz2, sruuid, vmname='CoreOs',
+def install_vm(session, urlvhdbz2, sruuid,
+               vmname='CoreOs-%d' % (random.randint(0,1000)),
                templatename='CoreOS (experimental)'):
     atempfile = tempfile.mkstemp(suffix='.vhd.bz2')[1]
     atempfileunpacked = atempfile.replace('.bz2', '')
@@ -106,7 +108,7 @@ def workaround_dependencies():
     cmd = ['chkconfig', '--add', 'xscontainer']
     Util.runlocal(cmd)
     cmd = ['service', 'xscontainer', 'restart']
-    Util.runlocal(cmd)
+    Util.runlocal(cmd, canfail = True)
 
 
 def create_config_drive_iso(session, userdata, vmuuid):
@@ -154,7 +156,7 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
         session.xenapi.VBD.plug(vbdref)
     vdirecord = session.xenapi.VDI.get_record(vdiref)
     vbdrecord = session.xenapi.VBD.get_record(vbdref)
-    return {'vdiuuid': vdirecord['uuid'], 'vbduuid': vbdrecord['uuid'], 'userdata': userdata}
+    return vdirecord['uuid']
 
 
 def get_config_drive_configuration(session, vdiuuid):
@@ -171,8 +173,3 @@ def get_config_drive_configuration(session, vdiuuid):
     os.remove(filename)
     return content
 
-
-def create_config_drive_xml(session, vmuuid, sruuid, userdata):
-    return Util.converttoxml({'config_drive':
-                              create_config_drive(session, vmuuid, sruuid,
-                                                  userdata)})

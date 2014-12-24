@@ -7,27 +7,33 @@ sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.Util as Util
 import xscontainer.CoreOs as CoreOs
 import xscontainer.Docker as Docker
-import xscontainer.XenApi as XenApi
+import xscontainer.ApiHelper as ApiHelper
 import pprint
 import time
 
 
 def main():
-    session = XenApi.get_local_api_session()
+    session = ApiHelper.get_local_api_session()
     #url = 'http://stable.release.core-os.net/amd64-usr/current/coreos_production_xen_image.vhd.bz2'
     url = 'http://10.80.3.229/coreos_production_xen_image.vhd.bz2'
-    #srref = XenApi.get_default_sr(session)
-    #sruuid = session.xenapi.SR.get_record(srref)['uuid']
+    srref = ApiHelper.get_default_sr(session)
+    sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = CoreOs.install_vm(session, url, sruuid)
-    vmuuid = '4503c7ec-9b20-0b6d-0171-b18642a5d37e'
-    # Docker.passthrough(session, vmuuid,
-    #                   'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')
-    #vmref = XenApi.get_vm_ref_by_uuid(session, vmuuid)
+    vmuuid = '8b26c1bd-2119-1db8-257d-84feb081e817'
     #CoreOs.create_config_drive(session, vmuuid, sruuid, CoreOs.CLOUDCONFIG)
+    vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
     #session.xenapi.VM.start(vmref, False, True)
-    #time.sleep( 20 )
-    # print Docker.get_ps_xml(session, vmuuid)
-    container = Docker.get_ps_dict(session, vmuuid)
+    #print Docker.get_ps_xml(session, vmuuid)
+    connected = False
+    while not connected:
+        try:
+            container = Docker.get_ps_dict(session, vmuuid)
+            connected = True
+        except:
+            print "This didn't work. Trying again."
+            time.sleep(3)
+    Docker.passthrough(session, vmuuid,
+                       'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')
     container = container[0]['entry']['container']
     print Docker.get_info_xml(session, vmuuid)
     print Docker.get_version_xml(session, vmuuid)

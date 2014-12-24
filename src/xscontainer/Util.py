@@ -77,7 +77,7 @@ def ensure_idrsa():
 
 def get_idrsa_pub():
     ensure_idrsa()
-    return read_file(os.path.join(IDRSAPATH, "%s.pub"))
+    return read_file("%s.pub" % (IDRSAPATH)).split(' ')[1]
 
 
 def read_file(filepath):
@@ -89,7 +89,7 @@ def read_file(filepath):
 
 def write_file(filepath, content):
     filehandle = open(filepath, 'w')
-    content = filehandle.write()
+    filehandle.write(content)
     filehandle.close()
 
 
