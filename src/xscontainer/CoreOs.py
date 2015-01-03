@@ -1,6 +1,5 @@
 import xml.dom.minidom
 import os
-import pprint
 import random
 import re
 import tempfile
@@ -35,6 +34,12 @@ coreos:
     name: %XSVMTOHOST%
     # generate a new token for each unique cluster at https://discovery.etcd.io/new
     # discovery: https://discovery.etcd.io/<token>
+write_files:
+  - path: /etc/sysctl.d/10-disable-ipv6.conf
+    permissions: 0644
+    owner: root
+    content: |
+      net.ipv6.conf.eth0.disable_ipv6 = 1
 """
 
 
@@ -49,7 +54,7 @@ def remove_disks_from_vm_provisioning(session, vm_ref):
 
 
 def install_vm(session, urlvhdbz2, sruuid,
-               vmname='CoreOs-%d' % (random.randint(0,1000)),
+               vmname='CoreOs-%d' % (random.randint(0, 1000)),
                templatename='CoreOS (experimental)'):
     atempfile = tempfile.mkstemp(suffix='.vhd.bz2')[1]
     atempfileunpacked = atempfile.replace('.bz2', '')
@@ -93,7 +98,8 @@ def customize_userdata(session, userdata, vmuuid):
     vmname = ApiHelper.get_vm_record_by_uuid(session, vmuuid)['name_label']
     vmname = re.sub(r'[\W_]+', '', vmname).lower()
     userdata = userdata.replace('%XSVMTOHOST%', vmname)
-    userdata = userdata.replace('%XSRSAPUB%', Util.get_idrsa_pub())
+    userdata = userdata.replace(
+        '%XSRSAPUB%', ApiHelper.get_idrsa_secret_public(session))
     mgmtnet_device = ApiHelper.get_hi_mgmtnet_device(session, vmuuid)
     userdata = userdata.replace('%XSHIN%', mgmtnet_device)
     return userdata
@@ -108,7 +114,7 @@ def workaround_dependencies():
     cmd = ['chkconfig', '--add', 'xscontainer']
     Util.runlocal(cmd)
     cmd = ['service', 'xscontainer', 'restart']
-    Util.runlocal(cmd, canfail = True)
+    Util.runlocal(cmd, canfail=True)
 
 
 def create_config_drive_iso(session, userdata, vmuuid):
@@ -172,4 +178,3 @@ def get_config_drive_configuration(session, vdiuuid):
     os.rmdir(tempdir)
     os.remove(filename)
     return content
-

@@ -3,14 +3,13 @@ import Util
 import thread
 import time
 import simplejson
-import pprint
 
 import ApiHelper
 
 
 def _execute_cmd_on_vm(session, vmuuid, cmd):
     host = ApiHelper.get_hi_mgmtnet_ip(session, vmuuid)
-    result = Util.execute_ssh(host, cmd)
+    result = Util.execute_ssh(session, host, cmd)
     return result
 
 
@@ -114,10 +113,12 @@ def monitor_host(returninstantly=False):
             passedtime = 0
             continue
         # Detect whether there is changed VM states
+        hostref = ApiHelper.get_this_host_ref(session)
         for vmref, vmrecord in vmrecords.iteritems():
             if ('other_config' in vmrecord
                     and 'base_template_name' in vmrecord['other_config']
-                    and 'CoreOS' in vmrecord['other_config']['base_template_name']):
+                    and 'CoreOS' in vmrecord['other_config']['base_template_name']
+                    and hostref == vmrecord['resident_on']):
                 if vmrecord['power_state'] == 'Running':
                     if vmrecord['uuid'] not in vmuuidstomonitor:
                         Util.log("Adding monitor for VM name: %s, UUID: %s"

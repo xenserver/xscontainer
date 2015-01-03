@@ -19,11 +19,10 @@ def main():
     srref = ApiHelper.get_default_sr(session)
     sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = CoreOs.install_vm(session, url, sruuid)
-    vmuuid = '8b26c1bd-2119-1db8-257d-84feb081e817'
+    vmuuid = '348c296a-059f-b719-d785-0c0decddba0a'
     #CoreOs.create_config_drive(session, vmuuid, sruuid, CoreOs.CLOUDCONFIG)
     vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
     #session.xenapi.VM.start(vmref, False, True)
-    #print Docker.get_ps_xml(session, vmuuid)
     connected = False
     while not connected:
         try:
@@ -37,7 +36,7 @@ def main():
     container = container[0]['entry']['container']
     print Docker.get_info_xml(session, vmuuid)
     print Docker.get_version_xml(session, vmuuid)
-    #print CoreOs.get_config_drive_configuration(session, '')
+    # print CoreOs.get_config_drive_configuration(session, '')
     print Docker.monitor_host(returninstantly=True)
     print Docker.get_inspect_xml(session, vmuuid, container)
     Docker.start(session, vmuuid, container)

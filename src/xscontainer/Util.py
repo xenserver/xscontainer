@@ -1,15 +1,15 @@
+import ApiHelper
+
 import logging
 import os
-import pprint
 import re
 import signal
 import subprocess
 import sys
+import tempfile
+import time
 import xml.dom.minidom
 import xml.sax.saxutils
-
-# ToDo: Should use a special key
-IDRSAPATH = os.path.join(os.path.expanduser('~'), '.ssh/id_rsa')
 
 logger = logging.getLogger()
 loggerconfigured = False
@@ -69,15 +69,15 @@ def converttoxml(node, parentelement=None, dom=None):
             converttoxml(value, parentelement=element, dom=dom)
 
 
-def ensure_idrsa():
-    if not os.path.exists(IDRSAPATH):
-        cmd = ['ssh-keygen', '-f', IDRSAPATH, '-N', '']
-        runlocal(cmd)
-
-
-def get_idrsa_pub():
-    ensure_idrsa()
-    return read_file("%s.pub" % (IDRSAPATH)).split(' ')[1]
+def create_idrsa():
+    (filehandle, idrsafile) = tempfile.mkstemp()
+    os.remove(idrsafile)
+    cmd = ['ssh-keygen', '-f', idrsafile, '-N', '']
+    runlocal(cmd)
+    idrsapriv = read_file("%s" % (idrsafile))
+    idrsapub = read_file("%s.pub" % (idrsafile))
+    os.remove(idrsafile)
+    return (idrsapriv, idrsapub)
 
 
 def read_file(filepath):
@@ -88,18 +88,32 @@ def read_file(filepath):
 
 
 def write_file(filepath, content):
-    filehandle = open(filepath, 'w')
+    filehandle = open(filepath, "w+")
     filehandle.write(content)
     filehandle.close()
+    os.chmod(filepath, 0600)
 
 
-def execute_ssh(host, cmd):
-    ensure_idrsa()
+def ensure_idrsa(session, idrsafilename):
+    neednewfile = False
+    if os.path.exists(idrsafilename):
+        mtime = os.path.getmtime(idrsafilename)
+        if time.time() - mtime > 60:
+            neednewfile = True
+    else:
+        neednewfile = True
+    if neednewfile:
+        write_file(idrsafilename, ApiHelper.get_idrsa_secret_private(session))
+
+
+def execute_ssh(session, host, cmd):
+    idrsafilename = '/tmp/xscontainer-idrsa'
+    ensure_idrsa(session, idrsafilename)
     cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
            '-o', 'StrictHostKeyChecking=no',
            '-o', 'PasswordAuthentication=no',
            '-o', 'LogLevel=quiet',
            '-o', 'ConnectTimeout=10',
-           '-i', IDRSAPATH, 'core@%s' % (host)] + cmd
-    (rcode, stdout, stderr) = runlocal(cmd)
+           '-i', idrsafilename, 'core@%s' % (host)] + cmd
+    stdout = runlocal(cmd)[1]
     return str(stdout)
