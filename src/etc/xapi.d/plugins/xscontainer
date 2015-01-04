@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
+import XenAPI
 import XenAPIPlugin
 import sys
+import xmlrpclib
 # ToDo: hack for building on Fedora
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
-import xscontainer.Docker as Docker
+import xscontainer.ApiHelper as ApiHelper
 import xscontainer.CoreOs as CoreOs
+import xscontainer.Docker as Docker
 
 
 def check_args(reqs, args):
@@ -97,19 +100,35 @@ def passthrough(session, args):
     return prepare_output(Docker.passthrough(session, args['vmuuid'],
                                              args['command']))
 
-if __name__ == "__main__":
-    """
-    # Ensure that VM specific operations are run on the right slave
-    for arg in sys.argv:
-        if arg.startswith('args:vmuuid='):
-            vmuuid=arg.replace('args:vmuuid=', '')
-            vmrecord = ApiHelper.get_vm_record_by_uuid(vmuuid)
-            hostref = vmrecord['resident-on']
-            if hostref != get_this_host_ref():
-                print XenAPIPlugin.call_plugin(session, hostref, 'docker', args)
-                exit(0)
-    """
 
+def redirect_per_vm_operation_owned_by_other_slave(argv):
+    params, methodname = xmlrpclib.loads(argv[1])
+    session_id = params[0]
+    session = XenAPI.xapi_local()
+    session._session = session_id
+    args = params[1]
+    if 'vmuuid' in args:
+        vmuuid = args['vmuuid']
+        vmrecord = ApiHelper.get_vm_record_by_uuid(session, vmuuid)
+        hostref = vmrecord['resident_on']
+        if hostref != ApiHelper.get_this_host_ref(session):
+            # Redirect the call
+            try:
+                result = session.xenapi.host.call_plugin(
+                    hostref, 'xscontainer', methodname, args)
+                print XenAPIPlugin.success_message(result)
+                sys.exit(0)
+            except SystemExit:
+                raise
+            except Exception, e:
+                print XenAPIPlugin.failure_message(['XENAPI_PLUGIN_FAILURE',
+                                                    methodname, e.__class__.__name__, str(e)])
+                sys.exit(1)
+
+if __name__ == "__main__":
+    redirect_per_vm_operation_owned_by_other_slave(sys.argv)
+
+    # Now we can be certain that this message ought to be handled by this slave
     XenAPIPlugin.dispatch({
         'install_vm': install_vm,
         'create_config_drive': create_config_drive,
