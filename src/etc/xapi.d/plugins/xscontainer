@@ -111,7 +111,8 @@ def redirect_per_vm_operation_owned_by_other_slave(argv):
         vmuuid = args['vmuuid']
         vmrecord = ApiHelper.get_vm_record_by_uuid(session, vmuuid)
         hostref = vmrecord['resident_on']
-        if hostref != ApiHelper.get_this_host_ref(session):
+        if (hostref != 'OpaqueRef:NULL'
+            and hostref != ApiHelper.get_this_host_ref(session)):
             # Redirect the call
             try:
                 result = session.xenapi.host.call_plugin(

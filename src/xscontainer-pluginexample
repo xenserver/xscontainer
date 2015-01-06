@@ -63,6 +63,6 @@ xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=passthrough args
 if [[ "$#" == 1 && "$1" == "preparedemo" ]]; then
     COMMAND='docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=mysecretpassword mysql'
     xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=passthrough args:vmuuid="$VMUUID" args:command="$COMMAND"
-    COMMAND='docker run -d --name tomcat -p 8888:8080 -it tomcat'
+    COMMAND='docker run -d --name tomcat -p 8080:8080 -it tomcat'
     xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=passthrough args:vmuuid="$VMUUID" args:command="$COMMAND"
 fi

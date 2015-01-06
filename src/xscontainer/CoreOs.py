@@ -1,5 +1,6 @@
 import xml.dom.minidom
 import os
+import shutil
 import random
 import re
 import tempfile
@@ -30,6 +31,17 @@ coreos:
 
         [DHCP]
         UseRoutes=false
+    - name: xe-linux-distribution.service
+      command: start
+      content: |
+        [Unit]
+        Description=XenServer Linux Guest Agent
+        After=docker.service
+
+        [Service]
+        ExecStartPre=/media/configdrive/agent/xe-linux-distribution /var/cache/xe-linux-distribution
+        Environment="XE_UPDATE_GUEST_ATTRS=/media/configdrive/agent/xe-update-guest-attrs"
+        ExecStart=/media/configdrive/agent/xe-daemon
   etcd:
     name: %XSVMTOHOST%
     # generate a new token for each unique cluster at https://discovery.etcd.io/new
@@ -39,7 +51,12 @@ write_files:
     permissions: 0644
     owner: root
     content: |
-      net.ipv6.conf.eth0.disable_ipv6 = 1
+      net.ipv6.conf.all.disable_ipv6 = 1
+  - path: /etc/sysctl.d/10-enable-arp-notify.conf
+    permissions: 0644
+    owner: root
+    content: |
+      net.ipv4.conf.all.arp_notify = 1
 """
 
 
@@ -127,24 +144,46 @@ def create_config_drive_iso(session, userdata, vmuuid):
     userdatafile = os.path.join(latestfolder, 'user_data')
     userdata = customize_userdata(session, userdata, vmuuid)
     Util.write_file(userdatafile, userdata)
+    # Also add the Linux guest agent
+    temptoolsisodir = tempfile.mkdtemp()
+    cmd = ['mount', '-o', 'loop', '/opt/xensource/packages/iso/xs-tools-6.5.0.iso',  temptoolsisodir]
+    Util.runlocal(cmd)
+    agentpath = os.path.join(tempisodir, 'agent')
+    os.makedirs(agentpath)
+    agentfiles = ['xe-daemon', 'xe-linux-distribution',
+                  'xe-linux-distribution.service', 'xe-update-guest-attrs',
+                  'xen-vcpu-hotplug.rules', 'install.sh']
+    for filename in agentfiles:
+        path=os.path.join(temptoolsisodir, 'Linux', filename)
+        shutil.copy(path, agentpath)
+    cmd = ['umount', temptoolsisodir]
+    Util.runlocal(cmd)
+    os.rmdir(temptoolsisodir)
     cmd = ['mkisofs', '-R', '-V', 'config-2', '-o', tempisofile, tempisodir]
     Util.runlocal(cmd)
     os.remove(userdatafile)
     os.rmdir(latestfolder)
     os.rmdir(openstackfolder)
+    for filename in agentfiles:
+        path=os.path.join(agentpath, filename)
+        os.remove(path)
+    os.rmdir(agentpath)
     os.rmdir(tempisodir)
     return tempisofile
 
 
 def remove_config_drive(session, vmrecord, configdisk_namelabel):
     for vbd in vmrecord['VBDs']:
-        vbdrecord = session.xenapi.VBD.get_record(vbd)
-        vdirecord = session.xenapi.VDI.get_record(vbdrecord['VDI'])
-        if vdirecord['name_label'] == configdisk_namelabel:
-            if vbdrecord['currently_attached']:
-                session.xenapi.VBD.unplug(vbd)
-            session.xenapi.VBD.destroy(vbd)
-            session.xenapi.VDI.destroy(vbdrecord['VDI'])
+        try:
+            vbdrecord = session.xenapi.VBD.get_record(vbd)
+            vdirecord = session.xenapi.VDI.get_record(vbdrecord['VDI'])
+            if vdirecord['name_label'] == configdisk_namelabel:
+                if vbdrecord['currently_attached']:
+                    session.xenapi.VBD.unplug(vbd)
+                session.xenapi.VBD.destroy(vbd)
+                session.xenapi.VDI.destroy(vbdrecord['VDI'])
+        except:
+            continue
 
 
 def create_config_drive(session, vmuuid, sruuid, userdata):

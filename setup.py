@@ -11,8 +11,8 @@ def datapath(path):
     return path
 
 if __name__ == "__main__":
-    # Add forceversion option to set the version via the command line
     version = '0.1'
+    # Add forceversion option to set the version via the command line
     matchingarg = None
     for arg in sys.argv:
         if '--forceversion=' in arg:
