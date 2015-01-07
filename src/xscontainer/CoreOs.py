@@ -66,16 +66,13 @@ def remove_disks_from_vm_provisioning(session, vm_ref):
     del other_config['disks']
     session.xenapi.VM.set_other_config(vm_ref, other_config)
 
-# ToDo: Simplify this function
-# Todo: update template name label
-
 
 def install_vm(session, urlvhdbz2, sruuid,
                vmname='CoreOs-%d' % (random.randint(0, 1000)),
                templatename='CoreOS (experimental)'):
     atempfile = tempfile.mkstemp(suffix='.vhd.bz2')[1]
     atempfileunpacked = atempfile.replace('.bz2', '')
-    # ToDo: pipe the file, so it never actually touches Dom0
+    # ToDo: pipe instead, so the file never actually touches Dom0
     cmd = ['curl', '-o', atempfile, urlvhdbz2]
     Util.runlocal(cmd)
     cmd = ['bzip2', '-d', atempfile]
@@ -152,7 +149,8 @@ def create_config_drive_iso(session, userdata, vmuuid):
     os.makedirs(agentpath)
     agentfiles = ['xe-daemon', 'xe-linux-distribution',
                   'xe-linux-distribution.service', 'xe-update-guest-attrs',
-                  'xen-vcpu-hotplug.rules', 'install.sh']
+                  'xen-vcpu-hotplug.rules', 'install.sh',
+                  'versions.deb', 'versions.rpm']
     for filename in agentfiles:
         path=os.path.join(temptoolsisodir, 'Linux', filename)
         shutil.copy(path, agentpath)
@@ -207,7 +205,6 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
 def get_config_drive_configuration(session, vdiuuid):
     filename = ApiHelper.export_disk(session, vdiuuid)
     tempdir = tempfile.mkdtemp()
-    # ToDo: is this always safe?
     cmd = ['mount', '-o', 'loop', '-t', 'iso9660', filename, tempdir]
     Util.runlocal(cmd)
     userdatapath = os.path.join(tempdir, 'openstack', 'latest', 'user_data')
