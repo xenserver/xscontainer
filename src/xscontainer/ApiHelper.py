@@ -45,6 +45,13 @@ def get_hi_mgmtnet_ip(session, vmuuid):
                 return ipaddress
 
 
+def get_vm_ips(session, vmuuid):
+    vmref = get_vm_ref_by_uuid(session, vmuuid)
+    guest_metrics = session.xenapi.VM.get_guest_metrics(vmref)
+    ips = session.xenapi.VM_guest_metrics.get_networks(guest_metrics)
+    return ips
+
+
 def get_this_host_uuid():
     # ToDo: There must be a better way?!?
     uuid = None
@@ -54,6 +61,17 @@ def get_this_host_uuid():
             uuid = line.split("'")[1]
     filehandler.close()
     return uuid
+
+
+def get_hostinternalnetwork_preferene_on(session):
+    pool = session.xenapi.pool.get_all()[0]
+    other_config = session.xenapi.pool.get_other_config(pool)
+    if ('xscontainer-use-hostinternalnetwork' in other_config
+        and (other_config['xscontainer-use-hostinternalnetwork'].lower()
+             in ['1', 'yes', 'true', 'on'])):
+        return True
+    # Return the default
+    return False
 
 
 def get_this_host_ref(session):

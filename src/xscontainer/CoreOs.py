@@ -20,6 +20,7 @@ coreos:
       command: start
     - name: fleet.service
       command: start
+%XSHINEXISTS%
     - name: 00-eth%XSHIN%.network
       runtime: true
       content: |
@@ -30,7 +31,7 @@ coreos:
         DHCP=yes
 
         [DHCP]
-        UseRoutes=false
+        UseRoutes=false%ENDXSHINEXISTS%
     - name: xe-linux-distribution.service
       command: start
       content: |
@@ -100,12 +101,21 @@ def install_vm(session, urlvhdbz2, sruuid,
 
 
 def prepare_vm_for_config_drive(session, vmref, vmuuid):
-    # Setup host internal network
-    ApiHelper.disable_gateway_of_hi_mgmtnet_ref(session)
-    mgmtnet_device = ApiHelper.get_hi_mgmtnet_device(session, vmuuid)
-    if not mgmtnet_device:
-        ApiHelper.create_vif(session,
-                             ApiHelper.get_hi_mgmtnet_ref(session), vmref)
+    if ApiHelper.get_hostinternalnetwork_preferene_on(session):
+        # Setup host internal network
+        ApiHelper.disable_gateway_of_hi_mgmtnet_ref(session)
+        mgmtnet_device = ApiHelper.get_hi_mgmtnet_device(session, vmuuid)
+        if not mgmtnet_device:
+            ApiHelper.create_vif(session,
+                                 ApiHelper.get_hi_mgmtnet_ref(session), vmref)
+
+
+def filterxshinexists(text):
+    xshinexists = text.index('%XSHINEXISTS%')
+    endxshinexists = text.index('%ENDXSHINEXISTS%')
+    if xshinexists and endxshinexists:
+        text = text[:xshinexists] + text[endxshinexists + 14:]
+    return text
 
 
 def customize_userdata(session, userdata, vmuuid):
@@ -115,7 +125,17 @@ def customize_userdata(session, userdata, vmuuid):
     userdata = userdata.replace(
         '%XSRSAPUB%', ApiHelper.get_idrsa_secret_public(session))
     mgmtnet_device = ApiHelper.get_hi_mgmtnet_device(session, vmuuid)
-    userdata = userdata.replace('%XSHIN%', mgmtnet_device)
+    if mgmtnet_device:
+        userdata = userdata.replace('%XSHIN%', mgmtnet_device)
+    else:
+        userdata = filterxshinexists(userdata)
+    return userdata
+
+
+def get_config_drive_default(session):
+    userdata = CLOUDCONFIG
+    if not ApiHelper.get_hostinternalnetwork_preferene_on(session):
+        userdata = filterxshinexists(userdata)
     return userdata
 
 
@@ -143,7 +163,8 @@ def create_config_drive_iso(session, userdata, vmuuid):
     Util.write_file(userdatafile, userdata)
     # Also add the Linux guest agent
     temptoolsisodir = tempfile.mkdtemp()
-    cmd = ['mount', '-o', 'loop', '/opt/xensource/packages/iso/xs-tools-6.5.0.iso',  temptoolsisodir]
+    cmd = ['mount', '-o', 'loop',
+           '/opt/xensource/packages/iso/xs-tools-6.5.0.iso',  temptoolsisodir]
     Util.runlocal(cmd)
     agentpath = os.path.join(tempisodir, 'agent')
     os.makedirs(agentpath)
@@ -152,7 +173,7 @@ def create_config_drive_iso(session, userdata, vmuuid):
                   'xen-vcpu-hotplug.rules', 'install.sh',
                   'versions.deb', 'versions.rpm']
     for filename in agentfiles:
-        path=os.path.join(temptoolsisodir, 'Linux', filename)
+        path = os.path.join(temptoolsisodir, 'Linux', filename)
         shutil.copy(path, agentpath)
     cmd = ['umount', temptoolsisodir]
     Util.runlocal(cmd)
@@ -163,7 +184,7 @@ def create_config_drive_iso(session, userdata, vmuuid):
     os.rmdir(latestfolder)
     os.rmdir(openstackfolder)
     for filename in agentfiles:
-        path=os.path.join(agentpath, filename)
+        path = os.path.join(agentpath, filename)
         os.remove(path)
     os.rmdir(agentpath)
     os.rmdir(tempisodir)

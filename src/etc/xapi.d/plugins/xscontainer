@@ -39,7 +39,7 @@ def create_config_drive(session, args):
 
 def get_config_drive_default(session, args):
     check_args(['templateuuid'], args)
-    return prepare_output(CoreOs.CLOUDCONFIG)
+    return prepare_output(CoreOs.get_config_drive_default(session))
 
 
 def get_config_drive_configuration(session, args):

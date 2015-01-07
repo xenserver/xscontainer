@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -117,3 +118,32 @@ def execute_ssh(session, host, cmd):
            '-i', idrsafilename, 'core@%s' % (host)] + cmd
     stdout = runlocal(cmd)[1]
     return str(stdout)
+
+
+def test_connection(ip, port):
+    try:
+        asocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Allow the connection to block for 2 seconds
+        asocket.settimeout(2)
+        asocket.connect((ip, port))
+        asocket.close()
+        return True
+    except:
+        return False
+
+
+def get_suitable_vm_ip(session, vmuuid):
+    ips = ApiHelper.get_vm_ips(session, vmuuid)
+    stage1filteredips = []
+    for network, ip in ips.iteritems():
+        if ':' not in ip:
+            # if ipv4
+            if ip.startswith('169.254.'):
+                # Prefer host internal network
+                stage1filteredips.insert(0, ip)
+            else:
+                stage1filteredips.append(ip)
+    for ip in stage1filteredips:
+        if test_connection(ip, 22):
+            return ip
+    raise Exception("No valid IP found for vmuuid %s" % (vmuuid))

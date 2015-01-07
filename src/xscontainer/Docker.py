@@ -8,7 +8,7 @@ import ApiHelper
 
 
 def _execute_cmd_on_vm(session, vmuuid, cmd):
-    host = ApiHelper.get_hi_mgmtnet_ip(session, vmuuid)
+    host = Util.get_suitable_vm_ip(session, vmuuid)
     result = Util.execute_ssh(session, host, cmd)
     return result
 

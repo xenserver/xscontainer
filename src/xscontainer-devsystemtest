@@ -19,12 +19,14 @@ def main():
     srref = ApiHelper.get_default_sr(session)
     sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = CoreOs.install_vm(session, url, sruuid)
-    vmuuid = '5b6979f7-c02b-03bb-edf8-e0c3f714cf49'
+    vmuuid = 'c5a927d1-d9af-def8-c665-adb65640a8a0'
     vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
+    #"""
     try:
         session.xenapi.VM.clean_shutdown(vmref)
     except:
         pass
+    #"""
     CoreOs.create_config_drive(session, vmuuid, sruuid, CoreOs.CLOUDCONFIG)
     session.xenapi.VM.start(vmref, False, True)
     sys.exit(0)
@@ -36,8 +38,10 @@ def main():
         except:
             print "This didn't work. Trying again."
             time.sleep(3)
+    """
     Docker.passthrough(session, vmuuid,
                        'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')
+    """
     container = container[0]['entry']['container']
     print Docker.get_info_xml(session, vmuuid)
     print Docker.get_version_xml(session, vmuuid)
