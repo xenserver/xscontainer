@@ -1,42 +1,18 @@
 import ApiHelper
+import Log
 
-import logging
 import os
 import re
-import signal
 import socket
 import subprocess
-import sys
 import tempfile
 import time
 import xml.dom.minidom
 import xml.sax.saxutils
 
-logger = logging.getLogger()
-loggerconfigured = False
-
-
-def configurelogging():
-    global loggerconfigured
-    loggerconfigured = True
-    logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler(sys.stderr)
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
-
-
-def log(message):
-    if not loggerconfigured:
-        configurelogging()
-    logger.info("%s" % (message))
-
 
 def runlocal(cmd, shell=False, canfail=False):
-    log("Running: %s" % (cmd))
+    Log.debug("Running: %s" % (cmd))
     process = subprocess.Popen(cmd,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
@@ -44,8 +20,8 @@ def runlocal(cmd, shell=False, canfail=False):
                                shell=shell)
     stdout, stderr = process.communicate('')
     rc = process.returncode
-    log("Command exited with rc %d: Stdout: %s Stderr: %s" %
-        (rc, stdout, stderr))
+    Log.debug("Command %s exited with rc %d: Stdout: %s Stderr: %s" %
+              (cmd, rc, stdout, stderr))
     if rc != 0 and not canfail:
         raise(Exception("Command failed"))
     return (rc, stdout, stderr)

@@ -1,3 +1,5 @@
+import Log
+
 import os
 import tempfile
 import Util
@@ -157,7 +159,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
         newsizeinb = sizeinb + \
             ((2 * 1024 * 1024) - sizeinb % (2 * 1024 * 1024))
         if sizeinb < newsizeinb:
-            Util.log('Resizing raw disk from size %d to %d' %
+            Log.info('Resizing raw disk from size %d to %d' %
                      (sizeinb, newsizeinb))
             filehandle = open(filename, "r+b")
             filehandle.seek(newsizeinb - 1)
@@ -166,7 +168,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
             sizeinb = os.path.getsize(filename)
     else:
         raise Exception('Invalid fileformat: %s ' % fileformat)
-    Util.log("Preparing vdi of size %d" % (sizeinb))
+    Log.info("Preparing vdi of size %d" % (sizeinb))
     vdiconf = {'SR': targetsr, 'virtual_size': str(sizeinb), 'type': 'system',
                'sharable': False, 'read_only': False, 'other_config': {},
                'name_label': namelabel}

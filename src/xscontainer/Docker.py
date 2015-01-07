@@ -1,10 +1,10 @@
 import ApiHelper
+import Log
+
 import Util
 import thread
 import time
 import simplejson
-
-import ApiHelper
 
 
 def _execute_cmd_on_vm(session, vmuuid, cmd):
@@ -73,7 +73,7 @@ def passthrough(session, vmuuid, command):
 
 def monitor_vm(session, vmuuid):
     # ToDo: must make this so much more efficient!
-    Util.log("Monitor %s" % vmuuid)
+    Log.debug("Monitor %s" % vmuuid)
     vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
     # ApiHelper.update_vm_other_config(
     #    session, vmref, 'docker_version', get_version(session, vmuuid))
@@ -116,17 +116,18 @@ def monitor_host(returninstantly=False):
         hostref = ApiHelper.get_this_host_ref(session)
         for vmref, vmrecord in vmrecords.iteritems():
             if ('other_config' in vmrecord
-                    and 'base_template_name' in vmrecord['other_config']
-                    and 'CoreOS' in vmrecord['other_config']['base_template_name']
+                    and ('xscontainer-monitor' in vmrecord['other_config']
+                         or ('base_template_name' in vmrecord['other_config']
+                             and 'CoreOS' in vmrecord['other_config']['base_template_name']))
                     and hostref == vmrecord['resident_on']):
                 if vmrecord['power_state'] == 'Running':
                     if vmrecord['uuid'] not in vmuuidstomonitor:
-                        Util.log("Adding monitor for VM name: %s, UUID: %s"
+                        Log.info("Adding monitor for VM name: %s, UUID: %s"
                                  % (vmrecord['name_label'], vmrecord['uuid']))
                         vmuuidstomonitor.append(vmrecord['uuid'])
                 else:
                     if 'docker_ps' in vmrecord['other_config']:
-                        Util.log("Removing monitor for VM name: %s, UUID: %s"
+                        Log.info("Removing monitor for VM name: %s, UUID: %s"
                                  % (vmrecord['name_label'], vmrecord['uuid']))
                         session.xenapi.VM.remove_from_other_config(
                             vmref, 'docker_ps')
