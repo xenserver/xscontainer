@@ -6,6 +6,7 @@ import re
 import tempfile
 
 import ApiHelper
+import Log
 import Util
 
 CLOUDCONFIG = """#cloud-config
@@ -111,10 +112,13 @@ def prepare_vm_for_config_drive(session, vmref, vmuuid):
 
 
 def filterxshinexists(text):
-    xshinexists = text.index('%XSHINEXISTS%')
-    endxshinexists = text.index('%ENDXSHINEXISTS%')
-    if xshinexists and endxshinexists:
-        text = text[:xshinexists] + text[endxshinexists + 14:]
+    try:
+        xshinexists = text.index('%XSHINEXISTS%')
+        endxshinexists = text.index('%ENDXSHINEXISTS%')
+        if xshinexists and endxshinexists:
+            text = text[:xshinexists] + text[endxshinexists + 16:]
+    except ValueError:
+        pass
     return text
 
 
@@ -161,6 +165,7 @@ def create_config_drive_iso(session, userdata, vmuuid):
     userdatafile = os.path.join(latestfolder, 'user_data')
     userdata = customize_userdata(session, userdata, vmuuid)
     Util.write_file(userdatafile, userdata)
+    Log.debug("Userdata: %s" % (userdata))
     # Also add the Linux guest agent
     temptoolsisodir = tempfile.mkdtemp()
     cmd = ['mount', '-o', 'loop',

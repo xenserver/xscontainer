@@ -1,5 +1,6 @@
 import Log
 
+import sys
 import os
 import tempfile
 import Util
