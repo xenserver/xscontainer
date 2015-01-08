@@ -57,17 +57,6 @@ def get_vm_ips(session, vmuuid):
     return ips
 
 
-def get_this_host_uuid():
-    # ToDo: There must be a better way?!?
-    uuid = None
-    filehandler = open("/etc/xensource-inventory", 'r')
-    for line in filehandler.readlines():
-        if line.startswith("INSTALLATION_UUID"):
-            uuid = line.split("'")[1]
-    filehandler.close()
-    return uuid
-
-
 def get_hostinternalnetwork_preferene_on(session):
     pool = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(pool)
@@ -80,8 +69,7 @@ def get_hostinternalnetwork_preferene_on(session):
 
 
 def get_this_host_ref(session):
-    host_uuid = get_this_host_uuid()
-    host_ref = session.xenapi.host.get_by_uuid(host_uuid)
+    host_ref=session.xenapi.session.get_this_host(session.handle)
     return host_ref
 
 
