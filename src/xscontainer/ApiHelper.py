@@ -5,6 +5,9 @@ import tempfile
 import Util
 import XenAPI
 
+XSCONTAINER_SECRET_UUID = 'xscontainer-secret-uuid'
+XSCONTAINER_SECRET_SEPARATOR = '<xscontainer-secret-separator>'
+
 
 def get_local_api_session():
     session = XenAPI.xapi_local()
@@ -204,13 +207,13 @@ def update_vm_other_config(session, vmref, name, value):
 def get_idrsa_secret(session):
     poolref = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(poolref)
-    if 'xscontainersecretuuid' not in other_config:
+    if XSCONTAINER_SECRET_UUID not in other_config:
         set_idrsa_secret(session)
         other_config = session.xenapi.pool.get_other_config(poolref)
-    secretuuid = other_config['xscontainersecretuuid']
+    secretuuid = other_config[XSCONTAINER_SECRET_UUID]
     secretref = session.xenapi.secret.get_by_uuid(secretuuid)
     secretrecord = session.xenapi.secret.get_record(secretref)
-    return secretrecord['value'].split('<seperator>')
+    return secretrecord['value'].split(XSCONTAINER_SECRET_SEPARATOR)
 
 
 def get_idrsa_secret_private(session):
@@ -224,10 +227,9 @@ def get_idrsa_secret_public(session):
 def set_idrsa_secret(session):
     (privateidrsa, publicidrsa) = Util.create_idrsa()
     secretref = session.xenapi.secret.create(
-        {'value': '%s<seperator>%s' % (privateidrsa, publicidrsa)})
+        {'value': '%s%s%s' % (privateidrsa, XSCONTAINER_SECRET_SEPARATOR, publicidrsa)})
     secretrecord = session.xenapi.secret.get_record(secretref)
     poolref = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(poolref)
-    other_config['xscontainersecretuuid'] = secretrecord['uuid']
+    other_config[XSCONTAINER_SECRET_UUID] = secretrecord['uuid']
     session.xenapi.pool.set_other_config(poolref, other_config)
-    #session.xenapi.pool.add_to_other_config(poolref, 'xscontainersecretuuid', secretrecord['uuid'])

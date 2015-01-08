@@ -178,8 +178,10 @@ def create_config_drive_iso(session, userdata, vmuuid):
     cmd = ['umount', temptoolsisodir]
     Util.runlocal(cmd)
     os.rmdir(temptoolsisodir)
+    # Finally wrap up the iso
     cmd = ['mkisofs', '-R', '-V', 'config-2', '-o', tempisofile, tempisodir]
     Util.runlocal(cmd)
+    # Tidy
     os.remove(userdatafile)
     os.rmdir(latestfolder)
     os.rmdir(openstackfolder)
