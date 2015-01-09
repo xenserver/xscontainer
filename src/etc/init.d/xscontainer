@@ -5,17 +5,13 @@
 # chkconfig: 2345 17 83
 # description: XenServer Container Monitor
 # processname: xscontainer-monitor
-# pidfile: /var/run/xscontainer-monitor.pid
 
-# Source function library.
 . /etc/init.d/functions
 
-# names
 FULL_NAME="the XenServer Container Monitor"
 NAME="xscontainer"
 
-# executable command:
-CMD="/usr/local/bin/xscontainer-monitor"
+CMD=$(which xscontainer-monitor)
 
 start() {
         echo -n $"Starting ${FULL_NAME}: "
