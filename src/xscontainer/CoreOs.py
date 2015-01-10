@@ -1,4 +1,3 @@
-import xml.dom.minidom
 import os
 import shutil
 import random
@@ -62,7 +61,7 @@ write_files:
 """
 
 
-def remove_disks_from_vm_provisioning(session, vm_ref):
+def remove_disks_in_vm_provisioning(session, vm_ref):
     """Re-write the xml for provisioning disks to set a SR"""
     other_config = session.xenapi.VM.get_other_config(vm_ref)
     del other_config['disks']
@@ -85,10 +84,14 @@ def install_vm(session, urlvhdbz2, sruuid,
     templateref = session.xenapi.VM.get_by_name_label(templatename)[0]
     vmref = session.xenapi.VM.clone(templateref, vmname)
     vmuuid = session.xenapi.VM.get_record(vmref)['uuid']
-    remove_disks_from_vm_provisioning(session, vmref)
+    remove_disks_in_vm_provisioning(session, vmref)
     session.xenapi.VM.provision(vmref)
     ApiHelper.create_vbd(session, vmref, vdiref, 'rw', True)
-    # Setup networking on the lowest pif
+    setup_network_on_lowest_pif(session, vmref)
+    return vmuuid
+
+
+def setup_network_on_lowest_pif(session, vmref):
     pifs = session.xenapi.PIF.get_all_records()
     lowest = None
     for pifref in pifs.keys():
@@ -98,13 +101,12 @@ def install_vm(session, urlvhdbz2, sruuid,
     if lowest:
         networkref = session.xenapi.PIF.get_network(lowest)
         ApiHelper.create_vif(session, networkref, vmref)
-    return vmuuid
 
 
 def prepare_vm_for_config_drive(session, vmref, vmuuid):
-    if ApiHelper.get_hostinternalnetwork_preferene_on(session):
+    if ApiHelper.get_hi_preferene_on(session):
         # Setup host internal network
-        ApiHelper.disable_gateway_of_hi_mgmtnet_ref(session)
+        ApiHelper.disable_gw_of_hi_mgmtnet_ref(session)
         mgmtnet_device = ApiHelper.get_hi_mgmtnet_device(session, vmuuid)
         if not mgmtnet_device:
             ApiHelper.create_vif(session,
@@ -138,7 +140,7 @@ def customize_userdata(session, userdata, vmuuid):
 
 def get_config_drive_default(session):
     userdata = CLOUDCONFIG
-    if not ApiHelper.get_hostinternalnetwork_preferene_on(session):
+    if not ApiHelper.get_hi_preferene_on(session):
         userdata = filterxshinexists(userdata)
     return userdata
 
@@ -200,16 +202,16 @@ def create_config_drive_iso(session, userdata, vmuuid):
 
 def remove_config_drive(session, vmrecord, configdisk_namelabel):
     for vbd in vmrecord['VBDs']:
-        try:
-            vbdrecord = session.xenapi.VBD.get_record(vbd)
+        vbdrecord = session.xenapi.VBD.get_record(vbd)
+        vdirecord = None
+        if vbdrecord['VDI'] != ApiHelper.NULLREF:
             vdirecord = session.xenapi.VDI.get_record(vbdrecord['VDI'])
+            # ToDo: Should rather base this on a other-config key
             if vdirecord['name_label'] == configdisk_namelabel:
                 if vbdrecord['currently_attached']:
                     session.xenapi.VBD.unplug(vbd)
                 session.xenapi.VBD.destroy(vbd)
                 session.xenapi.VDI.destroy(vbdrecord['VDI'])
-        except:
-            continue
 
 
 def create_config_drive(session, vmuuid, sruuid, userdata):
@@ -226,7 +228,6 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     if vmrecord['power_state'] == 'Running':
         session.xenapi.VBD.plug(vbdref)
     vdirecord = session.xenapi.VDI.get_record(vdiref)
-    vbdrecord = session.xenapi.VBD.get_record(vbdref)
     return vdirecord['uuid']
 
 

@@ -1,6 +1,5 @@
 import Log
 
-import sys
 import os
 import tempfile
 import Util
@@ -8,6 +7,8 @@ import XenAPI
 
 XSCONTAINER_SECRET_UUID = 'xscontainer-secret-uuid'
 XSCONTAINER_SECRET_SEPARATOR = '<xscontainer-secret-separator>'
+
+NULLREF = 'OpaqueRef:NULL'
 
 
 def get_local_api_session():
@@ -23,7 +24,7 @@ def get_hi_mgmtnet_ref(session):
             return networkref
 
 
-def disable_gateway_of_hi_mgmtnet_ref(session):
+def disable_gw_of_hi_mgmtnet_ref(session):
     networkref = get_hi_mgmtnet_ref(session)
     other_config = session.xenapi.network.get_other_config(networkref)
     other_config['ip_disable_gw'] = 'true'
@@ -58,7 +59,7 @@ def get_vm_ips(session, vmuuid):
     return ips
 
 
-def get_hostinternalnetwork_preferene_on(session):
+def get_hi_preferene_on(session):
     pool = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(pool)
     if ('xscontainer-use-hostinternalnetwork' in other_config
@@ -70,7 +71,7 @@ def get_hostinternalnetwork_preferene_on(session):
 
 
 def get_this_host_ref(session):
-    host_ref=session.xenapi.session.get_this_host(session.handle)
+    host_ref = session.xenapi.session.get_this_host(session.handle)
     return host_ref
 
 
@@ -103,7 +104,8 @@ def _retry_device_exists(function, config, devicenumberfield):
             ref = function(config)
             return ref
         except XenAPI.Failure, failure:
-            if failure.details[0] != 'DEVICE_ALREADY_EXISTS' or devicenumber > 20:
+            if (failure.details[0] != 'DEVICE_ALREADY_EXISTS'
+                    or devicenumber > 20):
                 raise failure
             devicenumber = devicenumber + 1
             config[devicenumberfield] = str(devicenumber)
@@ -134,7 +136,8 @@ def create_vbd(session, vmref, vdiref, vbdmode, bootable):
                'other_config': {},
                'qos_algorithm_type': '',
                'qos_algorithm_params': {}, }
-    return _retry_device_exists(session.xenapi.VBD.create, vbdconf, 'userdevice')
+    return _retry_device_exists(session.xenapi.VBD.create, vbdconf,
+                                'userdevice')
 
 
 # ToDo: Ugly - this function may modify the file specified as filename
@@ -168,7 +171,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
     vdiuuid = session.xenapi.VDI.get_record(vdiref)['uuid']
     cmd = ['curl', '-k', '--upload', filename,
            'https://localhost/import_raw_vdi?session_id=%s&vdi=%s&format=%s'
-           % (session._session, vdiuuid, fileformat)]
+           % (session.handle, vdiuuid, fileformat)]
     Util.runlocal(cmd)
     return vdiref
 
@@ -177,7 +180,7 @@ def export_disk(session, vdiuuid):
     filename = tempfile.mkstemp(suffix='.raw')[1]
     cmd = ['curl', '-k', '-o', filename,
            'https://localhost/export_raw_vdi?session_id=%s&vdi=%s&format=raw'
-           % (session._session, vdiuuid)]
+           % (session.handle, vdiuuid)]
     Util.runlocal(cmd)
     return filename
 
@@ -216,7 +219,8 @@ def get_idrsa_secret_public(session):
 def set_idrsa_secret(session):
     (privateidrsa, publicidrsa) = Util.create_idrsa()
     secretref = session.xenapi.secret.create(
-        {'value': '%s%s%s' % (privateidrsa, XSCONTAINER_SECRET_SEPARATOR, publicidrsa)})
+        {'value': '%s%s%s'
+                  % (privateidrsa, XSCONTAINER_SECRET_SEPARATOR, publicidrsa)})
     secretrecord = session.xenapi.secret.get_record(secretref)
     poolref = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(poolref)

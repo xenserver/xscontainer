@@ -20,14 +20,14 @@ def main():
     srref = ApiHelper.get_default_sr(session)
     sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = CoreOs.install_vm(session, url, sruuid)
-    vmuuid = 'dccc924b-e6ed-fa1d-2681-69674ef38ecf'
+    vmuuid = '2cab3b90-5dc8-3707-22f9-10b26cfa9c2a'
     vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
-    try:
-        session.xenapi.VM.clean_shutdown(vmref)
-    except:
-        pass
-    CoreOs.create_config_drive(session, vmuuid, sruuid, CoreOs.CLOUDCONFIG)
-    session.xenapi.VM.start(vmref, False, True)
+    #try:
+    #    session.xenapi.VM.clean_shutdown(vmref)
+    #except:
+    #    pass
+    #CoreOs.create_config_drive(session, vmuuid, sruuid, CoreOs.CLOUDCONFIG)
+    #session.xenapi.VM.start(vmref, False, True)
     connected = False
     while not connected:
         try:

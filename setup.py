@@ -12,7 +12,7 @@ def datapath(path):
 
 if __name__ == "__main__":
     version = '0.1'
-    # Add forceversion option to set the version via the command line
+    # Add forceversion option to specify the version via the command line
     matchingarg = None
     for arg in sys.argv:
         if '--forceversion=' in arg:
@@ -24,11 +24,12 @@ if __name__ == "__main__":
           version=version,
           description='Container integration for XenServer.',
           author='Citrix Systems Inc., Robert Breker',
-          license = "BSD",
+          license = 'BSD',
           url='http://github.com/xenserver/xscontainer',
           packages=['xscontainer'],
           package_dir = {'xscontainer': 'src/xscontainer'},
-          scripts = ['src/xscontainer-monitor', 'src/xscontainer-pluginexample',
+          scripts = ['src/xscontainer-monitor',
+                     'src/xscontainer-pluginexample',
                      'src/xscontainer-devsystemtest',],
           data_files = [('/etc/xapi.d/plugins',
                          [datapath('src/etc/xapi.d/plugins/xscontainer')]),

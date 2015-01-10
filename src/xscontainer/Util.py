@@ -2,7 +2,6 @@ import ApiHelper
 import Log
 
 import os
-import re
 import socket
 import subprocess
 import tempfile
@@ -10,21 +9,25 @@ import time
 import xml.dom.minidom
 import xml.sax.saxutils
 
+class XSContainerException(Exception):
+
+    def customised(self):
+        pass
 
 def runlocal(cmd, shell=False, canfail=False):
-    Log.debug("Running: %s" % (cmd))
+    Log.debug('Running: %s' % (cmd))
     process = subprocess.Popen(cmd,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
                                stdin=subprocess.PIPE,
                                shell=shell)
     stdout, stderr = process.communicate('')
-    rc = process.returncode
-    Log.debug("Command %s exited with rc %d: Stdout: %s Stderr: %s" %
-              (cmd, rc, stdout, stderr))
-    if rc != 0 and not canfail:
-        raise(Exception("Command failed"))
-    return (rc, stdout, stderr)
+    returncode = process.returncode
+    Log.debug('Command %s exited with rc %d: Stdout: %s Stderr: %s' %
+              (cmd, returncode, stdout, stderr))
+    if returncode != 0 and not canfail:
+        raise(XSContainerException('Command failed'))
+    return (returncode, stdout, stderr)
 
 
 def converttoxml(node, parentelement=None, dom=None):
@@ -47,7 +50,7 @@ def converttoxml(node, parentelement=None, dom=None):
 
 
 def create_idrsa():
-    (filehandle, idrsafile) = tempfile.mkstemp()
+    idrsafile = tempfile.mkstemp()[1]
     os.remove(idrsafile)
     cmd = ['ssh-keygen', '-f', idrsafile, '-N', '']
     runlocal(cmd)
@@ -96,30 +99,31 @@ def execute_ssh(session, host, cmd):
     return str(stdout)
 
 
-def test_connection(ip, port):
+def test_connection(address, port):
     try:
         asocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Allow the connection to block for 2 seconds
         asocket.settimeout(2)
-        asocket.connect((ip, port))
+        asocket.connect((address, port))
         asocket.close()
         return True
-    except:
+    except (socket.error, socket.timeout):
         return False
 
 
 def get_suitable_vm_ip(session, vmuuid):
     ips = ApiHelper.get_vm_ips(session, vmuuid)
     stage1filteredips = []
-    for network, ip in ips.iteritems():
-        if ':' not in ip:
+    for address in ips.itervalues():
+        if ':' not in address:
             # if ipv4
-            if ip.startswith('169.254.'):
+            if address.startswith('169.254.'):
                 # Prefer host internal network
-                stage1filteredips.insert(0, ip)
+                stage1filteredips.insert(0, address)
             else:
-                stage1filteredips.append(ip)
-    for ip in stage1filteredips:
-        if test_connection(ip, 22):
-            return ip
-    raise Exception("No valid IP found for vmuuid %s" % (vmuuid))
+                stage1filteredips.append(address)
+    for address in stage1filteredips:
+        if test_connection(address, 22):
+            return address
+    raise XSContainerException(
+        "No valid IP found for vmuuid %s" % (vmuuid))

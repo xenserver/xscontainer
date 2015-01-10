@@ -111,7 +111,7 @@ def redirect_per_vm_operation_owned_by_other_slave(argv):
         vmuuid = args['vmuuid']
         vmrecord = ApiHelper.get_vm_record_by_uuid(session, vmuuid)
         hostref = vmrecord['resident_on']
-        if (hostref != 'OpaqueRef:NULL'
+        if (hostref != ApiHelper.NULLREF
             and hostref != ApiHelper.get_this_host_ref(session)):
             # Redirect the call
             try:

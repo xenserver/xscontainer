@@ -2,9 +2,11 @@ import ApiHelper
 import Log
 
 import Util
-import thread
 import time
 import simplejson
+import XenAPI
+
+MONITORINTERVALLINS = 10
 
 
 def _execute_cmd_on_vm(session, vmuuid, cmd):
@@ -71,80 +73,74 @@ def passthrough(session, vmuuid, command):
     return result
 
 
-def monitor_vm(session, vmuuid):
+def monitor_vm(session, vmuuid, vmref=None):
     # ToDo: must make this so much more efficient!
     Log.debug("Monitor %s" % vmuuid)
-    vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
-    # ApiHelper.update_vm_other_config(
-    #    session, vmref, 'docker_version', get_version(session, vmuuid))
-    # ToDo: maintain connection to a VM
-    # ApiHelper.update_vm_other_config(
-    #    session, vmref, 'docker_info', get_info(session, vmuuid))
+    if vmref == None:
+        vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
     ApiHelper.update_vm_other_config(
         session, vmref, 'docker_ps', get_ps_xml(session, vmuuid))
 
 
-def monitor_host(returninstantly=False):
-    # ToDo: must tidy this
-    # ToDo: must make this so much more efficient!
-    vmuuidstomonitor = []
-    passedtime = 10
-    session = None
-    while True:
-        starttime = time.time()
-        # Do throttle
-        if passedtime < 10:
-            time.sleep(10 - passedtime)
-        # Make sure that we can talk to XAPI
-        vmrecords = None
-        try:
-            if session == None:
-                session = ApiHelper.get_local_api_session()
-            vmrecords = ApiHelper.get_vm_records(session)
-        except Exception, e:
-            if None != session:
-                # Something is seriously wrong, let's re-connect to XAPI
-                try:
-                    session.xenapi.session.__logout()
-                except Exception, e:
-                    pass
-                session = None
-            # Try again from scratch
-            passedtime = 0
-            continue
-        # Detect whether there is changed VM states
-        hostref = ApiHelper.get_this_host_ref(session)
-        for vmref, vmrecord in vmrecords.iteritems():
-            if ('other_config' in vmrecord
-                    and ('xscontainer-monitor' in vmrecord['other_config']
-                         or ('base_template_name' in vmrecord['other_config']
-                             and 'CoreOS' in vmrecord['other_config']['base_template_name']))
-                    and hostref == vmrecord['resident_on']):
-                if vmrecord['power_state'] == 'Running':
-                    if vmrecord['uuid'] not in vmuuidstomonitor:
-                        Log.info("Adding monitor for VM name: %s, UUID: %s"
-                                 % (vmrecord['name_label'], vmrecord['uuid']))
-                        vmuuidstomonitor.append(vmrecord['uuid'])
-                else:
-                    if 'docker_ps' in vmrecord['other_config']:
-                        Log.info("Removing monitor for VM name: %s, UUID: %s"
-                                 % (vmrecord['name_label'], vmrecord['uuid']))
-                        session.xenapi.VM.remove_from_other_config(
-                            vmref, 'docker_ps')
-                        # session.xenapi.VM.remove_from_other_config(vmref,
-                        #    'docker_info')
-                        # session.xenapi.VM.remove_from_other_config(vmref,
-                        #    'docker_version')
-                    if vmrecord['uuid'] in vmuuidstomonitor:
-                        vmuuidstomonitor.remove(vmrecord['uuid'])
-        for vmuuid in vmuuidstomonitor:
+def update_vmuuids_to_monitor(session, vmrefstomonitor):
+    # Make sure that we can talk to XAPI
+    vmrecords = None
+    removedvmrefs = {}
+    try:
+        if session == None:
+            session = ApiHelper.get_local_api_session()
+        vmrecords = ApiHelper.get_vm_records(session)
+    except XenAPI.Failure:
+        if None != session:
+            # Something is seriously wrong, let's re-connect to XAPI
             try:
-                monitor_vm(session, vmuuid)
-            except Exception, e:
+                session.xenapi.session.logout()
+            except XenAPI.Failure:
+                pass
+            session = None
+        return (session, vmrefstomonitor, removedvmrefs)
+    hostref = ApiHelper.get_this_host_ref(session)
+    for vmref, vmrecord in vmrecords.iteritems():
+        if ('xscontainer-monitor' in vmrecord['other_config']
+            or ('base_template_name' in vmrecord['other_config']
+                and 'CoreOS' in vmrecord['other_config']['base_template_name'])
+                and hostref == vmrecord['resident_on']
+                and vmrecord['power_state'] == 'Running'):
+            if vmref not in vmrefstomonitor:
+                Log.info("Adding monitor for VM name: %s, UUID: %s"
+                         % (vmrecord['name_label'], vmrecord['uuid']))
+                vmrefstomonitor[vmref] = vmrecord['uuid']
+            else:
+                if 'docker_ps' in vmrecord['other_config']:
+                    Log.info("Removing monitor for VM name: %s, UUID: %s"
+                             % (vmrecord['name_label'], vmrecord['uuid']))
+                del(vmrefstomonitor[vmref])
+                removedvmrefs[vmref] = vmrecord['uuid']
+    return (session, vmrefstomonitor, removedvmrefs)
+
+
+def monitor_host(returninstantly=False):
+    # ToDo: must make this so much more efficient!
+    vmrefstomonitor = {}
+    session = None
+    passedtime = MONITORINTERVALLINS
+    iterationstarttime = time.time() - MONITORINTERVALLINS
+    while True:
+        # Do throttle
+        passedtime = time.time() - iterationstarttime
+        iterationstarttime = time.time()
+        if passedtime < MONITORINTERVALLINS:
+            time.sleep(MONITORINTERVALLINS - passedtime)
+        (session, vmrefstomonitor, removedvmrefs) = update_vmuuids_to_monitor(
+            session, vmrefstomonitor)
+        for vmref, vmuuid in vmrefstomonitor.iteritems():
+            try:
+                monitor_vm(session, vmuuid, vmref)
+            except (XenAPI.Failure, Util.XSContainerException):
                 # Ignore single VM failures and move on
                 pass
-        # Try to idle, if performance allows
-        passedtime = time.time() - starttime
+        for vmref in removedvmrefs.iterkeys():
+            session.xenapi.VM.remove_from_other_config(vmref, 'docker_ps')
         if returninstantly:
             break
 
