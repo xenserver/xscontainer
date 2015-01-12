@@ -192,8 +192,11 @@ def get_default_sr(session):
 
 
 def update_vm_other_config(session, vmref, name, value):
-    session.xenapi.VM.remove_from_other_config(vmref, name)
-    session.xenapi.VM.add_to_other_config(vmref, name, value)
+    #session.xenapi.VM.remove_from_other_config(vmref, name)
+    #session.xenapi.VM.add_to_other_config(vmref, name, value)
+    other_config = session.xenapi.VM.get_other_config(vmref)
+    other_config[name] = value
+    session.xenapi.VM.set_other_config(vmref, other_config)
 
 
 def get_idrsa_secret(session):

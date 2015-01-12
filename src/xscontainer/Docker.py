@@ -6,7 +6,7 @@ import time
 import simplejson
 import XenAPI
 
-MONITORINTERVALLINS = 10
+MONITORINTERVALLINS = 20
 
 
 def _execute_cmd_on_vm(session, vmuuid, cmd):
@@ -103,19 +103,20 @@ def update_vmuuids_to_monitor(session, vmrefstomonitor):
     for vmref, vmrecord in vmrecords.iteritems():
         if ('xscontainer-monitor' in vmrecord['other_config']
             or ('base_template_name' in vmrecord['other_config']
-                and 'CoreOS' in vmrecord['other_config']['base_template_name'])
-                and hostref == vmrecord['resident_on']
-                and vmrecord['power_state'] == 'Running'):
-            if vmref not in vmrefstomonitor:
-                Log.info("Adding monitor for VM name: %s, UUID: %s"
-                         % (vmrecord['name_label'], vmrecord['uuid']))
-                vmrefstomonitor[vmref] = vmrecord['uuid']
+                and 'CoreOS'
+                in vmrecord['other_config']['base_template_name'])):
+            if vmrecord['power_state'] == 'Running':
+                if (hostref == vmrecord['resident_on']
+                    and vmref not in vmrefstomonitor):
+                    Log.info("Adding monitor for VM name: %s, UUID: %s"
+                             % (vmrecord['name_label'], vmrecord['uuid']))
+                    vmrefstomonitor[vmref] = vmrecord['uuid']
             else:
-                if 'docker_ps' in vmrecord['other_config']:
+                if vmref in vmrefstomonitor:
                     Log.info("Removing monitor for VM name: %s, UUID: %s"
                              % (vmrecord['name_label'], vmrecord['uuid']))
-                del(vmrefstomonitor[vmref])
-                removedvmrefs[vmref] = vmrecord['uuid']
+                    del(vmrefstomonitor[vmref])
+                    removedvmrefs[vmref] = vmrecord['uuid']
     return (session, vmrefstomonitor, removedvmrefs)
 
 
