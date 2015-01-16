@@ -15,29 +15,47 @@ def _execute_cmd_on_vm(session, vmuuid, cmd):
     return result
 
 
+def _api_execute(session, vmuuid, request_type, request):
+    # ToDo: Must really not pipe (!!!)
+    cmd = ['echo -e "%s %s HTTP/1.1\r\n"' % (request_type, request) +
+           '| ncat -U /var/run/docker.sock']
+    stdout = _execute_cmd_on_vm(session, vmuuid, cmd)
+    (header, body) = stdout.split("\r\n\r\n", 2)
+    # ToDo: Should use re
+    headersplits = header.split('\r\n', 2)[0].split(' ')
+    #protocol = headersplits[0]
+    statuscode = headersplits[1]
+    if statuscode[0] != '2':
+        status = ' '.join(headersplits[2:])
+        raise Util.XSContainerException("Request %s led to bad status %s %s"
+                                        % (cmd, statuscode, status))
+    return body
+
+
+def _api_get_json_on_vm(session, vmuuid, request):
+    stdout = _api_execute(session, vmuuid, 'GET', request)
+    results = simplejson.loads(stdout)
+    return results
+
+
+def _api_post_on_vm(session, vmuuid, request):
+    stdout = _api_execute(session, vmuuid, 'POST', request)
+    return stdout
+
+
 def get_ps_dict(session, vmuuid):
-    cmd = ['docker', 'ps', '--no-trunc=true', '--all=true']
-    result = _execute_cmd_on_vm(session, vmuuid, cmd)
-    # The ugly part - converting the text table to a dict
-    linebyline = result.strip().split('\n')
-    columns = []
-    for column in linebyline[0].split():
-        columns.append({'name': column,
-                        'position': linebyline[0].find(column)})
-    psresult = []
-    for line in linebyline[1:]:
-        psentry = {}
-        for columnpos in range(0, len(columns)):
-            columnstart = columns[columnpos]['position']
-            if columnpos + 1 < len(columns):
-                nextcolumnstart = columns[columnpos + 1]['position']
-            else:
-                nextcolumnstart = None
-            name = columns[columnpos]['name']
-            value = line[columnstart:nextcolumnstart].strip()
-            psentry.update({name.lower(): value})
-        psresult.append({'entry': psentry})
-    return psresult
+    container_results = _api_get_json_on_vm(session, vmuuid,
+                                            '/containers/json?all=1&size=1')
+    return_results = []
+    for container_result in container_results:
+        container_result['Names'] = container_result['Names'][0][1:]
+        # Do some patching for XC - ToDo: patch XC to not require these
+        container_result['Container'] = container_result['Id'][:10]
+        patched_result = {}
+        for (key, value) in container_result.iteritems():
+            patched_result[key.lower()] = value
+        return_results.append({'entry': patched_result})
+    return return_results
 
 
 def get_ps_xml(session, vmuuid):
@@ -45,26 +63,14 @@ def get_ps_xml(session, vmuuid):
     return Util.converttoxml(result)
 
 
-def _get_info_or_version_dict(session, vmuuid, mode):
-    cmd = ['docker', mode]
-    result = _execute_cmd_on_vm(session, vmuuid, cmd)
-    linebyline = result.strip().split('\n')
-    returnarray = []
-    for line in linebyline:
-        (name, value) = line.split(': ')
-        returnarray.append({'property': {'name': name, 'value': value}})
-    return returnarray
-
-
 def get_info_xml(session, vmuuid):
-    result = {'docker_info': _get_info_or_version_dict(session, vmuuid, 'info')
-              }
+    result = {'docker_info': _api_get_json_on_vm(session, vmuuid, '/info')}
     return Util.converttoxml(result)
 
 
 def get_version_xml(session, vmuuid):
-    result = {'docker_version': _get_info_or_version_dict(session, vmuuid,
-                                                          'version')}
+    result = {'docker_version': _api_get_json_on_vm(session, vmuuid,
+                                                    '/version')}
     return Util.converttoxml(result)
 
 
@@ -108,7 +114,7 @@ def update_vmuuids_to_monitor(session, vmrefstomonitor):
                 in vmrecord['other_config']['base_template_name'])):
             if vmrecord['power_state'] == 'Running':
                 if (hostref == vmrecord['resident_on']
-                    and vmref not in vmrefstomonitor):
+                        and vmref not in vmrefstomonitor):
                     Log.info("Adding monitor for VM name: %s, UUID: %s"
                              % (vmrecord['name_label'], vmrecord['uuid']))
                     vmrefstomonitor[vmref] = vmrecord['uuid']
@@ -163,8 +169,9 @@ def get_inspect_xml(session, vmuuid, container):
 
 
 def _run_container_cmd(session, vmuuid, container, command):
-    cmd = ['docker', command, container]
-    return _execute_cmd_on_vm(session, vmuuid, cmd)
+    result = _api_post_on_vm(session, vmuuid,
+                             '/containers/%s/%s' % (container, command))
+    return result
 
 
 def start(session, vmuuid, container):

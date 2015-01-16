@@ -9,10 +9,12 @@ import time
 import xml.dom.minidom
 import xml.sax.saxutils
 
+
 class XSContainerException(Exception):
 
     def customised(self):
         pass
+
 
 def runlocal(cmd, shell=False, canfail=False):
     Log.debug('Running: %s' % (cmd))

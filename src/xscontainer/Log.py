@@ -3,6 +3,7 @@ import logging.handlers
 import signal
 import sys
 
+
 def configurelogging():
     _LOGGER.setLevel(logging.DEBUG)
     streamhandler = logging.StreamHandler(sys.stderr)

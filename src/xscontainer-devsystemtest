@@ -32,12 +32,18 @@ def main():
     while not connected:
         try:
             print "Trying..."
+            #start = time.time()
+            #for x in range(0, 10):
             container = Docker.get_ps_dict(session, vmuuid)
+            #end = time.time()
+            #print end - start
+            pprint.pprint(container)
             connected = True
         except:
             traceback.print_exc()
             print "This didn't work. Trying again."
             time.sleep(3)
+    print Docker.monitor_host(returninstantly=True)
     """
     Docker.passthrough(session, vmuuid,
                        'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')
@@ -46,11 +52,12 @@ def main():
     print Docker.get_info_xml(session, vmuuid)
     print Docker.get_version_xml(session, vmuuid)
     # print CoreOs.get_config_drive_configuration(session, '')
-    print Docker.monitor_host(returninstantly=True)
-    print Docker.get_inspect_xml(session, vmuuid, container)
-    Docker.start(session, vmuuid, container)
+    #print Docker.monitor_host(returninstantly=True)
+    #print Docker.get_inspect_xml(session, vmuuid, container)
+    #Docker.start(session, vmuuid, container)
     Docker.restart(session, vmuuid, container)
-    Docker.pause(session, vmuuid, container)
+    sys.exit(0)
+    #Docker.pause(session, vmuuid, container)
     Docker.unpause(session, vmuuid, container)
     Docker.stop(session, vmuuid, container)
     Docker.start(session, vmuuid, container)
