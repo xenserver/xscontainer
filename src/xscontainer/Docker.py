@@ -11,7 +11,7 @@ MONITORINTERVALLINS = 20
 
 def _execute_cmd_on_vm(session, vmuuid, cmd):
     host = Util.get_suitable_vm_ip(session, vmuuid)
-    result = Util.execute_ssh(session, host, cmd)
+    result = Util.execute_ssh(session, host, 'core', cmd)
     return result
 
 
@@ -45,7 +45,7 @@ def get_ps_xml(session, vmuuid):
     return Util.converttoxml(result)
 
 
-def get_stateorversion_dict(session, vmuuid, mode):
+def _get_info_or_version_dict(session, vmuuid, mode):
     cmd = ['docker', mode]
     result = _execute_cmd_on_vm(session, vmuuid, cmd)
     linebyline = result.strip().split('\n')
@@ -57,13 +57,14 @@ def get_stateorversion_dict(session, vmuuid, mode):
 
 
 def get_info_xml(session, vmuuid):
-    result = {'docker_info': get_stateorversion_dict(session, vmuuid, 'info')}
+    result = {'docker_info': _get_info_or_version_dict(session, vmuuid, 'info')
+              }
     return Util.converttoxml(result)
 
 
 def get_version_xml(session, vmuuid):
-    result = {'docker_version': get_stateorversion_dict(session, vmuuid,
-                                                        'version')}
+    result = {'docker_version': _get_info_or_version_dict(session, vmuuid,
+                                                          'version')}
     return Util.converttoxml(result)
 
 
@@ -161,36 +162,36 @@ def get_inspect_xml(session, vmuuid, container):
     return Util.converttoxml({'docker_inspect': result})
 
 
-def _simplecommand(session, vmuuid, container, command):
+def _run_container_cmd(session, vmuuid, container, command):
     cmd = ['docker', command, container]
     return _execute_cmd_on_vm(session, vmuuid, cmd)
 
 
 def start(session, vmuuid, container):
-    result = _simplecommand(session, vmuuid, container, 'start')
+    result = _run_container_cmd(session, vmuuid, container, 'start')
     monitor_vm(session, vmuuid)
     return result
 
 
 def stop(session, vmuuid, container):
-    result = _simplecommand(session, vmuuid, container, 'stop')
+    result = _run_container_cmd(session, vmuuid, container, 'stop')
     monitor_vm(session, vmuuid)
     return result
 
 
 def restart(session, vmuuid, container):
-    result = _simplecommand(session, vmuuid, container, 'restart')
+    result = _run_container_cmd(session, vmuuid, container, 'restart')
     monitor_vm(session, vmuuid)
     return result
 
 
 def pause(session, vmuuid, container):
-    result = _simplecommand(session, vmuuid, container, 'pause')
+    result = _run_container_cmd(session, vmuuid, container, 'pause')
     monitor_vm(session, vmuuid)
     return result
 
 
 def unpause(session, vmuuid, container):
-    result = _simplecommand(session, vmuuid, container, 'unpause')
+    result = _run_container_cmd(session, vmuuid, container, 'unpause')
     monitor_vm(session, vmuuid)
     return result

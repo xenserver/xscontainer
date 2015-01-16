@@ -86,7 +86,7 @@ def ensure_idrsa(session, idrsafilename):
         write_file(idrsafilename, ApiHelper.get_idrsa_secret_private(session))
 
 
-def execute_ssh(session, host, cmd):
+def execute_ssh(session, host, user, cmd):
     idrsafilename = '/tmp/xscontainer-idrsa'
     ensure_idrsa(session, idrsafilename)
     cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
@@ -94,7 +94,7 @@ def execute_ssh(session, host, cmd):
            '-o', 'PasswordAuthentication=no',
            '-o', 'LogLevel=quiet',
            '-o', 'ConnectTimeout=10',
-           '-i', idrsafilename, 'core@%s' % (host)] + cmd
+           '-i', idrsafilename, '%s@%s' % (user, host)] + cmd
     stdout = runlocal(cmd)[1]
     return str(stdout)
 
