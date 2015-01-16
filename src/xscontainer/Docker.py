@@ -1,9 +1,10 @@
 import ApiHelper
 import Log
-
 import Util
-import time
+
+import re
 import simplejson
+import time
 import XenAPI
 
 MONITORINTERVALLINS = 20
@@ -17,10 +18,12 @@ def _execute_cmd_on_vm(session, vmuuid, cmd):
 
 def _api_execute(session, vmuuid, request_type, request):
     # ToDo: Must really not pipe (!!!)
-    cmd = ['echo -e "%s %s HTTP/1.1\r\n"' % (request_type, request) +
+    cmd = ['echo -e "%s %s HTTP/1.0\r\n"' % (request_type, request) +
            '| ncat -U /var/run/docker.sock']
     stdout = _execute_cmd_on_vm(session, vmuuid, cmd)
-    (header, body) = stdout.split("\r\n\r\n", 2)
+    headerend = stdout.index('\r\n\r\n')
+    header = stdout[:headerend]
+    body = stdout[headerend+4:]
     # ToDo: Should use re
     headersplits = header.split('\r\n', 2)[0].split(' ')
     #protocol = headersplits[0]
@@ -31,6 +34,10 @@ def _api_execute(session, vmuuid, request_type, request):
                                         % (cmd, statuscode, status))
     return body
 
+
+def _verify_or_throw_invalid_container(container):
+    if not re.match('^[a-z0-9]+$', container):
+        raise Util.XSContainerException("Invalid container")
 
 def _api_get_json_on_vm(session, vmuuid, request):
     stdout = _api_execute(session, vmuuid, 'GET', request)
@@ -154,16 +161,14 @@ def monitor_host(returninstantly=False):
 
 
 def _get_inspect_dict(session, vmuuid, container):
-    cmd = ['docker', 'inspect', container]
-    result = _execute_cmd_on_vm(session, vmuuid, cmd)
-    result = simplejson.loads(result)
-    newresult = []
-    for key, value in result[0].iteritems():
-        newresult.append({'property': {'name': key, 'value': value}})
-    return newresult
+    _verify_or_throw_invalid_container(container)
+    result = _api_get_json_on_vm(session, vmuuid,
+                                 '/containers/%s/json' % (container))
+    return result
 
 
 def get_inspect_xml(session, vmuuid, container):
+    _verify_or_throw_invalid_container(container)
     result = _get_inspect_dict(session, vmuuid, container)
     return Util.converttoxml({'docker_inspect': result})
 
@@ -175,30 +180,35 @@ def _run_container_cmd(session, vmuuid, container, command):
 
 
 def start(session, vmuuid, container):
+    _verify_or_throw_invalid_container(container)
     result = _run_container_cmd(session, vmuuid, container, 'start')
     monitor_vm(session, vmuuid)
     return result
 
 
 def stop(session, vmuuid, container):
+    _verify_or_throw_invalid_container(container)
     result = _run_container_cmd(session, vmuuid, container, 'stop')
     monitor_vm(session, vmuuid)
     return result
 
 
 def restart(session, vmuuid, container):
+    _verify_or_throw_invalid_container(container)
     result = _run_container_cmd(session, vmuuid, container, 'restart')
     monitor_vm(session, vmuuid)
     return result
 
 
 def pause(session, vmuuid, container):
+    _verify_or_throw_invalid_container(container)
     result = _run_container_cmd(session, vmuuid, container, 'pause')
     monitor_vm(session, vmuuid)
     return result
 
 
 def unpause(session, vmuuid, container):
+    _verify_or_throw_invalid_container(container)
     result = _run_container_cmd(session, vmuuid, container, 'unpause')
     monitor_vm(session, vmuuid)
     return result
