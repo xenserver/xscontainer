@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 import sys
-import sys
 # ToDo: hack for building on Fedora
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.Util as Util
 import xscontainer.CoreOs as CoreOs
 import xscontainer.Docker as Docker
+import xscontainer.DockerMonitor as DockerMonitor
 import xscontainer.ApiHelper as ApiHelper
 import pprint
 import time
@@ -39,11 +39,12 @@ def main():
             #print end - start
             pprint.pprint(container)
             connected = True
-        except:
+        except Exception:
             traceback.print_exc()
             print "This didn't work. Trying again."
             time.sleep(3)
-    print Docker.monitor_host(returninstantly=True)
+    #DockerMonitor.monitor_events(session, vmuuid)
+    print DockerMonitor.monitor_host(returninstantly=False)
     """
     Docker.passthrough(session, vmuuid,
                        'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')

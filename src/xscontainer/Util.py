@@ -9,6 +9,8 @@ import time
 import xml.dom.minidom
 import xml.sax.saxutils
 
+IDRSAFILENAME = '/tmp/xscontainer-idrsa'
+
 
 class XSContainerException(Exception):
 
@@ -76,28 +78,34 @@ def write_file(filepath, content):
     os.chmod(filepath, 0600)
 
 
-def ensure_idrsa(session, idrsafilename):
+def ensure_idrsa(session):
     neednewfile = False
-    if os.path.exists(idrsafilename):
-        mtime = os.path.getmtime(idrsafilename)
+    if os.path.exists(IDRSAFILENAME):
+        mtime = os.path.getmtime(IDRSAFILENAME)
         if time.time() - mtime > 60:
             neednewfile = True
     else:
         neednewfile = True
     if neednewfile:
-        write_file(idrsafilename, ApiHelper.get_idrsa_secret_private(session))
+        write_file(IDRSAFILENAME, ApiHelper.get_idrsa_secret_private(session))
 
 
-def execute_ssh(session, host, user, cmd):
-    idrsafilename = '/tmp/xscontainer-idrsa'
-    ensure_idrsa(session, idrsafilename)
-    cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
-           '-o', 'StrictHostKeyChecking=no',
-           '-o', 'PasswordAuthentication=no',
-           '-o', 'LogLevel=quiet',
-           '-o', 'ConnectTimeout=10',
-           '-i', idrsafilename, '%s@%s' % (user, host)] + cmd
-    stdout = runlocal(cmd)[1]
+def prepare_ssh_cmd(session, vmuuid, cmd):
+    user = 'core'
+    host = get_suitable_vm_ip(session, vmuuid)
+    ensure_idrsa(session)
+    complete_cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
+                    '-o', 'StrictHostKeyChecking=no',
+                    '-o', 'PasswordAuthentication=no',
+                    '-o', 'LogLevel=quiet',
+                    '-o', 'ConnectTimeout=10',
+                    '-i', IDRSAFILENAME, '%s@%s' % (user, host)] + cmd
+    return complete_cmd
+
+
+def execute_ssh(session, vmuuid, cmd):
+    complete_cmd = prepare_ssh_cmd(session, vmuuid, cmd)
+    stdout = runlocal(complete_cmd)[1]
     return str(stdout)
 
 
@@ -118,12 +126,15 @@ def get_suitable_vm_ip(session, vmuuid):
     stage1filteredips = []
     for address in ips.itervalues():
         if ':' not in address:
-            # if ipv4
+            # If we get here - it's ipv4
             if address.startswith('169.254.'):
-                # Prefer host internal network
+                # we prefer host internal networks and put them at the front
                 stage1filteredips.insert(0, address)
             else:
                 stage1filteredips.append(address)
+        else:
+            # Ignore ipv6 as Dom0 won't be able to use it
+            pass
     for address in stage1filteredips:
         if test_connection(address, 22):
             return address

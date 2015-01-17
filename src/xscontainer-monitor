@@ -5,13 +5,11 @@ import sys
 # ToDo: hack for building on Fedora
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.Util as Util
-import xscontainer.Docker as Docker
-import pprint
-import time
+import xscontainer.DockerMonitor as DockerMonitor
 
 
 def main():
-    Docker.monitor_host()
+    DockerMonitor.monitor_host()
 
 if __name__ == "__main__":
     main()
