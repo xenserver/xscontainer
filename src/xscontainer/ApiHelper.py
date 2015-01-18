@@ -198,6 +198,13 @@ def update_vm_other_config(session, vmref, name, value):
     other_config[name] = value
     session.xenapi.VM.set_other_config(vmref, other_config)
 
+def get_value_from_vm_other_config(session, vmuuid, name):
+    vmref = get_vm_ref_by_uuid(session, vmuuid)
+    other_config = session.xenapi.VM.get_other_config(vmref)
+    if name in other_config:
+        return other_config[name]
+    else:
+        return None
 
 def get_idrsa_secret(session):
     poolref = session.xenapi.pool.get_all()[0]

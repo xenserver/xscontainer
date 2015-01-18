@@ -91,7 +91,10 @@ def ensure_idrsa(session):
 
 
 def prepare_ssh_cmd(session, vmuuid, cmd):
-    user = 'core'
+    username = ApiHelper.get_value_from_vm_other_config(session, vmuuid,
+                                                        'xscontainer-username')
+    if username == None:
+        username = 'core'
     host = get_suitable_vm_ip(session, vmuuid)
     ensure_idrsa(session)
     complete_cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
@@ -99,7 +102,7 @@ def prepare_ssh_cmd(session, vmuuid, cmd):
                     '-o', 'PasswordAuthentication=no',
                     '-o', 'LogLevel=quiet',
                     '-o', 'ConnectTimeout=10',
-                    '-i', IDRSAFILENAME, '%s@%s' % (user, host)] + cmd
+                    '-i', IDRSAFILENAME, '%s@%s' % (username, host)] + cmd
     return complete_cmd
 
 
