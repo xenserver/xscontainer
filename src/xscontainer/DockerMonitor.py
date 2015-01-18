@@ -15,12 +15,10 @@ MONITORDICT = {}
 
 
 def monitor_events(session, vmuuid):
-    # ToDo: Could use http1.1 and chunked encoding to be more efficient
-    cmd = ['echo -e "GET /events HTTP/1.0\r\n"' +
-           '| ncat -U /var/run/docker.sock']
-    cmd = Util.prepare_ssh_cmd(session, vmuuid, cmd)
-    Log.debug('Running: %s' % (cmd))
-    process = subprocess.Popen(cmd,
+    request_cmds = Docker.prepare_request_cmds('GET', '/events')
+    cmds = Util.prepare_ssh_cmd(session, vmuuid, request_cmds)
+    Log.debug('Running: %s' % (cmds))
+    process = subprocess.Popen(cmds,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
                                stdin=subprocess.PIPE,
@@ -59,7 +57,7 @@ def monitor_events(session, vmuuid):
     process.poll()
     returncode = process.returncode
     if returncode != 0:
-        Log.error('Docker monitor (%s) exited with rc %d' % (cmd, returncode))
+        Log.error('Docker monitor (%s) exited with rc %d' % (cmds, returncode))
 
 
 def update_vmuuids_to_monitor(session):
