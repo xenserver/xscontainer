@@ -24,24 +24,20 @@ xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_config_drive
 echo "Now let's start the VM"
 xe vm-start uuid=$VMUUID
 
-echo "Once up and running we can query the versions - that should be displayed on the general-tab of CoreOS VM as a table, the keys can change."
-until xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_version args:vmuuid="$VMUUID"
+echo "Once up and running - for demo purposes - beyond the commited-scope, we can control CoreOs VMs from the xscontainer plugin. E.g. we can run multiple containers. Let's fake hadoop."
+COMMAND='docker run -d --name hadoop busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"'
+until xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=passthrough args:vmuuid="$VMUUID" args:command="$COMMAND"
 do
     echo "VM not up, retrying"
     sleep 3
 done
-echo "And also a lot more interesting information about Docker - that should be displayed on the general-tab of the CoreOS VM as a table, the keys can change."
-xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_info args:vmuuid="$VMUUID"
-
-echo "For demo purposes - beyond the commited-scope, we can control CoreOs VMs from the xscontainer plugin. E.g. we can run multiple containers. Let's fake hadoop."
-COMMAND='docker run -d --name hadoop busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"'
-xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=passthrough args:vmuuid="$VMUUID" args:command="$COMMAND"
 
 echo "After a moment, we can see the running Container in the VM.other-onfig:docker_ps - these should be listed as entries in the treeview under the corresponding CoreOS VM"
+echo "We can also generic runtime information in VM.other-onfig:docker_info and VM.other-onfig:docker_version, that could both be included in the per-VM dialog
 sleep 11
 xe vm-param-get uuid="$VMUUID" param-name=other-config
 
-echo "It's also possible to query information about a particular container - that should be displayed on the general-tab of a container"
+echo "It's also possible to query detailed information about a particular container - that should be displayed on the general-tab of a container"
 xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_inspect args:vmuuid="$VMUUID" args:object="hadoop"
 echo "As well as to perform some simple lifecycle operations"
 xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=start args:vmuuid="$VMUUID" args:container="hadoop"

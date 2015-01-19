@@ -49,16 +49,6 @@ def get_config_drive_configuration(session, args):
                                                                 ))
 
 
-def get_version(session, args):
-    check_args(['vmuuid'], args)
-    return prepare_output(Docker.get_version_xml(session, args['vmuuid']))
-
-
-def get_info(session, args):
-    check_args(['vmuuid'], args)
-    return prepare_output(Docker.get_info_xml(session, args['vmuuid']))
-
-
 def get_inspect(session, args):
     check_args(['vmuuid', 'object'], args)
     return prepare_output(Docker.get_inspect_xml(session, args['vmuuid'],
@@ -135,8 +125,6 @@ if __name__ == "__main__":
         'create_config_drive': create_config_drive,
         'get_config_drive_default': get_config_drive_default,
         'get_config_drive_configuration': get_config_drive_configuration,
-        'get_info': get_info,
-        'get_version': get_version,
         'get_inspect': get_inspect,
         'start': start,
         'stop': stop,

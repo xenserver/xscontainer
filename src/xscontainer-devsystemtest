@@ -44,7 +44,7 @@ def main():
             print "This didn't work. Trying again."
             time.sleep(3)
     #DockerMonitor.monitor_events(session, vmuuid)
-    print DockerMonitor.monitor_host(returninstantly=False)
+    #print DockerMonitor.monitor_host(returninstantly=False)
     """
     Docker.passthrough(session, vmuuid,
                        'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')

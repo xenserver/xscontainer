@@ -82,7 +82,7 @@ def get_version_xml(session, vmuuid):
     return Util.converttoxml(result)
 
 
-# ToDo: Must drop this, really
+# ToDo: Must remove this cmd, really
 def passthrough(session, vmuuid, command):
     cmd = [command]
     result = Util.execute_ssh(session, vmuuid, cmd)
@@ -96,7 +96,9 @@ def get_inspect_dict(session, vmuuid, container):
     return result
 
 def get_inspect_xml(session, vmuuid, container):
-    return {'docker_inspect': get_inspect(session, vmuuid, container)}
+    result = {'docker_inspect': get_inspect_dict(session, vmuuid, container)}
+    #ToDo: Util.converttoxml doesn't quite produce valid xml for inspect
+    return Util.converttoxml(result)
 
 def _run_container_cmd(session, vmuuid, container, command):
     _verify_or_throw_invalid_container(container)

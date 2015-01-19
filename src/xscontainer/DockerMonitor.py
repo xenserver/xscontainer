@@ -14,7 +14,10 @@ MONITORINTERVALLINS = 60
 MONITORDICT = {}
 
 
-def monitor_events(session, vmuuid):
+def monitor_vm(session, vmuuid):
+    vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
+    update_docker_info(session, vmuuid, vmref)
+    update_docker_version(session, vmuuid, vmref)
     request_cmds = Docker.prepare_request_cmds('GET', '/events')
     cmds = Util.prepare_ssh_cmd(session, vmuuid, request_cmds)
     Log.debug('Running: %s' % (cmds))
@@ -41,18 +44,22 @@ def monitor_events(session, vmuuid):
         elif lastread == '}':
             openbrackets = openbrackets - 1
             if openbrackets == 0:
-                Log.debug("received Event: %s" % data)
+                Log.debug("monitpr_vm received Event: %s" % data)
                 results = simplejson.loads(data)
-                if 'status' in results and (results['status']
-                                            in ['create', 'destroy', 'die',
-                                                'export', 'kill', 'pause',
-                                                'restart', 'start', 'stop',
-                                                'unpause']):
-                    monitor_vm(session, vmuuid)
+                if 'status' in results:
+                    if results['status'] in ['create', 'destroy', 'die',
+                                             'export', 'kill', 'pause',
+                                             'restart', 'start', 'stop',
+                                             'unpause']:
+                        update_docker_ps(session, vmuuid, vmref)
+                    if results['status'] in ['create', 'destroy', 'delete']:
+                        update_docker_info(session, vmuuid, vmref)
+                    # ignore untag for now
                 data = ""
         if len(data) >= 2048:
-            raise(Util.XSContainerException('monitor_events buffer is full'))
+            raise(Util.XSContainerException('monitor_vm buffer is full'))
         lastread = process.stdout.read(1)
+    # Todo: make this threadsafe
     del MONITORDICT[vmuuid]
     process.poll()
     returncode = process.returncode
@@ -88,7 +95,7 @@ def update_vmuuids_to_monitor(session):
                     Log.info("Adding monitor for VM name: %s, UUID: %s"
                              % (vmrecord['name_label'], vmrecord['uuid']))
                     MONITORDICT[vmrecord['uuid']] = "starting"
-                    thread.start_new_thread(monitor_events,
+                    thread.start_new_thread(monitor_vm,
                                             (session, vmrecord['uuid']))
             else:
                 if vmrecord['uuid'] in MONITORDICT:
@@ -114,10 +121,16 @@ def monitor_host(returninstantly=False):
             break
 
 
-def monitor_vm(session, vmuuid, vmref=None):
-    # ToDo: must make this so much more efficient!
-    Log.debug("Monitor %s" % vmuuid)
-    if vmref == None:
-        vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
+def update_docker_info(session, vmuuid, vmref):
+    ApiHelper.update_vm_other_config(
+        session, vmref, 'docker_info', Docker.get_info_xml(session, vmuuid))
+
+
+def update_docker_version(session, vmuuid, vmref):
+    ApiHelper.update_vm_other_config(
+        session, vmref, 'docker_version', Docker.get_version_xml(session, vmuuid))
+
+
+def update_docker_ps(session, vmuuid, vmref):
     ApiHelper.update_vm_other_config(
         session, vmref, 'docker_ps', Docker.get_ps_xml(session, vmuuid))
