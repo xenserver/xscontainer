@@ -26,7 +26,7 @@ if __name__ == "__main__":
           author='Citrix Systems Inc., Robert Breker',
           license = 'BSD',
           url='http://github.com/xenserver/xscontainer',
-          packages=['xscontainer'],
+          packages=['xscontainer', 'xscontainer.util'],
           package_dir = {'xscontainer': 'src/xscontainer'},
           scripts = ['src/xscontainer-monitor',
                      'src/scripts/xscontainer-pluginexample',
