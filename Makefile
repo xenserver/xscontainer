@@ -3,7 +3,7 @@ RELEASE ?= 1
 MY_OUTPUT_DIR ?= dist/
 
 all:
-	ptyhon setup build
+	python setup.py build
 
 bdist_rpm:
 	python setup.py bdist_rpm --forceversion=$(VERSION) --release=$(RELEASE) \
