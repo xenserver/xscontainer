@@ -3,7 +3,6 @@
 import sys
 # ToDo: hack for building on Fedora
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
-import xscontainer.util as util
 import xscontainer.docker_monitor as docker_monitor
 
 

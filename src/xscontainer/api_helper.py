@@ -1,11 +1,14 @@
 import os
 import tempfile
-import xscontainer.util
+import time
+import xscontainer.util as util
 from xscontainer.util import log
 import XenAPI
 
 XSCONTAINER_SECRET_UUID = 'xscontainer-secret-uuid'
 XSCONTAINER_SECRET_SEPARATOR = '<xscontainer-secret-separator>'
+
+IDRSAFILENAME = '/tmp/xscontainer-idrsa'
 
 NULLREF = 'OpaqueRef:NULL'
 
@@ -241,3 +244,59 @@ def set_idrsa_secret(session):
     other_config = session.xenapi.pool.get_other_config(poolref)
     other_config[XSCONTAINER_SECRET_UUID] = secretrecord['uuid']
     session.xenapi.pool.set_other_config(poolref, other_config)
+
+
+def get_suitable_vm_ip(session, vmuuid):
+    ips = get_vm_ips(session, vmuuid)
+    stage1filteredips = []
+    for address in ips.itervalues():
+        if ':' not in address:
+            # If we get here - it's ipv4
+            if address.startswith('169.254.'):
+                # we prefer host internal networks and put them at the front
+                stage1filteredips.insert(0, address)
+            else:
+                stage1filteredips.append(address)
+        else:
+            # Ignore ipv6 as Dom0 won't be able to use it
+            pass
+    for address in stage1filteredips:
+        if util.test_connection(address, 22):
+            return address
+    raise util.XSContainerException(
+        "No valid IP found for vmuuid %s" % (vmuuid))
+
+
+def ensure_idrsa(session):
+    neednewfile = False
+    if os.path.exists(IDRSAFILENAME):
+        mtime = os.path.getmtime(IDRSAFILENAME)
+        if time.time() - mtime > 60:
+            neednewfile = True
+    else:
+        neednewfile = True
+    if neednewfile:
+        util.write_file(IDRSAFILENAME, get_idrsa_secret_private(session))
+
+
+def prepare_ssh_cmd(session, vmuuid, cmd):
+    username = get_value_from_vm_other_config(session, vmuuid,
+                                              'xscontainer-username')
+    if username == None:
+        username = 'core'
+    host = get_suitable_vm_ip(session, vmuuid)
+    ensure_idrsa(session)
+    complete_cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
+                    '-o', 'StrictHostKeyChecking=no',
+                    '-o', 'PasswordAuthentication=no',
+                    '-o', 'LogLevel=quiet',
+                    '-o', 'ConnectTimeout=10',
+                    '-i', IDRSAFILENAME, '%s@%s' % (username, host)] + cmd
+    return complete_cmd
+
+
+def execute_ssh(session, vmuuid, cmd):
+    complete_cmd = prepare_ssh_cmd(session, vmuuid, cmd)
+    stdout = util.runlocal(complete_cmd)[1]
+    return str(stdout)
+

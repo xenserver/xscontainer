@@ -1,1 +1,3 @@
 recursive-include *.py
+src/xscontainer-monitor
+src/scripts/*

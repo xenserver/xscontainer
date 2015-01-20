@@ -1,6 +1,7 @@
 import api_helper
-import xscontainer.util
+import xscontainer.util as util
 from xscontainer.util import log
+from xscontainer import api_helper
 
 import re
 import simplejson
@@ -15,7 +16,7 @@ def prepare_request_cmds(request_type, request):
 
 def _interact_with_api(session, vmuuid, request_type, request):
     request_cmds = prepare_request_cmds(request_type, request)
-    stdout = util.execute_ssh(session, vmuuid, request_cmds)
+    stdout = api_helper.execute_ssh(session, vmuuid, request_cmds)
     headerend = stdout.index('\r\n\r\n')
     header = stdout[:headerend]
     body = stdout[headerend + 4:]
@@ -87,7 +88,7 @@ def get_version_xml(session, vmuuid):
 # ToDo: Must remove this cmd, really
 def passthrough(session, vmuuid, command):
     cmd = [command]
-    result = util.execute_ssh(session, vmuuid, cmd)
+    result = api_helper.execute_ssh(session, vmuuid, cmd)
     return result
 
 

@@ -5,7 +5,7 @@ import re
 import tempfile
 
 import api_helper
-import xscontainer.util
+import xscontainer.util as util
 from xscontainer.util import log
 
 CLOUDCONFIG = """#cloud-config

@@ -1,15 +1,12 @@
-import api_helper
 import log
 
 import os
 import socket
 import subprocess
 import tempfile
-import time
 import xml.dom.minidom
 import xml.sax.saxutils
 
-IDRSAFILENAME = '/tmp/xscontainer-idrsa'
 
 
 class XSContainerException(Exception):
@@ -78,40 +75,6 @@ def write_file(filepath, content):
     os.chmod(filepath, 0600)
 
 
-def ensure_idrsa(session):
-    neednewfile = False
-    if os.path.exists(IDRSAFILENAME):
-        mtime = os.path.getmtime(IDRSAFILENAME)
-        if time.time() - mtime > 60:
-            neednewfile = True
-    else:
-        neednewfile = True
-    if neednewfile:
-        write_file(IDRSAFILENAME, api_helper.get_idrsa_secret_private(session))
-
-
-def prepare_ssh_cmd(session, vmuuid, cmd):
-    username = api_helper.get_value_from_vm_other_config(session, vmuuid,
-                                                        'xscontainer-username')
-    if username == None:
-        username = 'core'
-    host = get_suitable_vm_ip(session, vmuuid)
-    ensure_idrsa(session)
-    complete_cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
-                    '-o', 'StrictHostKeyChecking=no',
-                    '-o', 'PasswordAuthentication=no',
-                    '-o', 'LogLevel=quiet',
-                    '-o', 'ConnectTimeout=10',
-                    '-i', IDRSAFILENAME, '%s@%s' % (username, host)] + cmd
-    return complete_cmd
-
-
-def execute_ssh(session, vmuuid, cmd):
-    complete_cmd = prepare_ssh_cmd(session, vmuuid, cmd)
-    stdout = runlocal(complete_cmd)[1]
-    return str(stdout)
-
-
 def test_connection(address, port):
     try:
         asocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -124,22 +87,3 @@ def test_connection(address, port):
         return False
 
 
-def get_suitable_vm_ip(session, vmuuid):
-    ips = api_helper.get_vm_ips(session, vmuuid)
-    stage1filteredips = []
-    for address in ips.itervalues():
-        if ':' not in address:
-            # If we get here - it's ipv4
-            if address.startswith('169.254.'):
-                # we prefer host internal networks and put them at the front
-                stage1filteredips.insert(0, address)
-            else:
-                stage1filteredips.append(address)
-        else:
-            # Ignore ipv6 as Dom0 won't be able to use it
-            pass
-    for address in stage1filteredips:
-        if test_connection(address, 22):
-            return address
-    raise XSContainerException(
-        "No valid IP found for vmuuid %s" % (vmuuid))

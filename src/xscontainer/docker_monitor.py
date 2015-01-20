@@ -1,6 +1,6 @@
 import api_helper
 import docker
-import xscontainer.util
+import xscontainer.util as util
 from xscontainer.util import log
 
 import os
@@ -32,7 +32,7 @@ def monitor_vm(session, vmuuid):
 
 def monitor_vm_events(session, vmuuid, vmref):
     request_cmds = docker.prepare_request_cmds('GET', '/events')
-    cmds = util.prepare_ssh_cmd(session, vmuuid, request_cmds)
+    cmds = api_helper.prepare_ssh_cmd(session, vmuuid, request_cmds)
     log.debug('monitor_vm is unning: %s' % (cmds))
     process = subprocess.Popen(cmds,
                                stdout=subprocess.PIPE,
