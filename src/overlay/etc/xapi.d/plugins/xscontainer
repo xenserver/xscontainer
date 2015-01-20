@@ -6,9 +6,9 @@ import sys
 import xmlrpclib
 # ToDo: hack for building on Fedora
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
-import xscontainer.ApiHelper as ApiHelper
-import xscontainer.CoreOs as CoreOs
-import xscontainer.Docker as Docker
+import xscontainer.api_helper as api_helper
+import xscontainer.coreos as coreos
+import xscontainer.docker as docker
 
 
 def check_args(reqs, args):
@@ -23,7 +23,7 @@ def prepare_output(output):
 
 def install_vm(session, args):
     check_args(['url', 'sruuid'],  args)
-    return prepare_output(CoreOs.install_vm(session,
+    return prepare_output(coreos.install_vm(session,
                                             args['url'],
                                             args['sruuid']))
 
@@ -31,7 +31,7 @@ def install_vm(session, args):
 def create_config_drive(session, args):
     check_args(['vmuuid', 'sruuid', 'configuration'], args)
     configuration = args['configuration'].replace("%BR%", "\r\n")
-    return prepare_output(CoreOs.create_config_drive(session,
+    return prepare_output(coreos.create_config_drive(session,
                                                      args['vmuuid'],
                                                      args['sruuid'],
                                                      configuration))
@@ -39,55 +39,55 @@ def create_config_drive(session, args):
 
 def get_config_drive_default(session, args):
     check_args(['templateuuid'], args)
-    return prepare_output(CoreOs.get_config_drive_default(session))
+    return prepare_output(coreos.get_config_drive_default(session))
 
 
 def get_config_drive_configuration(session, args):
     check_args(['vdiuuid'], args)
-    return prepare_output(CoreOs.get_config_drive_configuration(session,
+    return prepare_output(coreos.get_config_drive_configuration(session,
                                                                 args['vdiuuid']
                                                                 ))
 
 
 def get_inspect(session, args):
     check_args(['vmuuid', 'object'], args)
-    return prepare_output(Docker.get_inspect_xml(session, args['vmuuid'],
+    return prepare_output(docker.get_inspect_xml(session, args['vmuuid'],
                                                  args['object']))
 
 
 def start(session, args):
     check_args(['vmuuid', 'container'], args)
-    return prepare_output(Docker.start(session, args['vmuuid'],
+    return prepare_output(docker.start(session, args['vmuuid'],
                                        args['container']))
 
 
 def stop(session, args):
     check_args(['vmuuid', 'container'], args)
-    return prepare_output(Docker.stop(session, args['vmuuid'],
+    return prepare_output(docker.stop(session, args['vmuuid'],
                                       args['container']))
 
 
 def restart(session, args):
     check_args(['vmuuid', 'container'], args)
-    return prepare_output(Docker.restart(session, args['vmuuid'],
+    return prepare_output(docker.restart(session, args['vmuuid'],
                                          args['container']))
 
 
 def pause(session, args):
     check_args(['vmuuid', 'container'], args)
-    return prepare_output(Docker.pause(session, args['vmuuid'],
+    return prepare_output(docker.pause(session, args['vmuuid'],
                                        args['container']))
 
 
 def unpause(session, args):
     check_args(['vmuuid', 'container'], args)
-    return prepare_output(Docker.unpause(session, args['vmuuid'],
+    return prepare_output(docker.unpause(session, args['vmuuid'],
                                          args['container']))
 
 
 def passthrough(session, args):
     check_args(['vmuuid', 'command'], args)
-    return prepare_output(Docker.passthrough(session, args['vmuuid'],
+    return prepare_output(docker.passthrough(session, args['vmuuid'],
                                              args['command']))
 
 
@@ -99,10 +99,10 @@ def redirect_per_vm_operation_owned_by_other_slave(argv):
     args = params[1]
     if 'vmuuid' in args:
         vmuuid = args['vmuuid']
-        vmrecord = ApiHelper.get_vm_record_by_uuid(session, vmuuid)
+        vmrecord = api_helper.get_vm_record_by_uuid(session, vmuuid)
         hostref = vmrecord['resident_on']
-        if (hostref != ApiHelper.NULLREF
-            and hostref != ApiHelper.get_this_host_ref(session)):
+        if (hostref != api_helper.NULLREF
+            and hostref != api_helper.get_this_host_ref(session)):
             # Redirect the call
             try:
                 result = session.xenapi.host.call_plugin(

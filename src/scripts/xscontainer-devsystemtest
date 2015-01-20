@@ -3,30 +3,30 @@
 import sys
 # ToDo: hack for building on Fedora
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
-import xscontainer.Util as Util
-import xscontainer.CoreOs as CoreOs
-import xscontainer.Docker as Docker
-import xscontainer.DockerMonitor as DockerMonitor
-import xscontainer.ApiHelper as ApiHelper
+import xscontainer.util as util
+import xscontainer.coreos as coreos
+import xscontainer.docker as docker
+import xscontainer.docker_monitor as docker_monitor
+import xscontainer.api_helper as api_helper
 import pprint
 import time
 import traceback
 
 
 def main():
-    session = ApiHelper.get_local_api_session()
+    session = api_helper.get_local_api_session()
     #url = 'http://stable.release.core-os.net/amd64-usr/current/coreos_production_xen_image.vhd.bz2'
     url = 'http://10.80.3.229/coreos_production_xen_image.vhd.bz2'
-    srref = ApiHelper.get_default_sr(session)
+    srref = api_helper.get_default_sr(session)
     sruuid = session.xenapi.SR.get_record(srref)['uuid']
-    #vmuuid = CoreOs.install_vm(session, url, sruuid)
+    #vmuuid = coreos.install_vm(session, url, sruuid)
     vmuuid = 'bf775922-de88-088b-4082-34621bf5a55e'
-    vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
+    vmref = api_helper.get_vm_ref_by_uuid(session, vmuuid)
     #try:
     #    session.xenapi.VM.clean_shutdown(vmref)
     #except:
     #    pass
-    #CoreOs.create_config_drive(session, vmuuid, sruuid, CoreOs.CLOUDCONFIG)
+    #coreos.create_config_drive(session, vmuuid, sruuid, coreos.CLOUDCONFIG)
     #session.xenapi.VM.start(vmref, False, True)
     connected = False
     while not connected:
@@ -34,7 +34,7 @@ def main():
             print "Trying..."
             #start = time.time()
             #for x in range(0, 10):
-            container = Docker.get_ps_dict(session, vmuuid)
+            container = docker.get_ps_dict(session, vmuuid)
             #end = time.time()
             #print end - start
             pprint.pprint(container)
@@ -43,26 +43,26 @@ def main():
             traceback.print_exc()
             print "This didn't work. Trying again."
             time.sleep(3)
-    DockerMonitor.update_docker_ps(session, vmuuid, vmref)
-    #DockerMonitor.monitor_events(session, vmuuid)
-    #print DockerMonitor.monitor_host(returninstantly=False)
+    docker_monitor.update_docker_ps(session, vmuuid, vmref)
+    #docker_monitor.monitor_events(session, vmuuid)
+    #print docker_monitor.monitor_host(returninstantly=False)
     """
-    Docker.passthrough(session, vmuuid,
+    docker.passthrough(session, vmuuid,
                        'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')
     """
     container = container[0]['entry']['container']
-    print Docker.get_info_xml(session, vmuuid)
-    print Docker.get_version_xml(session, vmuuid)
-    # print CoreOs.get_config_drive_configuration(session, '')
-    #print Docker.monitor_host(returninstantly=True)
-    print Docker.get_inspect_xml(session, vmuuid, container)
-    #Docker.start(session, vmuuid, container)
-    #Docker.restart(session, vmuuid, container)
+    print docker.get_info_xml(session, vmuuid)
+    print docker.get_version_xml(session, vmuuid)
+    # print coreos.get_config_drive_configuration(session, '')
+    #print docker.monitor_host(returninstantly=True)
+    print docker.get_inspect_xml(session, vmuuid, container)
+    #docker.start(session, vmuuid, container)
+    #docker.restart(session, vmuuid, container)
     sys.exit(0)
-    #Docker.pause(session, vmuuid, container)
-    Docker.unpause(session, vmuuid, container)
-    Docker.stop(session, vmuuid, container)
-    Docker.start(session, vmuuid, container)
+    #docker.pause(session, vmuuid, container)
+    docker.unpause(session, vmuuid, container)
+    docker.stop(session, vmuuid, container)
+    docker.start(session, vmuuid, container)
 
 if __name__ == "__main__":
     main()
