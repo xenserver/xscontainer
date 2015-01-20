@@ -16,11 +16,24 @@ MONITORDICT = {}
 
 def monitor_vm(session, vmuuid):
     vmref = ApiHelper.get_vm_ref_by_uuid(session, vmuuid)
-    update_docker_info(session, vmuuid, vmref)
-    update_docker_version(session, vmuuid, vmref)
+    try:
+        update_docker_ps(session, vmuuid, vmref)
+        update_docker_info(session, vmuuid, vmref)
+        update_docker_version(session, vmuuid, vmref)
+        monitor_vm_events(session, vmuuid, vmref)
+    except Util.XSContainerException, exception:
+        Log.exception(exception)
+    # Todo: make this threadsafe
+    del MONITORDICT[vmuuid]
+    session.xenapi.VM.remove_from_other_config(vmref, 'docker_ps')
+    session.xenapi.VM.remove_from_other_config(vmref, 'docker_info')
+    session.xenapi.VM.remove_from_other_config(vmref, 'docker_version')
+
+
+def monitor_vm_events(session, vmuuid, vmref):
     request_cmds = Docker.prepare_request_cmds('GET', '/events')
     cmds = Util.prepare_ssh_cmd(session, vmuuid, request_cmds)
-    Log.debug('Running: %s' % (cmds))
+    Log.debug('monitor_vm is unning: %s' % (cmds))
     process = subprocess.Popen(cmds,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
@@ -36,7 +49,7 @@ def monitor_vm(session, vmuuid):
     while lastread != '':
         data = data + lastread
         if (not skippedheader and lastread == "\n"
-                and len(data) > 4 and data[-4:] == "\r\n\r\n"):
+                and len(data) >= 4 and data[-4:] == "\r\n\r\n"):
             data = ""
             skippedheader = True
         elif lastread == '{':
@@ -44,27 +57,32 @@ def monitor_vm(session, vmuuid):
         elif lastread == '}':
             openbrackets = openbrackets - 1
             if openbrackets == 0:
-                Log.debug("monitpr_vm received Event: %s" % data)
+                Log.debug("monitor_vm received Event: %s" % data)
                 results = simplejson.loads(data)
                 if 'status' in results:
                     if results['status'] in ['create', 'destroy', 'die',
-                                             'export', 'kill', 'pause',
-                                             'restart', 'start', 'stop',
-                                             'unpause']:
-                        update_docker_ps(session, vmuuid, vmref)
-                    if results['status'] in ['create', 'destroy', 'delete']:
-                        update_docker_info(session, vmuuid, vmref)
+                                             'kill', 'pause', 'restart',
+                                             'start', 'stop', 'unpause']:
+                        try:
+                            update_docker_ps(session, vmuuid, vmref)
+                        except Util.XSContainerException, exception:
+                            # This can happen, when the docker daemon stops
+                            Log.exception(exception)
+                    elif results['status'] in ['create', 'destroy', 'delete']:
+                        try:
+                            update_docker_info(session, vmuuid, vmref)
+                        except Util.XSContainerException, exception:
+                            # This can happen, when the docker daemon stops
+                            Log.exception(exception)
                     # ignore untag for now
                 data = ""
         if len(data) >= 2048:
             raise(Util.XSContainerException('monitor_vm buffer is full'))
         lastread = process.stdout.read(1)
     # Todo: make this threadsafe
-    del MONITORDICT[vmuuid]
     process.poll()
     returncode = process.returncode
-    if returncode != 0:
-        Log.error('Docker monitor (%s) exited with rc %d' % (cmds, returncode))
+    Log.debug('monitor_vm (%s) exited with rc %d' % (cmds, returncode))
 
 
 def update_vmuuids_to_monitor(session):
@@ -101,9 +119,11 @@ def update_vmuuids_to_monitor(session):
                 if vmrecord['uuid'] in MONITORDICT:
                     Log.info("Removing monitor for VM name: %s, UUID: %s"
                              % (vmrecord['name_label'], vmrecord['uuid']))
-                    os.close(MONITORDICT[vmrecord['uuid']])
-                    session.xenapi.VM.remove_from_other_config(vmref,
-                                                               'docker_ps')
+                    # ToDo: need to make this threadsafe and more specific
+                    try:
+                        os.close(MONITORDICT[vmrecord['uuid']])
+                    except:
+                        pass
 
 
 def monitor_host(returninstantly=False):

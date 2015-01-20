@@ -55,7 +55,11 @@ def get_hi_mgmtnet_ip(session, vmuuid):
 def get_vm_ips(session, vmuuid):
     vmref = get_vm_ref_by_uuid(session, vmuuid)
     guest_metrics = session.xenapi.VM.get_guest_metrics(vmref)
-    ips = session.xenapi.VM_guest_metrics.get_networks(guest_metrics)
+    if guest_metrics != NULLREF:
+        ips = session.xenapi.VM_guest_metrics.get_networks(guest_metrics)
+    else:
+        # The VM is probably shut-down
+        ips = {}
     return ips
 
 
@@ -198,6 +202,7 @@ def update_vm_other_config(session, vmref, name, value):
     other_config[name] = value
     session.xenapi.VM.set_other_config(vmref, other_config)
 
+
 def get_value_from_vm_other_config(session, vmuuid, name):
     vmref = get_vm_ref_by_uuid(session, vmuuid)
     other_config = session.xenapi.VM.get_other_config(vmref)
@@ -205,6 +210,7 @@ def get_value_from_vm_other_config(session, vmuuid, name):
         return other_config[name]
     else:
         return None
+
 
 def get_idrsa_secret(session):
     poolref = session.xenapi.pool.get_all()[0]

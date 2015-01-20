@@ -5,11 +5,13 @@ import Util
 import re
 import simplejson
 
+
 def prepare_request_cmds(request_type, request):
     # ToDo: Must really not pipe (!!!)
     request_cmds = ['echo -e "%s %s HTTP/1.0\r\n"' % (request_type, request) +
                     '| ncat -U /var/run/docker.sock']
     return request_cmds
+
 
 def _interact_with_api(session, vmuuid, request_type, request):
     request_cmds = prepare_request_cmds(request_type, request)
@@ -95,15 +97,17 @@ def get_inspect_dict(session, vmuuid, container):
                                             % (container))
     return result
 
+
 def get_inspect_xml(session, vmuuid, container):
     result = {'docker_inspect': get_inspect_dict(session, vmuuid, container)}
-    #ToDo: Util.converttoxml doesn't quite produce valid xml for inspect
+    # ToDo: Util.converttoxml doesn't quite produce valid xml for inspect
     return Util.converttoxml(result)
+
 
 def _run_container_cmd(session, vmuuid, container, command):
     _verify_or_throw_invalid_container(container)
     result = _post_api(session, vmuuid,
-                             '/containers/%s/%s' % (container, command))
+                       '/containers/%s/%s' % (container, command))
     return result
 
 
