@@ -1,6 +1,6 @@
 import api_helper
-import log
-import util
+import xscontainer.util
+from xscontainer.util import log
 
 import re
 import simplejson

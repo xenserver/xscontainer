@@ -1,7 +1,7 @@
 import api_helper
 import docker
-import log
-import util
+import xscontainer.util
+from xscontainer.util import log
 
 import os
 import subprocess

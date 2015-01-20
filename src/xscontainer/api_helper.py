@@ -1,8 +1,7 @@
-import log
-
 import os
 import tempfile
-import util
+import xscontainer.util
+from xscontainer.util import log
 import XenAPI
 
 XSCONTAINER_SECRET_UUID = 'xscontainer-secret-uuid'
