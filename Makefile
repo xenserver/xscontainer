@@ -7,7 +7,7 @@ all:
 
 bdist_rpm:
 	python setup.py bdist_rpm --forceversion=$(VERSION) --release=$(RELEASE) \
-		--install-script install.spec --dist-dir $(MY_OUTPUT_DIR)
+		--install-script mk/post-install-script --dist-dir $(MY_OUTPUT_DIR)
 
 install:
 	python setup.py install
