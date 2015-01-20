@@ -4,9 +4,9 @@ import random
 import re
 import tempfile
 
-import ApiHelper
-import Log
-import Util
+import api_helper
+import log
+import util
 
 CLOUDCONFIG = """#cloud-config
 
@@ -75,10 +75,10 @@ def install_vm(session, urlvhdbz2, sruuid,
     atempfileunpacked = atempfile.replace('.bz2', '')
     # ToDo: pipe instead, so the file never actually touches Dom0
     cmd = ['curl', '-o', atempfile, urlvhdbz2]
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     cmd = ['bzip2', '-d', atempfile]
-    Util.runlocal(cmd)
-    vdiref = ApiHelper.import_disk(session, sruuid, atempfileunpacked, 'vhd',
+    util.runlocal(cmd)
+    vdiref = api_helper.import_disk(session, sruuid, atempfileunpacked, 'vhd',
                                    'Disk')
     os.remove(atempfileunpacked)
     templateref = session.xenapi.VM.get_by_name_label(templatename)[0]
@@ -86,7 +86,7 @@ def install_vm(session, urlvhdbz2, sruuid,
     vmuuid = session.xenapi.VM.get_record(vmref)['uuid']
     remove_disks_in_vm_provisioning(session, vmref)
     session.xenapi.VM.provision(vmref)
-    ApiHelper.create_vbd(session, vmref, vdiref, 'rw', True)
+    api_helper.create_vbd(session, vmref, vdiref, 'rw', True)
     setup_network_on_lowest_pif(session, vmref)
     return vmuuid
 
@@ -100,17 +100,17 @@ def setup_network_on_lowest_pif(session, vmref):
             lowest = pifref
     if lowest:
         networkref = session.xenapi.PIF.get_network(lowest)
-        ApiHelper.create_vif(session, networkref, vmref)
+        api_helper.create_vif(session, networkref, vmref)
 
 
 def prepare_vm_for_config_drive(session, vmref, vmuuid):
-    if ApiHelper.get_hi_preferene_on(session):
+    if api_helper.get_hi_preferene_on(session):
         # Setup host internal network
-        ApiHelper.disable_gw_of_hi_mgmtnet_ref(session)
-        mgmtnet_device = ApiHelper.get_hi_mgmtnet_device(session, vmuuid)
+        api_helper.disable_gw_of_hi_mgmtnet_ref(session)
+        mgmtnet_device = api_helper.get_hi_mgmtnet_device(session, vmuuid)
         if not mgmtnet_device:
-            ApiHelper.create_vif(session,
-                                 ApiHelper.get_hi_mgmtnet_ref(session), vmref)
+            api_helper.create_vif(session,
+                                 api_helper.get_hi_mgmtnet_ref(session), vmref)
 
 
 def filterxshinexists(text):
@@ -125,12 +125,12 @@ def filterxshinexists(text):
 
 
 def customize_userdata(session, userdata, vmuuid):
-    vmname = ApiHelper.get_vm_record_by_uuid(session, vmuuid)['name_label']
+    vmname = api_helper.get_vm_record_by_uuid(session, vmuuid)['name_label']
     vmname = re.sub(r'[\W_]+', '', vmname).lower()
     userdata = userdata.replace('%XSVMTOHOST%', vmname)
     userdata = userdata.replace(
-        '%XSRSAPUB%', ApiHelper.get_idrsa_secret_public(session))
-    mgmtnet_device = ApiHelper.get_hi_mgmtnet_device(session, vmuuid)
+        '%XSRSAPUB%', api_helper.get_idrsa_secret_public(session))
+    mgmtnet_device = api_helper.get_hi_mgmtnet_device(session, vmuuid)
     if mgmtnet_device:
         userdata = userdata.replace('%XSHIN%', mgmtnet_device)
     else:
@@ -140,7 +140,7 @@ def customize_userdata(session, userdata, vmuuid):
 
 def get_config_drive_default(session):
     userdata = CLOUDCONFIG
-    if not ApiHelper.get_hi_preferene_on(session):
+    if not api_helper.get_hi_preferene_on(session):
         userdata = filterxshinexists(userdata)
     return userdata
 
@@ -149,12 +149,12 @@ def workaround_dependencies():
     # ToDo: Install rpm with hotfix/supp-pack
     cmd = ['yum', '--disablerepo', 'citrix',
            '--enablerepo', 'base', '-y', 'install', 'mkisofs']
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     # ToDo: create spec file instead
     cmd = ['chkconfig', '--add', 'xscontainer']
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     cmd = ['service', 'xscontainer', 'restart']
-    Util.runlocal(cmd, canfail=True)
+    util.runlocal(cmd, canfail=True)
 
 
 def create_config_drive_iso(session, userdata, vmuuid):
@@ -166,13 +166,13 @@ def create_config_drive_iso(session, userdata, vmuuid):
     os.makedirs(latestfolder)
     userdatafile = os.path.join(latestfolder, 'user_data')
     userdata = customize_userdata(session, userdata, vmuuid)
-    Util.write_file(userdatafile, userdata)
-    Log.debug("Userdata: %s" % (userdata))
+    util.write_file(userdatafile, userdata)
+    log.debug("Userdata: %s" % (userdata))
     # Also add the Linux guest agent
     temptoolsisodir = tempfile.mkdtemp()
     cmd = ['mount', '-o', 'loop',
            '/opt/xensource/packages/iso/xs-tools-6.5.0.iso',  temptoolsisodir]
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     agentpath = os.path.join(tempisodir, 'agent')
     os.makedirs(agentpath)
     agentfiles = ['xe-daemon', 'xe-linux-distribution',
@@ -183,11 +183,11 @@ def create_config_drive_iso(session, userdata, vmuuid):
         path = os.path.join(temptoolsisodir, 'Linux', filename)
         shutil.copy(path, agentpath)
     cmd = ['umount', temptoolsisodir]
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     os.rmdir(temptoolsisodir)
     # Finally wrap up the iso
     cmd = ['mkisofs', '-R', '-V', 'config-2', '-o', tempisofile, tempisodir]
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     # Tidy
     os.remove(userdatafile)
     os.rmdir(latestfolder)
@@ -204,7 +204,7 @@ def remove_config_drive(session, vmrecord, configdisk_namelabel):
     for vbd in vmrecord['VBDs']:
         vbdrecord = session.xenapi.VBD.get_record(vbd)
         vdirecord = None
-        if vbdrecord['VDI'] != ApiHelper.NULLREF:
+        if vbdrecord['VDI'] != api_helper.NULLREF:
             vdirecord = session.xenapi.VDI.get_record(vbdrecord['VDI'])
             # ToDo: Should rather base this on a other-config key
             if vdirecord['name_label'] == configdisk_namelabel:
@@ -220,11 +220,11 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     prepare_vm_for_config_drive(session, vmref, vmuuid)
     isofile = create_config_drive_iso(session, userdata, vmuuid)
     configdisk_namelabel = 'Automatic Config Drive'
-    vdiref = ApiHelper.import_disk(session, sruuid, isofile, 'raw',
+    vdiref = api_helper.import_disk(session, sruuid, isofile, 'raw',
                                    configdisk_namelabel)
     os.remove(isofile)
     remove_config_drive(session, vmrecord, configdisk_namelabel)
-    vbdref = ApiHelper.create_vbd(session, vmref, vdiref, 'ro', False)
+    vbdref = api_helper.create_vbd(session, vmref, vdiref, 'ro', False)
     if vmrecord['power_state'] == 'Running':
         session.xenapi.VBD.plug(vbdref)
     vdirecord = session.xenapi.VDI.get_record(vdiref)
@@ -232,14 +232,14 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
 
 
 def get_config_drive_configuration(session, vdiuuid):
-    filename = ApiHelper.export_disk(session, vdiuuid)
+    filename = api_helper.export_disk(session, vdiuuid)
     tempdir = tempfile.mkdtemp()
     cmd = ['mount', '-o', 'loop', '-t', 'iso9660', filename, tempdir]
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     userdatapath = os.path.join(tempdir, 'openstack', 'latest', 'user_data')
-    content = Util.read_file(userdatapath)
+    content = util.read_file(userdatapath)
     cmd = ['umount', tempdir]
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     os.rmdir(tempdir)
     os.remove(filename)
     return content

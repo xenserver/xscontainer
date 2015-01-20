@@ -1,8 +1,8 @@
-import Log
+import log
 
 import os
 import tempfile
-import Util
+import util
 import XenAPI
 
 XSCONTAINER_SECRET_UUID = 'xscontainer-secret-uuid'
@@ -150,7 +150,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
     sizeinb = None
     if fileformat == "vhd":
         cmd = ['vhd-util', 'query', '-n', filename, '-v']
-        sizeinmb = Util.runlocal(cmd)[1]
+        sizeinmb = util.runlocal(cmd)[1]
         sizeinb = int(sizeinmb) * 1024 * 1024
     elif fileformat == "raw":
         sizeinb = os.path.getsize(filename)
@@ -158,7 +158,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
         newsizeinb = sizeinb + \
             ((2 * 1024 * 1024) - sizeinb % (2 * 1024 * 1024))
         if sizeinb < newsizeinb:
-            Log.info('Resizing raw disk from size %d to %d' %
+            log.info('Resizing raw disk from size %d to %d' %
                      (sizeinb, newsizeinb))
             filehandle = open(filename, "r+b")
             filehandle.seek(newsizeinb - 1)
@@ -167,7 +167,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
             sizeinb = os.path.getsize(filename)
     else:
         raise Exception('Invalid fileformat: %s ' % fileformat)
-    Log.info("Preparing vdi of size %d" % (sizeinb))
+    log.info("Preparing vdi of size %d" % (sizeinb))
     vdiconf = {'SR': targetsr, 'virtual_size': str(sizeinb), 'type': 'system',
                'sharable': False, 'read_only': False, 'other_config': {},
                'name_label': namelabel}
@@ -176,7 +176,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
     cmd = ['curl', '-k', '--upload', filename,
            'https://localhost/import_raw_vdi?session_id=%s&vdi=%s&format=%s'
            % (session.handle, vdiuuid, fileformat)]
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     return vdiref
 
 
@@ -185,7 +185,7 @@ def export_disk(session, vdiuuid):
     cmd = ['curl', '-k', '-o', filename,
            'https://localhost/export_raw_vdi?session_id=%s&vdi=%s&format=raw'
            % (session.handle, vdiuuid)]
-    Util.runlocal(cmd)
+    util.runlocal(cmd)
     return filename
 
 
@@ -233,7 +233,7 @@ def get_idrsa_secret_public(session):
 
 
 def set_idrsa_secret(session):
-    (privateidrsa, publicidrsa) = Util.create_idrsa()
+    (privateidrsa, publicidrsa) = util.create_idrsa()
     secretref = session.xenapi.secret.create(
         {'value': '%s%s%s'
                   % (privateidrsa, XSCONTAINER_SECRET_SEPARATOR, publicidrsa)})

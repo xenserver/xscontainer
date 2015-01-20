@@ -1,5 +1,5 @@
-import ApiHelper
-import Log
+import api_helper
+import log
 
 import os
 import socket
@@ -19,7 +19,7 @@ class XSContainerException(Exception):
 
 
 def runlocal(cmd, shell=False, canfail=False):
-    Log.debug('Running: %s' % (cmd))
+    log.debug('Running: %s' % (cmd))
     process = subprocess.Popen(cmd,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
@@ -27,7 +27,7 @@ def runlocal(cmd, shell=False, canfail=False):
                                shell=shell)
     stdout, stderr = process.communicate('')
     returncode = process.returncode
-    Log.debug('Command %s exited with rc %d: Stdout: %s Stderr: %s' %
+    log.debug('Command %s exited with rc %d: Stdout: %s Stderr: %s' %
               (cmd, returncode, stdout, stderr))
     if returncode != 0 and not canfail:
         raise(XSContainerException('Command failed'))
@@ -87,11 +87,11 @@ def ensure_idrsa(session):
     else:
         neednewfile = True
     if neednewfile:
-        write_file(IDRSAFILENAME, ApiHelper.get_idrsa_secret_private(session))
+        write_file(IDRSAFILENAME, api_helper.get_idrsa_secret_private(session))
 
 
 def prepare_ssh_cmd(session, vmuuid, cmd):
-    username = ApiHelper.get_value_from_vm_other_config(session, vmuuid,
+    username = api_helper.get_value_from_vm_other_config(session, vmuuid,
                                                         'xscontainer-username')
     if username == None:
         username = 'core'
@@ -125,7 +125,7 @@ def test_connection(address, port):
 
 
 def get_suitable_vm_ip(session, vmuuid):
-    ips = ApiHelper.get_vm_ips(session, vmuuid)
+    ips = api_helper.get_vm_ips(session, vmuuid)
     stage1filteredips = []
     for address in ips.itervalues():
         if ':' not in address:

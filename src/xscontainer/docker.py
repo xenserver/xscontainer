@@ -1,6 +1,6 @@
-import ApiHelper
-import Log
-import Util
+import api_helper
+import log
+import util
 
 import re
 import simplejson
@@ -15,7 +15,7 @@ def prepare_request_cmds(request_type, request):
 
 def _interact_with_api(session, vmuuid, request_type, request):
     request_cmds = prepare_request_cmds(request_type, request)
-    stdout = Util.execute_ssh(session, vmuuid, request_cmds)
+    stdout = util.execute_ssh(session, vmuuid, request_cmds)
     headerend = stdout.index('\r\n\r\n')
     header = stdout[:headerend]
     body = stdout[headerend + 4:]
@@ -25,7 +25,7 @@ def _interact_with_api(session, vmuuid, request_type, request):
     statuscode = headersplits[1]
     if statuscode[0] != '2':
         status = ' '.join(headersplits[2:])
-        raise Util.XSContainerException("Request %s led to bad status %s %s"
+        raise util.XSContainerException("Request %s led to bad status %s %s"
                                         % (request_cmds, statuscode, status))
     return body
 
@@ -43,7 +43,7 @@ def _post_api(session, vmuuid, request):
 
 def _verify_or_throw_invalid_container(container):
     if not re.match('^[a-z0-9]+$', container):
-        raise Util.XSContainerException("Invalid container")
+        raise util.XSContainerException("Invalid container")
 
 
 def get_ps_dict(session, vmuuid):
@@ -63,7 +63,7 @@ def get_ps_dict(session, vmuuid):
 
 def get_ps_xml(session, vmuuid):
     result = {'docker_ps': get_ps_dict(session, vmuuid)}
-    return Util.converttoxml(result)
+    return util.converttoxml(result)
 
 
 def get_info_dict(session, vmuuid):
@@ -72,7 +72,7 @@ def get_info_dict(session, vmuuid):
 
 def get_info_xml(session, vmuuid):
     result = {'docker_info': get_info_dict(session, vmuuid)}
-    return Util.converttoxml(result)
+    return util.converttoxml(result)
 
 
 def get_version_dict(session, vmuuid):
@@ -81,13 +81,13 @@ def get_version_dict(session, vmuuid):
 
 def get_version_xml(session, vmuuid):
     result = {'docker_version': get_version_dict(session, vmuuid)}
-    return Util.converttoxml(result)
+    return util.converttoxml(result)
 
 
 # ToDo: Must remove this cmd, really
 def passthrough(session, vmuuid, command):
     cmd = [command]
-    result = Util.execute_ssh(session, vmuuid, cmd)
+    result = util.execute_ssh(session, vmuuid, cmd)
     return result
 
 
@@ -100,8 +100,8 @@ def get_inspect_dict(session, vmuuid, container):
 
 def get_inspect_xml(session, vmuuid, container):
     result = {'docker_inspect': get_inspect_dict(session, vmuuid, container)}
-    # ToDo: Util.converttoxml doesn't quite produce valid xml for inspect
-    return Util.converttoxml(result)
+    # ToDo: util.converttoxml doesn't quite produce valid xml for inspect
+    return util.converttoxml(result)
 
 
 def _run_container_cmd(session, vmuuid, container, command):
