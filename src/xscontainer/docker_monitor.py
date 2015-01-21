@@ -8,20 +8,36 @@ import subprocess
 import simplejson
 import thread
 import time
+import socket
 import XenAPI
 
-MONITORINTERVALLINS = 60
+MONITORRETRYSLEEPINS = 10
+MONITORVMRETRYTIMEOUTINS = 100
 MONITORDICT = {}
 
 
 def monitor_vm(session, vmuuid):
     vmref = api_helper.get_vm_ref_by_uuid(session, vmuuid)
+    done = False
+    starttime = time.time()
+    while not done:
+        try:
+            update_docker_ps(session, vmuuid, vmref)
+            update_docker_info(session, vmuuid, vmref)
+            update_docker_version(session, vmuuid, vmref)
+            done = True
+        except util.XSContainerException, exception:
+            log.info("Could not connect to VM %s, will retry" %(vmuuid))
+            time.sleep(MONITORRETRYSLEEPINS)
+            if time.time() - starttime > MONITORVMRETRYTIMEOUTINS:
+                log.warning("Could not connect to VM within %ds - aborting"
+                            % (MONITORRETRYSLEEPINS))
+                log.exception(exception)
+                done = True
     try:
-        update_docker_ps(session, vmuuid, vmref)
-        update_docker_info(session, vmuuid, vmref)
-        update_docker_version(session, vmuuid, vmref)
         monitor_vm_events(session, vmuuid, vmref)
-    except util.XSContainerException, exception:
+    except (XenAPI.Failure, util.XSContainerException, exception):
+        log.warning("monitor_vm threw an an exception")
         log.exception(exception)
     # Todo: make this threadsafe
     del MONITORDICT[vmuuid]
@@ -33,7 +49,7 @@ def monitor_vm(session, vmuuid):
 def monitor_vm_events(session, vmuuid, vmref):
     request_cmds = docker.prepare_request_cmds('GET', '/events')
     cmds = api_helper.prepare_ssh_cmd(session, vmuuid, request_cmds)
-    log.debug('monitor_vm is unning: %s' % (cmds))
+    log.debug('monitor_vm is running: %s' % (cmds))
     process = subprocess.Popen(cmds,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
@@ -85,61 +101,67 @@ def monitor_vm_events(session, vmuuid, vmref):
     log.debug('monitor_vm (%s) exited with rc %d' % (cmds, returncode))
 
 
-def update_vmuuids_to_monitor(session):
-    # Make sure that we can talk to XAPI
-    vmrecords = None
-    try:
-        if session == None:
-            session = api_helper.get_local_api_session()
-        vmrecords = api_helper.get_vm_records(session)
-    except XenAPI.Failure:
-        if None != session:
-            # Something is seriously wrong, let's re-connect to XAPI
-            try:
-                session.xenapi.session.logout()
-            except XenAPI.Failure:
-                pass
-            session = None
-        return
-    hostref = api_helper.get_this_host_ref(session)
-    for vmref, vmrecord in vmrecords.iteritems():
-        if ('xscontainer-monitor' in vmrecord['other_config']
-            or ('base_template_name' in vmrecord['other_config']
-                and 'CoreOS'
-                in vmrecord['other_config']['base_template_name'])):
-            if vmrecord['power_state'] == 'Running':
-                if (hostref == vmrecord['resident_on']
-                        and vmrecord['uuid'] not in MONITORDICT):
-                    log.info("Adding monitor for VM name: %s, UUID: %s"
-                             % (vmrecord['name_label'], vmrecord['uuid']))
-                    MONITORDICT[vmrecord['uuid']] = "starting"
-                    thread.start_new_thread(monitor_vm,
-                                            (session, vmrecord['uuid']))
-            else:
-                if vmrecord['uuid'] in MONITORDICT:
-                    log.info("Removing monitor for VM name: %s, UUID: %s"
-                             % (vmrecord['name_label'], vmrecord['uuid']))
-                    # ToDo: need to make this threadsafe and more specific
-                    try:
-                        os.close(MONITORDICT[vmrecord['uuid']])
-                    except:
-                        pass
+def procees_vmrecord(session, hostref, vmrecord):
+    if (vmrecord['power_state'] == 'Running'
+        and vmrecord['resident_on'] == hostref
+        and 'Control domain on host: ' not in vmrecord['name_label']
+        and vmrecord['uuid'] not in MONITORDICT):
+        # ToDo: Should also filter for monitoring enabled
+        log.info("Adding monitor for VM name: %s, UUID: %s"
+                 % (vmrecord['name_label'], vmrecord['uuid']))
+        MONITORDICT[vmrecord['uuid']] = "starting"
+        thread.start_new_thread(monitor_vm, (session, vmrecord['uuid'],))
+    elif (vmrecord['power_state'] == 'Halted' and
+          vmrecord['uuid'] in MONITORDICT):
+        log.info("Removing monitor for VM name: %s, UUID: %s"
+                 % (vmrecord['name_label'], vmrecord['uuid']))
+        try:
+            os.close(MONITORDICT[vmrecord['uuid']])
+        except:
+            pass
+        del MONITORDICT[vmrecord['uuid']]
 
 
-def monitor_host(returninstantly=False):
-    session = None
-    passedtime = MONITORINTERVALLINS
-    iterationstarttime = time.time() - MONITORINTERVALLINS
+def monitor_host_oneshot(session, hostref):
+    vmrecords = api_helper.get_vm_records(session)
+    for vmrecord in vmrecords.itervalues():
+        procees_vmrecord(session, hostref, vmrecord)
+
+
+def monitor_host():
     while True:
-        # Do throttle
-        passedtime = time.time() - iterationstarttime
-        iterationstarttime = time.time()
-        if passedtime < MONITORINTERVALLINS:
-            time.sleep(MONITORINTERVALLINS - passedtime)
-        update_vmuuids_to_monitor(session)
-        if returninstantly:
-            break
-
+        try:
+            session = api_helper.get_local_api_session()
+            hostref = api_helper.get_this_host_ref(session)
+            try:
+                session.xenapi.event.register(["vm"])
+                monitor_host_oneshot(session, hostref)
+                while True:
+                    try:
+                        events = session.xenapi.event.next()
+                        for event in events:
+                            if (event['operation'] == 'mod'
+                                and 'snapshot' in event):
+                                    procees_vmrecord(session, hostref,
+                                                     event['snapshot'])
+                    except XenAPI.Failure, exception:
+                        if exception.details != "EVENTS_LOST":
+                            raise
+                        # handle EVENTS_LOST API failure
+                        log.warning("Recovering from EVENTS_LOST")
+                        session.xenapi.event.unregister(["vm"])
+                        session.xenapi.event.register(["vm"])
+                        monitor_host_oneshot(session, hostref)
+            finally:
+                try:
+                    session.xenapi.XAPISESSION.logout()
+                except XenAPI.Failure:
+                    log.warning("Failed when trying to logout")
+        except (socket.error, XenAPI.Failure), exception:
+            log.warning("Recovering from XAPI failure" +
+                        "- Possibly a XAPI toolstack restart.")
+            log.exception(exception)
+            time.sleep(5)
 
 def update_docker_info(session, vmuuid, vmref):
     api_helper.update_vm_other_config(
@@ -148,7 +170,8 @@ def update_docker_info(session, vmuuid, vmref):
 
 def update_docker_version(session, vmuuid, vmref):
     api_helper.update_vm_other_config(
-        session, vmref, 'docker_version', docker.get_version_xml(session, vmuuid))
+        session, vmref, 'docker_version',
+        docker.get_version_xml(session, vmuuid))
 
 
 def update_docker_ps(session, vmuuid, vmref):
