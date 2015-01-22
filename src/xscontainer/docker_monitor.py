@@ -101,7 +101,7 @@ def monitor_vm_events(session, vmuuid, vmref):
     log.debug('monitor_vm (%s) exited with rc %d' % (cmds, returncode))
 
 
-def procees_vmrecord(session, hostref, vmrecord):
+def process_vmrecord(session, hostref, vmrecord):
     if (vmrecord['power_state'] == 'Running'
         and vmrecord['resident_on'] == hostref
         and 'Control domain on host: ' not in vmrecord['name_label']
@@ -125,7 +125,7 @@ def procees_vmrecord(session, hostref, vmrecord):
 def monitor_host_oneshot(session, hostref):
     vmrecords = api_helper.get_vm_records(session)
     for vmrecord in vmrecords.itervalues():
-        procees_vmrecord(session, hostref, vmrecord)
+        process_vmrecord(session, hostref, vmrecord)
 
 
 def monitor_host():
@@ -142,7 +142,7 @@ def monitor_host():
                         for event in events:
                             if (event['operation'] == 'mod'
                                 and 'snapshot' in event):
-                                    procees_vmrecord(session, hostref,
+                                    process_vmrecord(session, hostref,
                                                      event['snapshot'])
                     except XenAPI.Failure, exception:
                         if exception.details != "EVENTS_LOST":
