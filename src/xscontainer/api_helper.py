@@ -13,6 +13,69 @@ IDRSAFILENAME = '/tmp/xscontainer-idrsa'
 NULLREF = 'OpaqueRef:NULL'
 
 
+class XenAPIClient(object):
+
+    def __init__(self):
+        self.session = get_local_api_session()
+
+    def get_session(self):
+        return self.session
+
+    def get_all_vms(self):
+        vm_refs = self.session.xenapi.VM.get_all()
+        return [VM(self, vm_ref) for vm_ref in vm_refs]
+
+    def get_all_vm_records(self):
+        return self.session.xenapi.VM.get_all_vm_records()
+
+class XenAPIObject(object):
+
+    OBJECT = None
+
+    def __init__(self, client, ref):
+        self.client = client
+        self.ref = ref
+
+    def get_id(self):
+        return self.ref
+
+    def get_session(self):
+        return self.client.get_session()
+
+    def get_record(self):
+        return self.rec
+
+class Host(XenAPIObject):
+
+    OBJECT = "Host"
+
+    # Return VMs running on the host _not_ the pool
+    def get_vms(self):
+        return [vm for vm in self.client.get_all_vms() if vm.is_on_host(self)]
+
+class VM(XenAPIObject):
+
+    OBJECT = "VM"
+
+    def get_uuid(self):
+        return self.get_session().xenapi.VM.get_uuid(self.ref)
+
+    def is_on_host(self, host):
+        return host.ref == self.get_host().ref
+
+    def get_host(self):
+        host_ref = self.client.session.xenapi.VM.get_resident_on(self.ref)
+        return Host(self.client, host_ref)
+
+    def get_other_config(self):
+        return self.client.session.xenapi.VM.get_other_config(self.ref)
+
+    def set_other_config_key(self, key, value):
+        return self.client.session.xenapi.VM.add_to_other_config(self.ref, key, value)
+
+    def remove_other_config_key(self, key):
+        return self.client.session.xenapi.VM.remove_from_other_config(self.ref, key)
+
 def get_local_api_session():
     session = XenAPI.xapi_local()
     session.xenapi.login_with_password('root', '')
