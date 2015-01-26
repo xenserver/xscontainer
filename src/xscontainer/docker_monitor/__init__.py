@@ -1,6 +1,6 @@
-import api_helper
-import docker
-import xscontainer.util as util
+from xscontainer import api_helper
+from xscontainer import docker
+from xscontainer import util
 from xscontainer.util import log
 
 import os
@@ -14,6 +14,10 @@ import XenAPI
 MONITORRETRYSLEEPINS = 10
 MONITORVMRETRYTIMEOUTINS = 100
 MONITORDICT = {}
+REGISTRATION_KEY = "monitor_docker"
+
+
+docker_monitor = None
 
 
 class RegistrationError(Exception):
@@ -27,7 +31,6 @@ class DockerMonitor(object):
     Object responsible for keeping track of the VMs being monitored.
     """
 
-    REGISTRATION_KEY = "monitor_docker"
 
     def __init__(self, host=None):
         self.VMS = {}
@@ -61,10 +64,10 @@ class DockerMonitor(object):
             return DeregistrationError("VM was not previously registered.")
 
     def set_registration_key(self, vm):
-        vm.set_other_config_key(self.REGISTRATION_KEY, 'True')
+        vm.set_other_config_key(REGISTRATION_KEY, 'True')
 
     def remove_registration_key(self, vm):
-        vm.remove_other_config_key(self.REGISTRATION_KEY)
+        vm.remove_other_config_key(REGISTRATION_KEY)
 
     def get_registered(self):
         return self.VMS.values()
@@ -76,26 +79,94 @@ class DockerMonitor(object):
         return vm.get_id() in self.VMS.keys()
 
     def start_monitoring(self, vm):
-        thread.start_new_thread(monitor_vm, (vm.get_session(), vm.get_id()))
+        log.info("Starting to monitor VM: %s" % vm)
+        thread.start_new_thread(monitor_vm, (vm.get_session(), vm.get_uuid()))
         return
 
     def stop_monitoring(self, vm):
         # @todo: refactor this code to handle tunnels, so the fh is not longer
         # required to communicate with docker.
+        # @todo: need to make the threads interruptible.
         try:
             os.close(MONITORDICT[vm.get_id()])
         except:
             pass
 
-    def should_monitor(self, vm):
-        other_config = vm.get_other_config()
-        return self.REGISTRATION_KEY in other_config
+    def refresh(self):
+        # @todo: switch from vmrecord to cacheable VM objects
+        vm_records = self.host.client.get_all_vm_records()
+        for vm_rec in vm_records.values():
+            self.process_vmrecord(vm_rec)
 
-    def load_registered(self):
-        vms = [vm for vm in self.host.get_vms() if self.should_monitor(vm)]
-        for vm in vms:
-            self.register(vm)
         return
+
+    def _should_start_monitoring(self, vmrecord):
+
+        # Check the VM is registered for monitoring
+        if REGISTRATION_KEY not in vmrecord['other_config']:
+            return False
+
+        # Only process events for running machines.
+        elif vmrecord['power_state'] != 'Running':
+            return False
+
+        # Ensure we only monitor VMs on this host.
+        elif vmrecord['resident_on'] != self.host.ref:
+            return False
+
+        # Ignore Dom0.
+        elif vmrecord['is_control_domain']:
+            return False
+
+        # Ignore events for VMs being monitored.
+        elif vmrecord['uuid'] in MONITORDICT:
+            return False
+
+        else:
+            # If conditions above are met, we should process the event.
+            return True
+
+    def _should_stop_monitoring(self, vmrecord):
+
+        # Only process events when the Halted state is reached.
+        if vmrecord['power_state'] != 'Halted':
+            return False
+
+        # Check whether the VM is being actively monitored.
+        elif vmrecord['uuid'] not in MONITORDICT:
+            return False
+
+        else:
+            return True
+
+    def process_vmrecord(self, vmrecord):
+        """
+        This function is for processing a vmrecord and determining the course
+        of action that should be taken.
+        """
+        ## Checking that the VM is:
+        ##   * Running
+        ##   * Not Dom0
+        ##   * Is not already being monitored
+        if self._should_start_monitoring(vmrecord):
+            log.info("Adding monitor for VM name: %s, UUID: %s"
+                 % (vmrecord['name_label'], vmrecord['uuid']))
+            ## Keeping the status of the VM
+            MONITORDICT[vmrecord['uuid']] = "starting"
+            ## Kicks off the monitoring thread
+            thread.start_new_thread(monitor_vm, (self.host.get_session(), vmrecord['uuid'],))
+        ## If the VM is:
+        ##    * Off
+        ##    * not in MONITORDICT
+        ## Then try to 'close' the monitor dict thread (?) and delete from register
+        elif self._should_stop_monitoring(vmrecord):
+            log.info("Removing monitor for VM name: %s, UUID: %s"
+                 % (vmrecord['name_label'], vmrecord['uuid']))
+            try:
+                os.close(MONITORDICT[vmrecord['uuid']])
+            except:
+                pass
+            del MONITORDICT[vmrecord['uuid']]
 
 
 def monitor_vm(session, vmuuid):
@@ -183,64 +254,34 @@ def monitor_vm_events(session, vmuuid, vmref):
     log.debug('monitor_vm (%s) exited with rc %d' % (cmds, returncode))
 
 
-def process_vmrecord(session, hostref, vmrecord):
-    ## Checking that the VM is:
-    ##   * Running
-    ##   * Not Dom0
-    ##   * Is not already being monitored
-    if (vmrecord['power_state'] == 'Running'
-        and vmrecord['resident_on'] == hostref
-        and 'Control domain on host: ' not in vmrecord['name_label']
-        and vmrecord['uuid'] not in MONITORDICT):
-        # ToDo: Should also filter for monitoring enabled
-        log.info("Adding monitor for VM name: %s, UUID: %s"
-                 % (vmrecord['name_label'], vmrecord['uuid']))
-        ## Keeping the status of the VM
-        MONITORDICT[vmrecord['uuid']] = "starting"
-        ## Kicks off the monitoring thread
-        thread.start_new_thread(monitor_vm, (session, vmrecord['uuid'],))
-    ## If the VM is:
-    ##    * Off
-    ##    * not in MONITORDICT
-    ## Then try to 'close' the monitor dict thread (?) and delete from register
-    elif (vmrecord['power_state'] == 'Halted' and
-          vmrecord['uuid'] in MONITORDICT):
-        log.info("Removing monitor for VM name: %s, UUID: %s"
-                 % (vmrecord['name_label'], vmrecord['uuid']))
-        try:
-            os.close(MONITORDICT[vmrecord['uuid']])
-        except:
-            pass
-        del MONITORDICT[vmrecord['uuid']]
-
-
-def monitor_host_oneshot(session, hostref):
-    vmrecords = api_helper.get_vm_records(session)
-    for vmrecord in vmrecords.itervalues():
-        # Filter for VMs that we _should_ register
-        # These are VMs which have the registration key
-        # and are VMs that are resident to this host.
-        # We should have the DockerMonitor handle this
-        # on load.
-        process_vmrecord(session, hostref, vmrecord)
-
-
 def monitor_host():
+
+    client = api_helper.XenAPIClient()
+    session = client.session
+    host = api_helper.Host(client, api_helper.get_this_host_ref(session))
+
+    # Initialise the DockerMonitor
+    global docker_monitor
+    docker_monitor = DockerMonitor(host)
+
     while True:
         try:
             session = api_helper.get_local_api_session()
             hostref = api_helper.get_this_host_ref(session)
             try:
                 session.xenapi.event.register(["vm"])
-                monitor_host_oneshot(session, hostref)
+                # Load the VMs that are enabled for monitoring
+                docker_monitor.refresh()
                 while True:
                     try:
                         events = session.xenapi.event.next()
                         for event in events:
                             if (event['operation'] == 'mod'
                                 and 'snapshot' in event):
-                                    process_vmrecord(session, hostref,
-                                                     event['snapshot'])
+                                    # At this point the monitor may need to
+                                    # refresh it's monitoring state of a particular
+                                    # vm.
+                                    docker_monitor.process_vmrecord(event['snapshot'])
                     except XenAPI.Failure, exception:
                         if exception.details != "EVENTS_LOST":
                             raise
@@ -248,7 +289,9 @@ def monitor_host():
                         log.warning("Recovering from EVENTS_LOST")
                         session.xenapi.event.unregister(["vm"])
                         session.xenapi.event.register(["vm"])
-                        monitor_host_oneshot(session, hostref)
+                        # Work around if we suffer an EVENTS_LOST XAPI exception
+                        # ensure we kick off a full refresh.
+                        docker_monitor.refresh()
             finally:
                 try:
                     session.xenapi.XAPISESSION.logout()

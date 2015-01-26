@@ -16,7 +16,7 @@ class TestDockerMonitorRegistration(unittest.TestCase):
 
         dm.register(mock_vm)
         registered = dm.get_registered()
-        mock_vm.set_other_config_key.assert_called_with(dm.REGISTRATION_KEY, 'True')
+        mock_vm.set_other_config_key.assert_called_with(REGISTRATION_KEY, 'True')
 
         # Asserts
         mstart_monitoring.assert_called_with(mock_vm)
@@ -31,7 +31,7 @@ class TestDockerMonitorRegistration(unittest.TestCase):
         dm.deregister(mock_vm)
         registered = dm.get_registered()
         self.assertEqual(registered, [])
-        mock_vm.remove_other_config_key.assert_called_with(dm.REGISTRATION_KEY)
+        mock_vm.remove_other_config_key.assert_called_with(REGISTRATION_KEY)
 
     @patch("xscontainer.docker_monitor.DockerMonitor.start_monitoring")
     def test_get_registered(self, mstart_monitoring):
@@ -66,65 +66,43 @@ class TestDockerMonitorRegistration(unittest.TestCase):
         mock_vm.set_other_config.side_effect = Exception("Ah, can't change the key!")
         self.assertRaises(Exception, dm.deregister(mock_vm))
 
-class TestDockerMonitorLoad(unittest.TestCase):
+class TestDockerMonitorRefresh(unittest.TestCase):
     """
-    Test the loading mechanism for the DockerMonitor.
+    Test the refresh mechanism for the DockerMonitor.
     """
 
-    @patch("xscontainer.docker_monitor.DockerMonitor.register")
-    @patch("xscontainer.docker_monitor.DockerMonitor.should_monitor")
-    def test_load_one_vm(self, mshould_monitor, mregister):
+    @patch("xscontainer.docker_monitor.DockerMonitor.process_vmrecord")
+    def test_load_one_vm(self, mprocess_vmrecord):
         host = MagicMock()
 
-        vm1 = MagicMock()
-        vm2 = MagicMock()
-        host.get_vms.return_value = [vm1, vm2]
+        mvm_rec = MagicMock()
 
-        # Only make one of them monitorable
-        mshould_monitor = lambda x: x == vm1
+        host.client.get_all_vm_records.return_value = [mvm_rec]
 
         dm = DockerMonitor(host)
-        dm.load_registered()
-        host.get_vms.assert_called_once()
-        mregister.assert_called_once()
+        dm.refresh()
+
+        host.client.get_vms.assert_called_once()
+        mprocess_vmrecord.assert_called_with(mvm_rec)
 
 
-    @patch("xscontainer.docker_monitor.DockerMonitor.register")
-    @patch.object(DockerMonitor,"should_monitor")
-    def test_load_multiple_vms(self, mshould_monitor, mregister):
+    @patch("xscontainer.docker_monitor.DockerMonitor.process_vmrecord")
+    def test_load_all_vm(self, mprocess_vmrecord):
         host = MagicMock()
 
-        num_monitor = 5
-        num_total = 20
-        vms = []
+        n = 10
+        mvm_recs = [MagicMock() for i in range(n)]
 
-        for i in range(num_monitor):
-            mvm = MagicMock()
-            mvm.should_monitor = True
-            vms.append(mvm)
-
-        for i in range(num_total - num_monitor):
-            mvm = MagicMock()
-            mvm.should_monitor = False
-            vms.append(mvm)
-
-        # Use the fake key to determine between
-        mshould_monitor.side_effect = lambda x: x.should_monitor
-        host.get_vms.return_value = vms
+        host.client.get_all_vm_records.return_value = mvm_recs
 
         dm = DockerMonitor(host)
-        dm.load_registered()
-        host.get_vms.assert_called_once()
+        dm.refresh()
 
-        # Test we register all the monitorable vms
-        self.assertEqual(mregister.call_count, num_monitor)
+        host.client.get_vms.assert_called_once()
 
-    def test_should_monitor(self):
-        mock_vm = MagicMock()
-        dm = DockerMonitor()
-        other_config = {dm.REGISTRATION_KEY: "True"}
-        mock_vm.get_other_config.return_value = other_config
-        self.assertTrue(dm.should_monitor(mock_vm))
+        # Assert we process every record.
+        self.assertEqual(mprocess_vmrecord.call_count, n)
+
 
 class TestDockerMonitorThreads(unittest.TestCase):
     """
@@ -135,8 +113,8 @@ class TestDockerMonitorThreads(unittest.TestCase):
     def test_start_monitoring(self, mstart_new_thread):
         mock_vm = MagicMock()
         dm = DockerMonitor()
-        dm.register(mock_vm)
-        mstart_new_thread.assert_called_with(monitor_vm, (mock_vm.get_session(), mock_vm.get_id()))
+        dm.start_monitoring(mock_vm)
+        mstart_new_thread.assert_called_with(monitor_vm, (mock_vm.get_session(), mock_vm.get_uuid()))
 
     @patch("os.close")
     @patch("thread.start_new_thread")

@@ -21,20 +21,35 @@ class XenAPIClient(object):
     def get_session(self):
         return self.session
 
+    def get_session_handle(self):
+        return self.get_session().handle
+
     def get_all_vms(self):
         vm_refs = self.session.xenapi.VM.get_all()
         return [VM(self, vm_ref) for vm_ref in vm_refs]
 
     def get_all_vm_records(self):
-        return self.session.xenapi.VM.get_all_vm_records()
+        return self.session.xenapi.VM.get_all_records()
+
+    def get_by_uuid(self, object_name, uuid):
+        method = "%s.get_by_uuid" % object_name
+        return getattr(self.get_session(), method)(self.get_session_handle(), uuid)
 
 class XenAPIObject(object):
 
     OBJECT = None
 
-    def __init__(self, client, ref):
+    def __init__(self, client, ref=None, uuid=None):
+        if not ref and not uuid:
+            raise Exception("XenAPI object requires either a ref or a uuid.")
+
         self.client = client
+
+        if uuid and not ref:
+            ref = self.client.get_by_uuid(self.OBJECT, uuid)
+
         self.ref = ref
+        self.uuid = uuid
 
     def get_id(self):
         return self.ref
