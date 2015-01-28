@@ -77,7 +77,7 @@ class TestDockerMonitorRefresh(unittest.TestCase):
 
         mvm_rec = MagicMock()
 
-        host.client.get_all_vm_records.return_value = [mvm_rec]
+        host.client.get_all_vm_records.return_value = {'test_rec': mvm_rec}
 
         dm = DockerMonitor(host)
         dm.refresh()
@@ -90,8 +90,11 @@ class TestDockerMonitorRefresh(unittest.TestCase):
     def test_load_all_vm(self, mprocess_vmrecord):
         host = MagicMock()
 
+        # Mock out the vm_ref: vm_rec dictionary object
+        mvm_recs = {}
         n = 10
-        mvm_recs = [MagicMock() for i in range(n)]
+        for i in range(n):
+            mvm_recs["rec_%d" % i] = MagicMock()
 
         host.client.get_all_vm_records.return_value = mvm_recs
 

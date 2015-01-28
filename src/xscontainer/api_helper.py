@@ -31,9 +31,15 @@ class XenAPIClient(object):
     def get_all_vm_records(self):
         return self.session.xenapi.VM.get_all_records()
 
-    def get_by_uuid(self, object_name, uuid):
-        method = "%s.get_by_uuid" % object_name
-        return getattr(self.get_session(), method)(self.get_session_handle(), uuid)
+    def _api_call(self, object_name, method, *args):
+        method_args = (self.get_session_handle(),) + args
+        method_name = "%s.%s" % (object_name, method)
+        res = getattr(self.get_session(), method_name)(*method_args)
+        return XenAPI._parse_result(res)
+
+    def add_to_other_config(self, object_name, ref, key, value):
+        method = "%s.add_to_other_config" % object_name
+        return self._api_call(object_name, "add_to_other_config", ref, key, value)
 
 class XenAPIObject(object):
 
@@ -46,7 +52,7 @@ class XenAPIObject(object):
         self.client = client
 
         if uuid and not ref:
-            ref = self.client.get_by_uuid(self.OBJECT, uuid)
+            ref = self.client._api_call(self.OBJECT, "get_by_uuid", uuid)
 
         self.ref = ref
         self.uuid = uuid
@@ -57,8 +63,23 @@ class XenAPIObject(object):
     def get_session(self):
         return self.client.get_session()
 
+    def get_session_handle(self):
+        return self.get_session().handle
+
     def get_record(self):
         return self.rec
+
+    def _api_call(self, method, *args):
+        method_args = (self.get_session_handle(), self.ref) + args
+        method_name = "%s.%s" % (self.OBJECT, method)
+        res = getattr(self.get_session(), method_name)(*method_args)
+        return XenAPI._parse_result(res)
+
+    def remove_from_other_config(self, key):
+        return self._api_call("remove_from_other_config", key)
+
+    def add_to_other_config(self, key, value):
+        return self._api_call("add_to_other_config", key, value)
 
 class Host(XenAPIObject):
 
@@ -85,11 +106,6 @@ class VM(XenAPIObject):
     def get_other_config(self):
         return self.client.session.xenapi.VM.get_other_config(self.ref)
 
-    def set_other_config_key(self, key, value):
-        return self.client.session.xenapi.VM.add_to_other_config(self.ref, key, value)
-
-    def remove_other_config_key(self, key):
-        return self.client.session.xenapi.VM.remove_from_other_config(self.ref, key)
 
 def get_local_api_session():
     session = XenAPI.xapi_local()

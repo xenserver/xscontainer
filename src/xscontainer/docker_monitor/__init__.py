@@ -101,7 +101,6 @@ class DockerMonitor(object):
         return
 
     def _should_start_monitoring(self, vmrecord):
-
         # Check the VM is registered for monitoring
         if REGISTRATION_KEY not in vmrecord['other_config']:
             return False
@@ -128,16 +127,23 @@ class DockerMonitor(object):
 
     def _should_stop_monitoring(self, vmrecord):
 
-        # Only process events when the Halted state is reached.
-        if vmrecord['power_state'] != 'Halted':
+        # Check whether the VM is being actively monitored.
+        if vmrecord['uuid'] not in MONITORDICT:
             return False
 
-        # Check whether the VM is being actively monitored.
-        elif vmrecord['uuid'] not in MONITORDICT:
-            return False
+        # If we are monitoring the VM, but the other_config key has been
+        # removed, we should stop monitoring.
+        elif REGISTRATION_KEY not in vmrecord['other_config']:
+            return True
+
+        # If the monitor key is still present, but the VM is halted, we must
+        # cleanup.
+        elif vmrecord['power_state'] == 'Halted':
+            return True
 
         else:
-            return True
+            # If none of the above matches, we can ignore.
+            return False
 
     def process_vmrecord(self, vmrecord):
         """

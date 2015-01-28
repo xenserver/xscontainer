@@ -10,6 +10,7 @@ import xscontainer.api_helper as api_helper
 import xscontainer.coreos as coreos
 import xscontainer.docker as docker
 
+from xscontainer.docker_monitor import api as docker_monitor_api
 
 def check_args(reqs, args):
     for req in reqs:
@@ -53,6 +54,16 @@ def get_inspect(session, args):
     check_args(['vmuuid', 'object'], args)
     return prepare_output(docker.get_inspect_xml(session, args['vmuuid'],
                                                  args['object']))
+
+
+def register(session, args):
+    check_args(['vmuuid'], args)
+    return prepare_output(docker_monitor_api.register_vm(args['vmuuid']))
+
+
+def deregister(session, args):
+    check_args(['vmuuid'], args)
+    return prepare_output(docker_monitor_api.deregister_vm(args['vmuuid']))
 
 
 def start(session, args):
@@ -126,6 +137,8 @@ if __name__ == "__main__":
         'get_config_drive_default': get_config_drive_default,
         'get_config_drive_configuration': get_config_drive_configuration,
         'get_inspect': get_inspect,
+        'register': register,
+        'deregister': deregister,
         'start': start,
         'stop': stop,
         'restart': restart,
