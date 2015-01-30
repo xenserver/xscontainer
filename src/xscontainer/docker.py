@@ -135,3 +135,18 @@ def pause(session, vmuuid, container):
 def unpause(session, vmuuid, container):
     result = _run_container_cmd(session, vmuuid, container, 'unpause')
     return result
+
+
+def update_docker_info(session, vmuuid, vmref):
+    api_helper.update_vm_other_config(session, vmref, 'docker_info',
+                                      get_info_xml(session, vmuuid))
+
+
+def update_docker_version(session, vmuuid, vmref):
+    api_helper.update_vm_other_config(session, vmref, 'docker_version',
+                                      get_version_xml(session, vmuuid))
+
+
+def update_docker_ps(session, vmuuid, vmref):
+    api_helper.update_vm_other_config(session, vmref, 'docker_ps',
+                                      get_ps_xml(session, vmuuid))

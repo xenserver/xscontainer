@@ -181,16 +181,16 @@ def monitor_vm(session, vmuuid):
     starttime = time.time()
     while not done:
         try:
-            update_docker_ps(session, vmuuid, vmref)
-            update_docker_info(session, vmuuid, vmref)
-            update_docker_version(session, vmuuid, vmref)
+            docker.update_docker_ps(session, vmuuid, vmref)
+            docker.update_docker_info(session, vmuuid, vmref)
+            docker.update_docker_version(session, vmuuid, vmref)
             done = True
         except util.XSContainerException, exception:
             log.info("Could not connect to VM %s, will retry" %(vmuuid))
             time.sleep(MONITORRETRYSLEEPINS)
             if time.time() - starttime > MONITORVMRETRYTIMEOUTINS:
-                log.warning("Could not connect to VM within %ds - aborting"
-                            % (MONITORRETRYSLEEPINS))
+                log.warning("Could not connect to VM within %ds - giving up"
+                            % (MONITORVMRETRYTIMEOUTINS))
                 log.exception(exception)
                 done = True
     try:
@@ -239,13 +239,13 @@ def monitor_vm_events(session, vmuuid, vmref):
                                              'kill', 'pause', 'restart',
                                              'start', 'stop', 'unpause']:
                         try:
-                            update_docker_ps(session, vmuuid, vmref)
+                            docker.update_docker_ps(session, vmuuid, vmref)
                         except util.XSContainerException, exception:
                             # This can happen, when the docker daemon stops
                             log.exception(exception)
                     elif results['status'] in ['create', 'destroy', 'delete']:
                         try:
-                            update_docker_info(session, vmuuid, vmref)
+                            docker.update_docker_info(session, vmuuid, vmref)
                         except util.XSContainerException, exception:
                             # This can happen, when the docker daemon stops
                             log.exception(exception)
@@ -261,7 +261,6 @@ def monitor_vm_events(session, vmuuid, vmref):
 
 
 def monitor_host():
-
     client = api_helper.XenAPIClient()
     session = client.session
     host = api_helper.Host(client, api_helper.get_this_host_ref(session))
@@ -308,18 +307,3 @@ def monitor_host():
                         "- Possibly a XAPI toolstack restart.")
             log.exception(exception)
             time.sleep(5)
-
-def update_docker_info(session, vmuuid, vmref):
-    api_helper.update_vm_other_config(
-        session, vmref, 'docker_info', docker.get_info_xml(session, vmuuid))
-
-
-def update_docker_version(session, vmuuid, vmref):
-    api_helper.update_vm_other_config(
-        session, vmref, 'docker_version',
-        docker.get_version_xml(session, vmuuid))
-
-
-def update_docker_ps(session, vmuuid, vmref):
-    api_helper.update_vm_other_config(
-        session, vmref, 'docker_ps', docker.get_ps_xml(session, vmuuid))

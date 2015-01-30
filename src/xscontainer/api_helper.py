@@ -321,11 +321,14 @@ def get_idrsa_secret(session):
 
 
 def get_idrsa_secret_private(session):
-    return get_idrsa_secret(session)[0]
+    return get_idrsa_secret(session)[0].strip()
 
 
 def get_idrsa_secret_public(session):
-    return get_idrsa_secret(session)[1].split(' ')[1]
+    return get_idrsa_secret(session)[1].strip()
+
+def get_idrsa_secret_public_keyonly(session):
+    return get_idrsa_secret_public(session).split(' ')[1]
 
 
 def set_idrsa_secret(session):
@@ -373,11 +376,20 @@ def ensure_idrsa(session):
         util.write_file(IDRSAFILENAME, get_idrsa_secret_private(session))
 
 
-def prepare_ssh_cmd(session, vmuuid, cmd):
+def get_vm_xscontainer_username(session, vmuuid):
     username = get_value_from_vm_other_config(session, vmuuid,
-                                              'xscontainer-username')
+                                              'xscontainer_username')
     if username == None:
         username = 'core'
+    return username
+
+def set_vm_xscontainer_username(session, vmuuid, newusername):
+    vmref = get_vm_ref_by_uuid(session, vmuuid)
+    update_vm_other_config(session, vmref, 'xscontainer_username', newusername)
+
+
+def prepare_ssh_cmd(session, vmuuid, cmd):
+    username = get_vm_xscontainer_username(session, vmuuid)
     host = get_suitable_vm_ip(session, vmuuid)
     ensure_idrsa(session)
     complete_cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
@@ -393,4 +405,3 @@ def execute_ssh(session, vmuuid, cmd):
     complete_cmd = prepare_ssh_cmd(session, vmuuid, cmd)
     stdout = util.runlocal(complete_cmd)[1]
     return str(stdout)
-
