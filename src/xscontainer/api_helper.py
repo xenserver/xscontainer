@@ -109,7 +109,7 @@ class VM(XenAPIObject):
 
 def get_local_api_session():
     session = XenAPI.xapi_local()
-    session.xenapi.login_with_password('root', '')
+    session.xenapi.login_with_password('root', '', '1.0', 'xscontainer')
     return session
 
 
