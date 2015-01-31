@@ -15,7 +15,7 @@ MONITORRETRYSLEEPINS = 10
 MONITORVMRETRYTIMEOUTINS = 100
 MONITORDICT = {}
 REGISTRATION_KEY = "monitor_docker"
-
+EVENT_FROM_TIMEOUT_S = 3600.0
 
 docker_monitor = None
 
@@ -272,31 +272,25 @@ def monitor_host():
     while True:
         try:
             session = api_helper.get_local_api_session()
-            hostref = api_helper.get_this_host_ref(session)
             try:
-                session.xenapi.event.register(["vm"])
-                # Load the VMs that are enabled for monitoring
+                # Avoid race conditions - get a current event token
+                event_from = session.xenapi.event_from(["vm"], '',  0.0)
+                token_from = event_from['token']
+                # Now load the VMs that are enabled for monitoring
                 docker_monitor.refresh()
                 while True:
-                    try:
-                        events = session.xenapi.event.next()
-                        for event in events:
-                            if (event['operation'] == 'mod'
-                                and 'snapshot' in event):
-                                    # At this point the monitor may need to
-                                    # refresh it's monitoring state of a particular
-                                    # vm.
-                                    docker_monitor.process_vmrecord(event['snapshot'])
-                    except XenAPI.Failure, exception:
-                        if exception.details != "EVENTS_LOST":
-                            raise
-                        # handle EVENTS_LOST API failure
-                        log.warning("Recovering from EVENTS_LOST")
-                        session.xenapi.event.unregister(["vm"])
-                        session.xenapi.event.register(["vm"])
-                        # Work around if we suffer an EVENTS_LOST XAPI exception
-                        # ensure we kick off a full refresh.
-                        docker_monitor.refresh()
+                    event_from = session.xenapi.event_from(["vm"], token_from,
+                                                           EVENT_FROM_TIMEOUT_S)
+                    log.warning("event from returned")
+                    token_from = event_from['token']
+                    events = event_from['events']
+                    for event in events:
+                        if (event['operation'] == 'mod'
+                            and 'snapshot' in event):
+                            # At this point the monitor may need to
+                            # refresh it's monitoring state of a particular
+                            # vm.
+                            docker_monitor.process_vmrecord(event['snapshot'])
             finally:
                 try:
                     session.xenapi.XAPISESSION.logout()
