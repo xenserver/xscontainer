@@ -5,8 +5,9 @@ import xscontainer.util as util
 from xscontainer.util import log
 import XenAPI
 
-XSCONTAINER_SECRET_UUID = 'xscontainer-secret-uuid'
-XSCONTAINER_SECRET_SEPARATOR = '<xscontainer-secret-separator>'
+XSCONTAINER_PRIVATE_SECRET_UUID = 'xscontainer-private-secret-uuid'
+XSCONTAINER_PUBLIC_SECRET_UUID = 'xscontainer-public-secret-uuid'
+XSCONTAINER_USERNAME = 'xscontainer-username'
 
 IDRSAFILENAME = '/tmp/xscontainer-idrsa'
 
@@ -308,24 +309,25 @@ def get_value_from_vm_other_config(session, vmuuid, name):
         return None
 
 
-def get_idrsa_secret(session):
+def get_idrsa_secret(session, secret_type):
     poolref = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(poolref)
-    if XSCONTAINER_SECRET_UUID not in other_config:
+    if (XSCONTAINER_PRIVATE_SECRET_UUID not in other_config
+        or XSCONTAINER_PUBLIC_SECRET_UUID not in other_config):
         set_idrsa_secret(session)
         other_config = session.xenapi.pool.get_other_config(poolref)
-    secretuuid = other_config[XSCONTAINER_SECRET_UUID]
-    secretref = session.xenapi.secret.get_by_uuid(secretuuid)
-    secretrecord = session.xenapi.secret.get_record(secretref)
-    return secretrecord['value'].split(XSCONTAINER_SECRET_SEPARATOR)
+    secret_uuid = other_config[secret_type]
+    secret_ref = session.xenapi.secret.get_by_uuid(secret_uuid)
+    secret_record = session.xenapi.secret.get_record(secret_ref)
+    return secret_record['value']
 
 
 def get_idrsa_secret_private(session):
-    return get_idrsa_secret(session)[0].strip()
+    return get_idrsa_secret(session, XSCONTAINER_PRIVATE_SECRET_UUID)
 
 
 def get_idrsa_secret_public(session):
-    return get_idrsa_secret(session)[1].strip()
+    return get_idrsa_secret(session, XSCONTAINER_PUBLIC_SECRET_UUID)
 
 def get_idrsa_secret_public_keyonly(session):
     return get_idrsa_secret_public(session).split(' ')[1]
@@ -333,14 +335,18 @@ def get_idrsa_secret_public_keyonly(session):
 
 def set_idrsa_secret(session):
     (privateidrsa, publicidrsa) = util.create_idrsa()
-    secretref = session.xenapi.secret.create(
-        {'value': '%s%s%s'
-                  % (privateidrsa, XSCONTAINER_SECRET_SEPARATOR, publicidrsa)})
-    secretrecord = session.xenapi.secret.get_record(secretref)
-    poolref = session.xenapi.pool.get_all()[0]
-    other_config = session.xenapi.pool.get_other_config(poolref)
-    other_config[XSCONTAINER_SECRET_UUID] = secretrecord['uuid']
-    session.xenapi.pool.set_other_config(poolref, other_config)
+    private_secret_ref = session.xenapi.secret.create(
+        {'value': '%s' % (privateidrsa)})
+    public_secret_ref = session.xenapi.secret.create(
+        {'value': '%s' % (publicidrsa)})
+    private_secret_record = session.xenapi.secret.get_record(private_secret_ref)
+    public_secret_record = session.xenapi.secret.get_record(public_secret_ref)
+    pool_ref = session.xenapi.pool.get_all()[0]
+    other_config = session.xenapi.pool.get_other_config(pool_ref)
+    other_config[XSCONTAINER_PRIVATE_SECRET_UUID] = private_secret_record[
+        'uuid']
+    other_config[XSCONTAINER_PUBLIC_SECRET_UUID] = public_secret_record['uuid']
+    session.xenapi.pool.set_other_config(pool_ref, other_config)
 
 
 def get_suitable_vm_ip(session, vmuuid):
@@ -378,14 +384,14 @@ def ensure_idrsa(session):
 
 def get_vm_xscontainer_username(session, vmuuid):
     username = get_value_from_vm_other_config(session, vmuuid,
-                                              'xscontainer_username')
+                                              XSCONTAINER_USERNAME)
     if username == None:
         username = 'core'
     return username
 
 def set_vm_xscontainer_username(session, vmuuid, newusername):
     vmref = get_vm_ref_by_uuid(session, vmuuid)
-    update_vm_other_config(session, vmref, 'xscontainer_username', newusername)
+    update_vm_other_config(session, vmref, XSCONTAINER_USERNAME, newusername)
 
 
 def prepare_ssh_cmd(session, vmuuid, cmd):
