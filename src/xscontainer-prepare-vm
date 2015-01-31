@@ -101,14 +101,15 @@ def main(argv=None):
         print('Attempting to push the public xscontainer key to %s@%s'
               % (options.username, host))
         key = api_helper.get_idrsa_secret_public(session)
-        cmd = ['/usr/bin/ssh', 'core@10.80.238.15',
+        # The following command is derived from OpenSSH-Client's ssh-copy-id
+        cmd = ['/usr/bin/ssh', '%s@%s' % (username, host),
                "umask 077; test -d ~/.ssh || mkdir ~/.ssh ; grep '%s'"
                % key
                + " ~/.ssh/authorized_keys >/dev/null 2>&1 || echo '%s'"
                % key
-               + " >> ~/.ssh/authorized_keys && (test -x /sbin/restorecon && "
+               + " >> ~/.ssh/authorized_keys && ((test -x /sbin/restorecon && "
                + "/sbin/restorecon ~/.ssh ~/.ssh/authorized_keys "
-               + ">/dev/null 2>&1 || true)"]
+               + ">/dev/null 2>&1) || true)"]
         process = subprocess.Popen(cmd)
         process.communicate()
         if process.returncode == 0:
