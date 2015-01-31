@@ -8,6 +8,7 @@ import subprocess
 import simplejson
 import thread
 import time
+import signal
 import socket
 import XenAPI
 
@@ -86,9 +87,9 @@ class DockerMonitor(object):
     def stop_monitoring(self, vm):
         # @todo: refactor this code to handle tunnels, so the fh is not longer
         # required to communicate with docker.
-        # @todo: need to make the threads interruptible.
+        # @todo: need to do this properly, e.g. make the threads interruptible.
         try:
-            os.close(MONITORDICT[vm.get_id()])
+            os.kill(MONITORDICT[vm.get_id()], signal.SIGTERM)
         except:
             pass
 
@@ -168,11 +169,11 @@ class DockerMonitor(object):
         elif self._should_stop_monitoring(vmrecord):
             log.info("Removing monitor for VM name: %s, UUID: %s"
                  % (vmrecord['name_label'], vmrecord['uuid']))
+            # @todo: call stop_monitoring
             try:
-                os.close(MONITORDICT[vmrecord['uuid']])
+                os.kill(MONITORDICT[vmrecord['uuid']], signal.SIGTERM)
             except:
-                pass
-            del MONITORDICT[vmrecord['uuid']]
+                util.log.exception("os.kill failed")
 
 
 def monitor_vm(session, vmuuid):
@@ -195,7 +196,7 @@ def monitor_vm(session, vmuuid):
                 done = True
     try:
         monitor_vm_events(session, vmuuid, vmref)
-    except (XenAPI.Failure, util.XSContainerException, exception):
+    except (XenAPI.Failure, util.XSContainerException), exception:
         log.warning("monitor_vm threw an an exception")
         log.exception(exception)
     # Todo: make this threadsafe
@@ -214,7 +215,7 @@ def monitor_vm_events(session, vmuuid, vmref):
                                stderr=subprocess.PIPE,
                                stdin=subprocess.PIPE,
                                shell=False)
-    MONITORDICT[vmuuid] = process.stdout
+    MONITORDICT[vmuuid] = process.pid
     process.stdin.write("\n")
     data = ""
     # ToDo: Got to make this sane
@@ -281,7 +282,6 @@ def monitor_host():
                 while True:
                     event_from = session.xenapi.event_from(["vm"], token_from,
                                                            EVENT_FROM_TIMEOUT_S)
-                    log.warning("event from returned")
                     token_from = event_from['token']
                     events = event_from['events']
                     for event in events:
