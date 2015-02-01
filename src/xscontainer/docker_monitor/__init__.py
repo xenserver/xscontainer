@@ -293,9 +293,9 @@ def monitor_host():
                             docker_monitor.process_vmrecord(event['snapshot'])
             finally:
                 try:
-                    session.xenapi.XAPISESSION.logout()
+                    session.xenapi.session.logout()
                 except XenAPI.Failure:
-                    log.warning("Failed when trying to logout")
+                    log.exception("Failed when trying to logout")
         except (socket.error, XenAPI.Failure), exception:
             log.warning("Recovering from XAPI failure" +
                         "- Possibly a XAPI toolstack restart.")
