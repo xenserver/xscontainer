@@ -1,4 +1,5 @@
 import unittest
+import signal
 from mock import MagicMock, patch
 
 from xscontainer.docker_monitor import *
@@ -119,13 +120,13 @@ class TestDockerMonitorThreads(unittest.TestCase):
         dm.start_monitoring(mock_vm)
         mstart_new_thread.assert_called_with(monitor_vm, (mock_vm.get_session(), mock_vm.get_uuid()))
 
-    @patch("os.close")
+    @patch("os.kill")
     @patch("thread.start_new_thread")
-    def test_stop_monitoring(self, mstart_new_thread, mos_close):
+    def test_stop_monitoring(self, mstart_new_thread, mos_kill):
         mock_vm = MagicMock()
         dm = DockerMonitor()
         pid = 1200
 
         with patch.dict('xscontainer.docker_monitor.MONITORDICT', {mock_vm.get_id(): pid}):
             dm.stop_monitoring(mock_vm)
-            mos_close.assert_called_with(pid)
+            mos_kill.assert_called_with(pid, signal.SIGTERM)
