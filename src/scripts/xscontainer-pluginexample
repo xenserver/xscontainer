@@ -32,9 +32,16 @@ do
     sleep 3
 done
 
+echo "To actually  see containers, the VM needs to be actively registered for container monitoring"
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=register args:vmuuid="$VMUUID"
+echo "It also can be deregistered anytime"
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=deregister args:vmuuid="$VMUUID"
+echo "But let's keep it registered.. so we actually see what's going on"
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=register args:vmuuid="$VMUUID"
+
 echo "After a moment, we can see the running Container in the VM.other-onfig:docker_ps - these should be listed as entries in the treeview under the corresponding CoreOS VM"
-echo "We can also generic runtime information in VM.other-onfig:docker_info and VM.other-onfig:docker_version, that could both be included in the per-VM dialog
-sleep 11
+echo "We can also generic runtime information in VM.other-onfig:docker_info and VM.other-onfig:docker_version, that could both be included in the per-VM dialog"
+sleep 3
 xe vm-param-get uuid="$VMUUID" param-name=other-config
 
 echo "It's also possible to query detailed information about a particular container - that should be displayed on the general-tab of a container"
