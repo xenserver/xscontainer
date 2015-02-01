@@ -5,7 +5,7 @@ set -eux
 echo "Let us first get some default settings."
 SRUUID=$(xe pool-list params=default-SR --minimal)
 HOSTUUID=$(cat /etc/xensource-inventory  | grep INSTALLATION_UUID | awk -F\' '{print $2}')
-TEMPLATEUUID=$(xe template-list name-label=CoreOS\ \(experimental\) --minimal)
+TEMPLATEUUID=$(xe template-list name-label=CoreOS --minimal)
 echo "For demo purposes - beyond the commited-scope, we can fake up a CoreOs VM that would otherwise be installed manually using XC."
 echo "Best to download http://beta.release.core-os.net/amd64-usr/current/coreos_production_xen_image.vhd.bz2 and cache locally."
 VMUUID=$(xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=install_vm args:url="http://10.80.3.229/coreos_production_xen_image.vhd.bz2" args:sruuid="$SRUUID" | sed 's/True//g')
