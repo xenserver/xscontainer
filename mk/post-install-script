@@ -1,0 +1,2 @@
+chkconfig --add xscontainer
+service xscontainer restart

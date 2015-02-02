@@ -149,20 +149,7 @@ def get_config_drive_default(session):
     return userdata
 
 
-def workaround_dependencies():
-    # ToDo: Install rpm with hotfix/supp-pack
-    cmd = ['yum', '--disablerepo', 'citrix',
-           '--enablerepo', 'base', '-y', 'install', 'mkisofs']
-    util.runlocal(cmd)
-    # ToDo: create spec file instead
-    cmd = ['chkconfig', '--add', 'xscontainer']
-    util.runlocal(cmd)
-    cmd = ['service', 'xscontainer', 'restart']
-    util.runlocal(cmd, canfail=True)
-
-
 def create_config_drive_iso(session, userdata, vmuuid):
-    workaround_dependencies()
     tempisodir = tempfile.mkdtemp()
     tempisofile = tempfile.mkstemp()[1]
     openstackfolder = os.path.join(tempisodir, 'openstack')
