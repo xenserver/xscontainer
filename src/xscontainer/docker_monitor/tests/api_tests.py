@@ -17,8 +17,8 @@ class TestAPIRegistration(unittest.TestCase):
 
         mock_vm.assert_called_with(client_inst, uuid=vm_uuid)
 
-        vm_inst.add_to_other_config.assert_called_once_with(REGISTRATION_KEY, "True")
-
+        vm_inst.add_to_other_config.assert_called_once_with(
+            REGISTRATION_KEY, "True")
 
     @patch('xscontainer.docker_monitor.api.VM')
     @patch('xscontainer.docker_monitor.api.XenAPIClient')
@@ -31,5 +31,5 @@ class TestAPIRegistration(unittest.TestCase):
 
         mock_vm.assert_called_with(client_inst, uuid=vm_uuid)
 
-        vm_inst.remove_from_other_config.assert_called_once_with(REGISTRATION_KEY)
-
+        vm_inst.remove_from_other_config.assert_called_once_with(
+            REGISTRATION_KEY)

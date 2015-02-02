@@ -47,8 +47,7 @@ def exception(message):
 def handle_unhandled_exceptions(exception_type, exception_value,
                                 exception_traceback):
     if not issubclass(exception_type, KeyboardInterrupt):
-        _LOGGER.error("Unhandled exception", exc_info=(
-            exception_type, exception_value, exception_traceback))
+        _LOGGER.exception("Unhandled exception")
     sys.__excepthook__(exception_type, exception_value, exception_traceback)
 
 _LOGGER = logging.getLogger()
