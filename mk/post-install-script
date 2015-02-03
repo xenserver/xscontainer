@@ -1,2 +1,3 @@
 chkconfig --add xscontainer
-service xscontainer restart
+service xscontainer stop >/dev/null 2>&1 | true
+service xscontainer start >/dev/null 2>&1 | true

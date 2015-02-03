@@ -37,6 +37,6 @@ if __name__ == "__main__":
                          ('/etc/init.d',
                          [datapath('src/overlay/etc/init.d/xscontainer')])],
           options = {'bdist_rpm': {'post_install': 'mk/post-install-script',
-                                   'post_uninstall' : 'mk/post-uninstall-script',
+                                   'pre_uninstall' : 'mk/pre-uninstall-script',
                                    'requires': 'mkisofs'}},
     )
