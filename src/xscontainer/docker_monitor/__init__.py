@@ -259,7 +259,7 @@ def monitor_vm_events(session, vm):
     vm.pid = None
     process.poll()
     returncode = process.returncode
-    log.debug('monitor_vm (%s) exited with rc %d' % (cmds, str(returncode)))
+    log.debug('monitor_vm (%s) exited with rc %s' % (cmds, str(returncode)))
 
 
 def interrupt_handler(signum, frame):
