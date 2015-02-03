@@ -20,7 +20,7 @@ def main():
     srref = api_helper.get_default_sr(session)
     sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = coreos.install_vm(session, url, sruuid)
-    vmuuid = 'bf775922-de88-088b-4082-34621bf5a55e'
+    vmuuid = 'f2a52a2f-db06-9d23-7d27-08854c55c0e5'
     vmref = api_helper.get_vm_ref_by_uuid(session, vmuuid)
     #try:
     #    session.xenapi.VM.clean_shutdown(vmref)
