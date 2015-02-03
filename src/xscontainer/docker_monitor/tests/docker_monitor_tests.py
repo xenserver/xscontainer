@@ -78,7 +78,7 @@ class TestDockerMonitorRefresh(unittest.TestCase):
         dm.refresh()
 
         host.client.get_vms.assert_called_once()
-        mprocess_vmrecord.assert_called_with(host.client, 'test_rec', mvm_rec)
+        mprocess_vmrecord.assert_called_with('test_rec', mvm_rec)
 
     @patch("xscontainer.docker_monitor.DockerMonitor.process_vmrecord")
     def test_load_all_vm(self, mprocess_vmrecord):
@@ -113,10 +113,10 @@ class TestDockerMonitorThreads(unittest.TestCase):
     def test_start_monitoring(self, mstart_new_thread, mxenapiclient, log_info):
         client = MagicMock()
         mvm_ref = MagicMock()
-        dm = DockerMonitor()
+        dm = DockerMonitor(host = MagicMock())
         mvmwithpid = MagicMock()
 
-        dm.start_monitoring(client, mvm_ref)
+        dm.start_monitoring(mvm_ref)
         registered = dm.get_registered()[0]
 
         mstart_new_thread.assert_called_with(dm.monitor_vm, (registered,))
