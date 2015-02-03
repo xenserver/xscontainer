@@ -4,6 +4,7 @@ import time
 import xscontainer.util as util
 from xscontainer.util import log
 import XenAPI
+import threading
 
 XSCONTAINER_PRIVATE_SECRET_UUID = 'xscontainer-private-secret-uuid'
 XSCONTAINER_PUBLIC_SECRET_UUID = 'xscontainer-public-secret-uuid'
@@ -13,11 +14,30 @@ IDRSAFILENAME = '/tmp/xscontainer-idrsa'
 
 NULLREF = 'OpaqueRef:NULL'
 
+GLOBAL_XAPI_SESSION = None
+GLOBAL_XAPI_SESSION_LOCK = threading.Lock()
+
+
+"""
+Decorator method for refreshing the local session object if an exception
+is raised during the API call.
+"""
+def refresh_global_session_on_failure(func):
+    def decorated(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception, e:
+            log.debug("Caught exception '%s'. Retrying with new session." % str(e))
+            # Refresh the global XAPI session
+            reinit_global_xapi_session()
+            # Return the func undecorated
+            return func(*args, **kwargs)
+    return decorated
 
 class XenAPIClient(object):
 
-    def __init__(self):
-        self.session = get_local_api_session()
+    def __init__(self, session):
+        self.session = session
 
     def get_session(self):
         return self.session
@@ -26,12 +46,13 @@ class XenAPIClient(object):
         return self.get_session().handle
 
     def get_all_vms(self):
-        vm_refs = self.session.xenapi.VM.get_all()
+        vm_refs = self.get_session().xenapi.VM.get_all()
         return [VM(self, vm_ref) for vm_ref in vm_refs]
 
     def get_all_vm_records(self):
-        return self.session.xenapi.VM.get_all_records()
+        return self.get_session().xenapi.VM.get_all_records()
 
+    @refresh_global_session_on_failure
     def _api_call(self, object_name, method, *args):
         method_args = (self.get_session_handle(),) + args
         method_name = "%s.%s" % (object_name, method)
@@ -41,6 +62,22 @@ class XenAPIClient(object):
     def add_to_other_config(self, object_name, ref, key, value):
         method = "%s.add_to_other_config" % object_name
         return self._api_call(object_name, "add_to_other_config", ref, key, value)
+
+class LocalXenAPIClient(XenAPIClient):
+    """
+    Localhost XenAPI client that uses a globally shared session.
+    """
+
+    def __init__(self):
+        session = get_local_api_session()
+        return super(LocalXenAPIClient, self).__init__(session)
+
+    def get_session(self):
+        return get_local_api_session()
+
+    @refresh_global_session_on_failure
+    def _api_call(self, object_name, method, *args):
+        return super(LocalXenAPIClient, self)._api_call(object_name, method, *args)
 
 class XenAPIObject(object):
 
@@ -70,6 +107,12 @@ class XenAPIObject(object):
     def get_record(self):
         return self.rec
 
+
+    """
+    @todo: for the case when a non-local global session is being used,
+    this decorator unnecessarily retries on exception.
+    """
+    @refresh_global_session_on_failure
     def _api_call(self, method, *args):
         method_args = (self.get_session_handle(), self.ref) + args
         method_name = "%s.%s" % (self.OBJECT, method)
@@ -101,18 +144,42 @@ class VM(XenAPIObject):
         return host.ref == self.get_host().ref
 
     def get_host(self):
-        host_ref = self.client.session.xenapi.VM.get_resident_on(self.ref)
+        host_ref = self.client.get_session().xenapi.VM.get_resident_on(self.ref)
         return Host(self.client, host_ref)
 
     def get_other_config(self):
-        return self.client.session.xenapi.VM.get_other_config(self.ref)
+        return self.client.get_session().xenapi.VM.get_other_config(self.ref)
 
 
 def get_local_api_session():
+    global GLOBAL_XAPI_SESSION
+
+    # Prefer to use a global session object to keep all communication
+    # with the host on the same ref. 
+    if GLOBAL_XAPI_SESSION == None:
+        GLOBAL_XAPI_SESSION = init_local_api_session()
+
+    return GLOBAL_XAPI_SESSION
+
+
+def init_local_api_session():
     session = XenAPI.xapi_local()
-    session.xenapi.login_with_password('root', '', '1.0', 'xscontainer')
+    session.xenapi.login_with_password("root", "", "1.0", "xscontainer")
     return session
 
+def reinit_global_xapi_session():
+    global GLOBAL_XAPI_SESSION
+    global GLOBAL_XAPI_SESSION_LOCK
+
+    # Make threadsafe
+    GLOBAL_XAPI_SESSION_LOCK.acquire()
+
+    GLOBAL_XAPI_SESSION = init_local_api_session()
+
+    GLOBAL_XAPI_SESSION_LOCK.release()
+    log.info("The Global XAPI session has been updated.")
+
+    return GLOBAL_XAPI_SESSION
 
 def get_hi_mgmtnet_ref(session):
     networkrecords = session.xenapi.network.get_all_records()

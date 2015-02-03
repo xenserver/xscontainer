@@ -276,8 +276,8 @@ def interrupt_handler(signum, frame):
 
 
 def monitor_host():
-    client = api_helper.XenAPIClient()
-    session = client.session
+    client = api_helper.LocalXenAPIClient()
+    session = client.get_session()
     host = api_helper.Host(client, api_helper.get_this_host_ref(session))
 
     # Initialise the DockerMonitor

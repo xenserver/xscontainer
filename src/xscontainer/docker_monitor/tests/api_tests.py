@@ -7,7 +7,7 @@ from mock import patch, MagicMock
 class TestAPIRegistration(unittest.TestCase):
 
     @patch('xscontainer.docker_monitor.api.VM')
-    @patch('xscontainer.docker_monitor.api.XenAPIClient')
+    @patch('xscontainer.docker_monitor.api.LocalXenAPIClient')
     def test_register_vm(self, mock_client, mock_vm):
         client_inst = mock_client.return_value = MagicMock()
         vm_inst = mock_vm.return_value = MagicMock()
@@ -21,7 +21,7 @@ class TestAPIRegistration(unittest.TestCase):
             REGISTRATION_KEY, "True")
 
     @patch('xscontainer.docker_monitor.api.VM')
-    @patch('xscontainer.docker_monitor.api.XenAPIClient')
+    @patch('xscontainer.docker_monitor.api.LocalXenAPIClient')
     def test_deregister_vm(self, mock_client, mock_vm):
         client_inst = mock_client.return_value = MagicMock()
         vm_inst = mock_vm.return_value = MagicMock()
