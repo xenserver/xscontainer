@@ -5,11 +5,8 @@ from xscontainer.api_helper import VM, XenAPIClient, LocalXenAPIClient
 API Entry points for interacting with the DockerMonitor service.
 """
 
-def register_vm(vm_uuid, session=None):
-    if not session:
-        client = LocalXenAPIClient()
-    else:
-        client = XenAPIClient(session)
+def register_vm(vm_uuid, session):
+    client = XenAPIClient(session)
     vm = VM(client, uuid=vm_uuid)
     # safe to call if key not present
     vm.remove_from_other_config(REGISTRATION_KEY)
@@ -17,11 +14,10 @@ def register_vm(vm_uuid, session=None):
     return
 
 
-def deregister_vm(vm_uuid, session=None):
-    if not session:
-        client = LocalXenAPIClient()
-    else:
-        client = XenAPIClient(session)
+def deregister_vm(vm_uuid, session):
+    client = XenAPIClient(session)
     vm = VM(client, uuid=vm_uuid)
     vm.remove_from_other_config(REGISTRATION_KEY)
+    # We must keep the key so XC knows which VMs can be enabled
+    vm.add_to_other_config(REGISTRATION_KEY, "False")
     return

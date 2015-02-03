@@ -221,7 +221,7 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     if re.search("\n\s*- ssh-rsa %XSRSAPUB%", userdata):
         # if %XSRSAPUB% isn't commented out, automatically register the VM for
         # monitoring
-        docker_monitor_api.register_vm(vmuuid)
+        docker_monitor_api.register_vm(vmuuid, session)
     vdirecord = session.xenapi.VDI.get_record(vdiref)
     return vdirecord['uuid']
 

@@ -15,7 +15,7 @@ import XenAPI
 
 MONITORRETRYSLEEPINS = 15
 #MONITORVMRETRYTIMEOUTINS = 100
-REGISTRATION_KEY = "monitor_docker"
+REGISTRATION_KEY = "xscontainer-monitor"
 EVENT_FROM_TIMEOUT_S = 3600.0
 
 docker_monitor = None
@@ -101,9 +101,10 @@ class DockerMonitor(object):
             self.process_vmrecord(vm_ref, vm_rec)
         return
 
-    def _should_start_monitoring(self, vm_ref, vmrecord):
+    def _should_monitor(self, vmrecord):
         # Check the VM is registered for monitoring
-        if REGISTRATION_KEY not in vmrecord['other_config']:
+        if (REGISTRATION_KEY not in vmrecord['other_config'] or
+            vmrecord['other_config'][REGISTRATION_KEY] != 'True'):
             return False
 
         # Only process events for running machines.
@@ -118,42 +119,20 @@ class DockerMonitor(object):
         elif vmrecord['is_control_domain']:
             return False
 
-        # Ignore events for VMs being monitored.
-        elif self.is_registered_vm_ref(vm_ref):
-            return False
-
         else:
             # If conditions above are met, we should process the event.
             return True
-
-    def _should_stop_monitoring(self, vm_ref, vmrecord):
-
-        # Check whether the VM is being actively monitored.
-        if not self.is_registered_vm_ref(vm_ref):
-            return False
-
-        # If we are monitoring the VM, but the other_config key has been
-        # removed, we should stop monitoring.
-        elif REGISTRATION_KEY not in vmrecord['other_config']:
-            return True
-
-        # If the monitor key is still present, but the VM is halted, we must
-        # cleanup.
-        elif vmrecord['power_state'] == 'Halted':
-            return True
-
-        else:
-            # If none of the above matches, we can ignore.
-            return False
 
     def process_vmrecord(self, vmref, vmrecord):
         """
         This function is for processing a vmrecord and determining the course
         of action that should be taken.
         """
-        if self._should_start_monitoring(vmref, vmrecord):
+        is_monitored = self.is_registered_vm_ref(vmref)
+        should_monitor = self._should_monitor(vmrecord)
+        if not is_monitored and should_monitor:
             self.start_monitoring(vmref)
-        elif self._should_stop_monitoring(vmref, vmrecord):
+        elif is_monitored and not should_monitor:
             self.stop_monitoring(vmref)
 
     def tear_down_all(self):

@@ -58,12 +58,14 @@ def get_inspect(session, args):
 
 def register(session, args):
     check_args(['vmuuid'], args)
-    return prepare_output(docker_monitor_api.register_vm(args['vmuuid']))
+    return prepare_output(docker_monitor_api.register_vm(args['vmuuid'],
+                                                         session))
 
 
 def deregister(session, args):
     check_args(['vmuuid'], args)
-    return prepare_output(docker_monitor_api.deregister_vm(args['vmuuid']))
+    return prepare_output(docker_monitor_api.deregister_vm(args['vmuuid'],
+                                                           session))
 
 
 def start(session, args):

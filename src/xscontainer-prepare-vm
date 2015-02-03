@@ -64,9 +64,9 @@ def ask_yes_or_no():
     while True:
         print("Answer y/n: ")
         choice = raw_input().lower()
-        if choice == 'y':
+        if choice in ('y', 'yes'):
             return True
-        elif choice == 'n':
+        elif choice in ('n', 'no'):
             return False
 
 
@@ -100,7 +100,6 @@ def push_ssh_key(session, vmuuid, username):
               "Please make sure that there is a SSH server running " +
               "inside the VM that is reachable from Dom0")
         return 1
-    docker_monitor_api.deregister_vm(vmuuid)
     api_helper.set_vm_xscontainer_username(session, vmuuid, username)
     api_helper.ensure_idrsa(session)
     print('Attempting to push the public xscontainer key to %s@%s'
@@ -121,7 +120,8 @@ def push_ssh_key(session, vmuuid, username):
         print('Success')
         return 0
     else:
-        print('Error: Failed to push the public xscontainer key to %s@%s')
+        print('Error: Failed to push the public xscontainer key to %s@%s'
+              % (username, host))
         return 1
 
 
@@ -142,7 +142,8 @@ def verify_monitoring(session, vmuuid, username):
 
 def register_vm_for_monitoring(session, vmuuid):
     print("Registering the VM for monitoring.")
-    docker_monitor_api.register_vm(vmuuid)
+    docker_monitor_api.deregister_vm(vmuuid, session)
+    docker_monitor_api.register_vm(vmuuid, session)
     print("Success.")
 
 
