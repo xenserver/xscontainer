@@ -105,6 +105,29 @@ def get_inspect_xml(session, vmuuid, container):
     return util.converttoxml(result)
 
 
+def get_top_dict(session, vmuuid, container):
+    _verify_or_throw_invalid_container(container)
+    result = _get_api_json(session, vmuuid, '/containers/%s/top'
+                                            % (container))
+    titles = result['Titles']
+    psentries = []
+    for process in result['Processes']:
+        process_dict = {}
+        item = 0
+        if len(titles)>len(process):
+            raise util.XSContainerException("Can't parse top output")
+        for title in titles:
+            process_dict.update({title: process[item]})
+            item = item+1
+        psentries.append({'Process': process_dict})
+    return psentries
+
+
+def get_top_xml(session, vmuuid, container):
+    result = {'docker_top': get_top_dict(session, vmuuid, container)}
+    return util.converttoxml(result)
+
+
 def _run_container_cmd(session, vmuuid, container, command):
     _verify_or_throw_invalid_container(container)
     result = _post_api(session, vmuuid,

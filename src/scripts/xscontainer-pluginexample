@@ -44,6 +44,8 @@ echo "We can also generic runtime information in VM.other-onfig:docker_info and 
 sleep 3
 xe vm-param-get uuid="$VMUUID" param-name=other-config
 
+echo "It's possible to query what processes are running inside a particular container - that should be displayed either on a general tab or another tab of a container"
+xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_top args:vmuuid="$VMUUID" args:object="hadoop"
 echo "It's also possible to query detailed information about a particular container - that should be displayed on the general-tab of a container"
 xe host-call-plugin host-uuid="$HOSTUUID" plugin=xscontainer fn=get_inspect args:vmuuid="$VMUUID" args:object="hadoop"
 echo "As well as to perform some simple lifecycle operations"

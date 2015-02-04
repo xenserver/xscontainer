@@ -58,6 +58,8 @@ def main():
     print docker.get_inspect_xml(session, vmuuid, container)
     #docker.start(session, vmuuid, container)
     #docker.restart(session, vmuuid, container)
+    pprint.pprint(docker.get_top_dict(session, vmuuid, container))
+    print docker.get_top_xml(session, vmuuid, container)
     sys.exit(0)
     #docker.pause(session, vmuuid, container)
     docker.unpause(session, vmuuid, container)
