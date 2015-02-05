@@ -6,7 +6,6 @@ from xscontainer import api_helper
 import re
 import simplejson
 
-
 def prepare_request_cmds(request_type, request):
     # ToDo: Must really not pipe (!!!)
     request_cmds = ['echo -e "%s %s HTTP/1.0\r\n"' % (request_type, request) +
@@ -46,6 +45,21 @@ def _verify_or_throw_invalid_container(container):
     if not re.match('^[a-z0-9]+$', container):
         raise util.XSContainerException("Invalid container")
 
+def patch_docker_ps_status(ps_dict):
+    """
+    Patch the status returned by Docker PS in order to avoid a stale
+    value being presented to the user. Due to the fact that xscontainer
+    only updates docker info when a docker event happens, it does not
+    register the regular status updates for the increase in container
+    run time. E.g. "Up 40 seconds" ... "Up 4 hours".
+
+    The tempoary solution is to just return "Up".
+    """
+    log.debug("Container Rec: %s" % ps_dict)
+    status = ps_dict["Status"]
+    if status.startswith("Up"):
+        ps_dict["Status"] = "Up"
+    return
 
 def get_ps_dict(session, vmuuid):
     container_results = _get_api_json(session, vmuuid,
@@ -55,6 +69,7 @@ def get_ps_dict(session, vmuuid):
         container_result['Names'] = container_result['Names'][0][1:]
         # Do some patching for XC - ToDo: patch XC to not require these
         container_result['Container'] = container_result['Id'][:10]
+        patch_docker_ps_status(container_result)
         patched_result = {}
         for (key, value) in container_result.iteritems():
             patched_result[key.lower()] = value
