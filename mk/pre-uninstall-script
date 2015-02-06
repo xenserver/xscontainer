@@ -1,3 +1,4 @@
 if [ $1 -eq 0 ]; then
-    chkconfig --del xscontainer
+    service xscontainer-monitor stop >/dev/null 2>&1 | true
+    chkconfig --del xscontainer-monitor
 fi

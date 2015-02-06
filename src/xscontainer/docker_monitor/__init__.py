@@ -255,13 +255,9 @@ def interrupt_handler(signum, frame):
 
 
 def monitor_host():
-    client = api_helper.LocalXenAPIClient()
-    session = client.get_session()
-    host = api_helper.Host(client, api_helper.get_this_host_ref(session))
-
-    # Initialise the DockerMonitor
+    host = None
+    # Use the global the DockerMonitor
     global docker_monitor
-    docker_monitor = DockerMonitor(host)
 
     signal.signal(signal.SIGTERM, interrupt_handler)
     signal.signal(signal.SIGINT, interrupt_handler)
@@ -269,6 +265,12 @@ def monitor_host():
     while True:
         try:
             session = api_helper.get_local_api_session()
+            if not host:
+                client = api_helper.LocalXenAPIClient()
+                host = api_helper.Host(client,
+                                       api_helper.get_this_host_ref(session))
+            if not docker_monitor:
+                docker_monitor = DockerMonitor(host)
             try:
                 # Avoid race conditions - get a current event token
                 event_from = session.xenapi.event_from(["vm"], '',  0.0)
@@ -294,7 +296,6 @@ def monitor_host():
                 except XenAPI.Failure:
                     log.exception("Failed when trying to logout")
         except (socket.error, XenAPI.Failure), exception:
-            log.warning("Recovering from XAPI failure" +
-                        "- Possibly a XAPI toolstack restart.")
-            log.exception(exception)
-            time.sleep(5)
+            log.exception("Recovering from XAPI failure" +
+                          "- Possibly XAPI is still starting or restarting.")
+            time.sleep(10)
