@@ -17,6 +17,7 @@ MONITORRETRYSLEEPINS = 15
 #MONITORVMRETRYTIMEOUTINS = 100
 REGISTRATION_KEY = "xscontainer-monitor"
 EVENT_FROM_TIMEOUT_S = 3600.0
+XAPIRETRYSLEEPINS = 10
 
 docker_monitor = None
 
@@ -255,6 +256,7 @@ def interrupt_handler(signum, frame):
 
 
 def monitor_host():
+    session = None
     host = None
     # Use the global the DockerMonitor
     global docker_monitor
@@ -295,7 +297,12 @@ def monitor_host():
                     session.xenapi.session.logout()
                 except XenAPI.Failure:
                     log.exception("Failed when trying to logout")
-        except (socket.error, XenAPI.Failure), exception:
-            log.exception("Recovering from XAPI failure" +
-                          "- Possibly XAPI is still starting or restarting.")
-            time.sleep(10)
+        except (socket.error, XenAPI.Failure):
+            if session == None:
+                log.info("Could not connect to XAPI - Is XAPI running?" +
+                            "Will retry in %d" %(XAPIRETRYSLEEPINS))
+            else:
+                log.exception("Recovering from XAPI failure - Is XAPI " +
+                              "restarting? Will retry in %d."
+                              %(XAPIRETRYSLEEPINS))
+            time.sleep(XAPIRETRYSLEEPINS)
