@@ -53,12 +53,15 @@ def patch_docker_ps_status(ps_dict):
     register the regular status updates for the increase in container
     run time. E.g. "Up 40 seconds" ... "Up 4 hours".
 
-    The tempoary solution is to just return "Up".
+    The tempoary solution is to just return "Up" or "Up (Paused)".
     """
     log.debug("Container Rec: %s" % ps_dict)
     status = ps_dict["Status"]
     if status.startswith("Up"):
-        ps_dict["Status"] = "Up"
+        if status.endswith("(Paused)"):
+            ps_dict["Status"] = "Up (Paused)"
+        else:
+            ps_dict["Status"] = "Up"
     return
 
 def get_ps_dict(session, vmuuid):
