@@ -188,3 +188,8 @@ def update_docker_version(session, vmuuid, vmref):
 def update_docker_ps(session, vmuuid, vmref):
     api_helper.update_vm_other_config(session, vmref, 'docker_ps',
                                       get_ps_xml(session, vmuuid))
+
+def wipe_docker_other_config(vm):
+    vm.remove_from_other_config('docker_ps')
+    vm.remove_from_other_config('docker_info')
+    vm.remove_from_other_config('docker_version')

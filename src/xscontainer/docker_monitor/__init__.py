@@ -179,9 +179,7 @@ class DockerMonitor(object):
             if not vm.teardown_requested:
                 time.sleep(MONITORRETRYSLEEPINS)
         self.deregister(vm)
-        session.xenapi.VM.remove_from_other_config(vmref, 'docker_ps')
-        session.xenapi.VM.remove_from_other_config(vmref, 'docker_info')
-        session.xenapi.VM.remove_from_other_config(vmref, 'docker_version')
+        docker.wipe_docker_other_config(vm)
         log.info("monitor_vm returns from handling vm %s" % (vmuuid))
 
 

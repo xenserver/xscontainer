@@ -1,5 +1,6 @@
-from xscontainer.docker_monitor import REGISTRATION_KEY
 from xscontainer.api_helper import VM, XenAPIClient, LocalXenAPIClient
+from xscontainer.docker_monitor import REGISTRATION_KEY
+import xscontainer.docker as docker
 
 """
 API Entry points for interacting with the DockerMonitor service.
@@ -20,4 +21,5 @@ def deregister_vm(vm_uuid, session):
     vm.remove_from_other_config(REGISTRATION_KEY)
     # We must keep the key so XC knows which VMs can be enabled
     vm.add_to_other_config(REGISTRATION_KEY, "False")
+    docker.wipe_docker_other_config(vm)
     return
