@@ -52,7 +52,6 @@ $(MY_SOURCES)/MANIFEST: $(MY_SOURCES_DIRSTAMP)
 .PHONY: clean
 clean:
 	rm -f $(OUTPUT)
-	rm -f $(MY_OBJ_DIR)/SOURCES
 	$(MAKE) -C $(REPO) clean
 
 .PHONY: $(SUPP_PACK)

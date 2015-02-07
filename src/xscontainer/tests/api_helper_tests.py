@@ -12,7 +12,7 @@ class TestRefreshSessionOnFailureDecorator(unittest.TestCase):
     def test_session_gets_updated(self, mreinit_func):
         test_func = MagicMock()
         test_func.side_effect = [Exception("foo"), "foo"]
-        api_helper.refresh_global_session_on_failure(test_func)()
+        api_helper.refresh_session_on_failure(test_func)()
         mreinit_func.assert_called_once()
         test_func.assert_has_calls([call(), call()])
 
@@ -21,7 +21,7 @@ class TestRefreshSessionOnFailureDecorator(unittest.TestCase):
         rv = "foo"
         test_func = MagicMock()
         test_func.return_value = rv
-        result = api_helper.refresh_global_session_on_failure(test_func)()
+        result = api_helper.refresh_session_on_failure(test_func)()
         assert not mreinit_func.called
         self.assertEqual(result, rv)
 
@@ -30,7 +30,7 @@ class TestRefreshSessionOnFailureDecorator(unittest.TestCase):
         rv = "bar"
         test_func = MagicMock()
         test_func.return_value = rv
-        api_helper.refresh_global_session_on_failure(test_func)()
+        api_helper.refresh_session_on_failure(test_func)()
         assert not mreinit_func.called
 
     @patch("xscontainer.api_helper.reinit_global_xapi_session")
@@ -39,7 +39,7 @@ class TestRefreshSessionOnFailureDecorator(unittest.TestCase):
         test_func = MagicMock()
         test_func.side_effect = Exception("bar")
         with self.assertRaises(Exception):
-            api_helper.refresh_global_session_on_failure(test_func)()
+            api_helper.refresh_session_on_failure(test_func)()
 
 
 
