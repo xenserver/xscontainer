@@ -57,10 +57,10 @@ clean:
 
 .PHONY: $(SUPP_PACK)
 $(SUPP_PACK): $(XSCONTAINER_STAMP)
-	mkdir -p $(MY_OBJ_DIR)/SOURCES
-	cp -f "$(RPM_SRPMSDIR)/$(SRPM)" $(MY_OBJ_DIR)/SOURCES/
-	cp -f $(DOM0_SRPMS) $(MY_OBJ_DIR)/SOURCES/
-	mkisofs -A "Citrix" -V "xscontainer" -J -joliet-long -r -o $(SUPP_PACK_SOURCES) $(MY_OBJ_DIR)/SOURCES
+	mkdir -p $(MY_OBJ_DIR)/ISO-SOURCES
+	cp -f "$(RPM_SRPMSDIR)/$(SRPM)" $(MY_OBJ_DIR)/ISO-SOURCES/
+	cp -f $(DOM0_SRPMS) $(MY_OBJ_DIR)/ISO-SOURCES/
+	mkisofs -A "Citrix" -V "xscontainer" -J -joliet-long -r -o $(SUPP_PACK_SOURCES) $(MY_OBJ_DIR)/ISO-SOURCES
 	./make-supp-pack --out $(dir $@) \
 	                 --pdn $(PRODUCT_BRAND) \
 	                 --pdv $(PRODUCT_VERSION) \
