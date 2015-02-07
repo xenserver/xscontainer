@@ -22,17 +22,21 @@ GLOBAL_XAPI_SESSION_LOCK = threading.Lock()
 Decorator method for refreshing the local session object if an exception
 is raised during the API call.
 """
+
+
 def refresh_global_session_on_failure(func):
     def decorated(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception, e:
-            log.debug("Caught exception '%s'. Retrying with new session." % str(e))
+            log.debug("Caught exception '%s'. Retrying with new session."
+                      % (str(e)))
             # Refresh the global XAPI session
             reinit_global_xapi_session()
             # Return the func undecorated
             return func(*args, **kwargs)
     return decorated
+
 
 class XenAPIClient(object):
 
@@ -59,7 +63,9 @@ class XenAPIClient(object):
         res = getattr(self.get_session(), method_name)(*method_args)
         return XenAPI._parse_result(res)
 
+
 class LocalXenAPIClient(XenAPIClient):
+
     """
     Localhost XenAPI client that uses a globally shared session.
     """
@@ -73,7 +79,9 @@ class LocalXenAPIClient(XenAPIClient):
 
     @refresh_global_session_on_failure
     def _api_call(self, object_name, method, *args):
-        return super(LocalXenAPIClient, self)._api_call(object_name, method, *args)
+        return super(LocalXenAPIClient, self)._api_call(object_name, method,
+                                                        *args)
+
 
 class XenAPIObject(object):
 
@@ -100,10 +108,6 @@ class XenAPIObject(object):
     def get_session_handle(self):
         return self.get_session().handle
 
-    def get_record(self):
-        return self.rec
-
-
     """
     @todo: for the case when a non-local global session is being used,
     this decorator unnecessarily retries on exception.
@@ -121,6 +125,7 @@ class XenAPIObject(object):
     def add_to_other_config(self, key, value):
         return self._api_call("add_to_other_config", key, value)
 
+
 class Host(XenAPIObject):
 
     OBJECT = "Host"
@@ -128,6 +133,7 @@ class Host(XenAPIObject):
     # Return VMs running on the host _not_ the pool
     def get_vms(self):
         return [vm for vm in self.client.get_all_vms() if vm.is_on_host(self)]
+
 
 class VM(XenAPIObject):
 
@@ -154,6 +160,7 @@ class VM(XenAPIObject):
         self.client.get_session().xenapi.VM.set_other_config(self.ref,
                                                              other_config)
 
+
 def get_local_api_session():
     global GLOBAL_XAPI_SESSION
 
@@ -170,6 +177,7 @@ def init_local_api_session():
     session.xenapi.login_with_password("root", "", "1.0", "xscontainer")
     return session
 
+
 def reinit_global_xapi_session():
     global GLOBAL_XAPI_SESSION
     global GLOBAL_XAPI_SESSION_LOCK
@@ -183,6 +191,7 @@ def reinit_global_xapi_session():
     log.info("The Global XAPI session has been updated.")
 
     return GLOBAL_XAPI_SESSION
+
 
 def get_hi_mgmtnet_ref(session):
     networkrecords = session.xenapi.network.get_all_records()
@@ -375,7 +384,7 @@ def get_idrsa_secret(session, secret_type):
     poolref = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(poolref)
     if (XSCONTAINER_PRIVATE_SECRET_UUID not in other_config
-        or XSCONTAINER_PUBLIC_SECRET_UUID not in other_config):
+            or XSCONTAINER_PUBLIC_SECRET_UUID not in other_config):
         set_idrsa_secret(session)
         other_config = session.xenapi.pool.get_other_config(poolref)
     secret_uuid = other_config[secret_type]
@@ -391,6 +400,7 @@ def get_idrsa_secret_private(session):
 def get_idrsa_secret_public(session):
     return get_idrsa_secret(session, XSCONTAINER_PUBLIC_SECRET_UUID)
 
+
 def get_idrsa_secret_public_keyonly(session):
     return get_idrsa_secret_public(session).split(' ')[1]
 
@@ -401,7 +411,8 @@ def set_idrsa_secret(session):
         {'value': '%s' % (privateidrsa)})
     public_secret_ref = session.xenapi.secret.create(
         {'value': '%s' % (publicidrsa)})
-    private_secret_record = session.xenapi.secret.get_record(private_secret_ref)
+    private_secret_record = session.xenapi.secret.get_record(
+        private_secret_ref)
     public_secret_record = session.xenapi.secret.get_record(public_secret_ref)
     pool_ref = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(pool_ref)
@@ -450,6 +461,7 @@ def get_vm_xscontainer_username(session, vmuuid):
     if username == None:
         username = 'core'
     return username
+
 
 def set_vm_xscontainer_username(session, vmuuid, newusername):
     vmref = get_vm_ref_by_uuid(session, vmuuid)

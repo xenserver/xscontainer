@@ -6,6 +6,7 @@ import xscontainer.docker as docker
 API Entry points for interacting with the DockerMonitor service.
 """
 
+
 def register_vm(vm_uuid, session):
     client = XenAPIClient(session)
     thevm = VM(client, uuid=vm_uuid)

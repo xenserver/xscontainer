@@ -129,11 +129,11 @@ def get_top_dict(session, vmuuid, container):
     for process in result['Processes']:
         process_dict = {}
         item = 0
-        if len(titles)>len(process):
+        if len(titles) > len(process):
             raise util.XSContainerException("Can't parse top output")
         for title in titles:
             process_dict.update({title: process[item]})
-            item = item+1
+            item = item + 1
         psentries.append({'Process': process_dict})
     return psentries
 
@@ -188,6 +188,7 @@ def update_docker_version(vm):
 def update_docker_ps(vm):
     vm.update_other_config('docker_ps', get_ps_xml(vm.get_session(),
                                                    vm.get_uuid()))
+
 
 def wipe_docker_other_config(vm):
     vm.remove_from_other_config('docker_ps')

@@ -83,7 +83,7 @@ def install_vm(session, urlvhdbz2, sruuid,
     cmd = ['bzip2', '-d', atempfile]
     util.runlocal(cmd)
     vdiref = api_helper.import_disk(session, sruuid, atempfileunpacked, 'vhd',
-                                   'Disk')
+                                    'Disk')
     os.remove(atempfileunpacked)
     templateref = session.xenapi.VM.get_by_name_label(templatename)[0]
     vmref = session.xenapi.VM.clone(templateref, vmname)
@@ -114,7 +114,7 @@ def prepare_vm_for_config_drive(session, vmref, vmuuid):
         mgmtnet_device = api_helper.get_hi_mgmtnet_device(session, vmuuid)
         if not mgmtnet_device:
             api_helper.create_vif(session,
-                                 api_helper.get_hi_mgmtnet_ref(session), vmref)
+                                  api_helper.get_hi_mgmtnet_ref(session), vmref)
 
 
 def filterxshinexists(text):
@@ -212,7 +212,7 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     isofile = create_config_drive_iso(session, userdata, vmuuid)
     configdisk_namelabel = 'Automatic Config Drive'
     vdiref = api_helper.import_disk(session, sruuid, isofile, 'raw',
-                                   configdisk_namelabel)
+                                    configdisk_namelabel)
     os.remove(isofile)
     remove_config_drive(session, vmrecord, configdisk_namelabel)
     vbdref = api_helper.create_vbd(session, vmref, vdiref, 'ro', False)

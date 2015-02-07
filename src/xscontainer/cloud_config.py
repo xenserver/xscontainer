@@ -7,6 +7,7 @@ A module for building cloud-config disks.
 
 MKISOFS = "/usr/bin/mkisofs"
 
+
 class CloudConfigDrive(object):
 
     FILES = []
@@ -17,7 +18,7 @@ class CloudConfigDrive(object):
         return
 
     def add_file(self, filename, data):
-        
+
         pass
 
     def read_file(self, fileloc):
@@ -28,6 +29,5 @@ class CloudConfigDrive(object):
         if fmt == "iso":
             return self.create_iso()
 
-
     def create_iso(self):
-        pass 
+        pass

@@ -113,7 +113,7 @@ class TestDockerMonitorThreads(unittest.TestCase):
     def test_start_monitoring(self, mstart_new_thread, mxenapiclient, log_info):
         client = MagicMock()
         mvm_ref = MagicMock()
-        dm = DockerMonitor(host = MagicMock())
+        dm = DockerMonitor(host=MagicMock())
         mvmwithpid = MagicMock()
 
         dm.start_monitoring(mvm_ref)

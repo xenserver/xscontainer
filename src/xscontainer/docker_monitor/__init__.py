@@ -105,7 +105,7 @@ class DockerMonitor(object):
     def _should_monitor(self, vmrecord):
         # Check the VM is registered for monitoring
         if (REGISTRATION_KEY not in vmrecord['other_config'] or
-            vmrecord['other_config'][REGISTRATION_KEY] != 'True'):
+                vmrecord['other_config'][REGISTRATION_KEY] != 'True'):
             return False
 
         # Only process events for running machines.
@@ -298,9 +298,9 @@ def monitor_host():
         except (socket.error, XenAPI.Failure):
             if session == None:
                 log.info("Could not connect to XAPI - Is XAPI running?" +
-                            "Will retry in %d" %(XAPIRETRYSLEEPINS))
+                         "Will retry in %d" % (XAPIRETRYSLEEPINS))
             else:
                 log.exception("Recovering from XAPI failure - Is XAPI " +
                               "restarting? Will retry in %d."
-                              %(XAPIRETRYSLEEPINS))
+                              % (XAPIRETRYSLEEPINS))
             time.sleep(XAPIRETRYSLEEPINS)
