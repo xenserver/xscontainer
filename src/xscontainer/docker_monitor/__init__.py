@@ -35,6 +35,8 @@ class DockerMonitor(object):
     Object responsible for keeping track of the VMs being monitored.
     """
 
+    host = None
+
     class VMWithPid(api_helper.VM):
 
         pid = None
@@ -43,8 +45,10 @@ class DockerMonitor(object):
     def __init__(self, host=None):
         self.vms = {}
 
-        if host:
-            self.host = host
+        self.set_host(host)
+
+    def set_host(self, host):
+        self.host = host
 
     def register(self, thevm):
         if not self.is_registered(thevm):
@@ -261,12 +265,14 @@ def monitor_host():
     while True:
         try:
             session = api_helper.get_local_api_session()
-            if not host:
-                client = api_helper.LocalXenAPIClient()
-                host = api_helper.Host(client,
-                                       api_helper.get_this_host_ref(session))
+            client = api_helper.LocalXenAPIClient()
+            # need to refresh the host, in case we just joined a pool
+            host = api_helper.Host(client,
+                                   api_helper.get_this_host_ref(session))
             if not DOCKER_MONITOR:
                 DOCKER_MONITOR = DockerMonitor(host)
+            else:
+                DOCKER_MONITOR.set_host(host)
             try:
                 # Avoid race conditions - get a current event token
                 event_from = session.xenapi.event_from(["vm"], '',  0.0)
