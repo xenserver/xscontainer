@@ -2,6 +2,7 @@ import logging
 import logging.handlers
 import signal
 import sys
+import traceback
 
 
 def configurelogging():
@@ -47,7 +48,9 @@ def exception(message):
 def handle_unhandled_exceptions(exception_type, exception_value,
                                 exception_traceback):
     if not issubclass(exception_type, KeyboardInterrupt):
-        _LOGGER.exception("Unhandled exception")
+        _LOGGER.exception("Uncaught exception", exc_info=(exception_type,
+                                                          exception_value,
+                                                          exception_traceback))
     sys.__excepthook__(exception_type, exception_value, exception_traceback)
 
 _LOGGER = logging.getLogger()
