@@ -292,8 +292,8 @@ def monitor_host():
                 except XenAPI.Failure:
                     log.exception("Failed when trying to logout")
         except (socket.error, XenAPI.Failure):
-            if session == None:
-                log.info("Could not connect to XAPI - Is XAPI running?" +
+            if session is not None:
+                log.info("Could not connect to XAPI - Is XAPI running? " +
                          "Will retry in %d" % (XAPIRETRYSLEEPINS))
             else:
                 log.exception("Recovering from XAPI failure - Is XAPI " +
