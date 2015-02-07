@@ -59,10 +59,6 @@ class XenAPIClient(object):
         res = getattr(self.get_session(), method_name)(*method_args)
         return XenAPI._parse_result(res)
 
-    def add_to_other_config(self, object_name, ref, key, value):
-        method = "%s.add_to_other_config" % object_name
-        return self._api_call(object_name, "add_to_other_config", ref, key, value)
-
 class LocalXenAPIClient(XenAPIClient):
     """
     Localhost XenAPI client that uses a globally shared session.
@@ -150,12 +146,19 @@ class VM(XenAPIObject):
     def get_other_config(self):
         return self.client.get_session().xenapi.VM.get_other_config(self.ref)
 
+    def update_other_config(self, key, value):
+        #session.xenapi.VM.remove_from_other_config(vmref, name)
+        #session.xenapi.VM.add_to_other_config(vmref, name, value)
+        other_config = self.get_other_config()
+        other_config[key] = value
+        self.client.get_session().xenapi.VM.set_other_config(self.ref,
+                                                             other_config)
 
 def get_local_api_session():
     global GLOBAL_XAPI_SESSION
 
     # Prefer to use a global session object to keep all communication
-    # with the host on the same ref. 
+    # with the host on the same ref.
     if GLOBAL_XAPI_SESSION == None:
         GLOBAL_XAPI_SESSION = init_local_api_session()
 
@@ -357,14 +360,6 @@ def get_default_sr(session):
     pool = session.xenapi.pool.get_all()[0]
     default_sr = session.xenapi.pool.get_default_SR(pool)
     return default_sr
-
-
-def update_vm_other_config(session, vmref, name, value):
-    #session.xenapi.VM.remove_from_other_config(vmref, name)
-    #session.xenapi.VM.add_to_other_config(vmref, name, value)
-    other_config = session.xenapi.VM.get_other_config(vmref)
-    other_config[name] = value
-    session.xenapi.VM.set_other_config(vmref, other_config)
 
 
 def get_value_from_vm_other_config(session, vmuuid, name):

@@ -7,6 +7,7 @@ import xscontainer.util as util
 import xscontainer.coreos as coreos
 import xscontainer.docker as docker
 import xscontainer.docker_monitor as docker_monitor
+import xscontainer.docker_monitor.api as docker_monitor_api
 import xscontainer.api_helper as api_helper
 import pprint
 import time
@@ -21,6 +22,10 @@ def main():
     sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = coreos.install_vm(session, url, sruuid)
     vmuuid = 'f2a52a2f-db06-9d23-7d27-08854c55c0e5'
+    client = api_helper.LocalXenAPIClient()
+    vm = api_helper.VM(client, uuid = vmuuid)
+    docker_monitor_api.register_vm(vmuuid, session)
+    docker_monitor_api.deregister_vm(vmuuid, session)
     vmref = api_helper.get_vm_ref_by_uuid(session, vmuuid)
     #try:
     #    session.xenapi.VM.clean_shutdown(vmref)
@@ -43,7 +48,7 @@ def main():
             traceback.print_exc()
             print "This didn't work. Trying again."
             time.sleep(3)
-    docker.update_docker_ps(session, vmuuid, vmref)
+    docker.update_docker_ps(vm)
 
     #docker_monitor.monitor_host()
     """

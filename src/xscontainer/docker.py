@@ -175,19 +175,19 @@ def unpause(session, vmuuid, container):
     return result
 
 
-def update_docker_info(session, vmuuid, vmref):
-    api_helper.update_vm_other_config(session, vmref, 'docker_info',
-                                      get_info_xml(session, vmuuid))
+def update_docker_info(vm):
+    vm.update_other_config('docker_info', get_info_xml(vm.get_session(),
+                                                       vm.get_uuid()))
 
 
-def update_docker_version(session, vmuuid, vmref):
-    api_helper.update_vm_other_config(session, vmref, 'docker_version',
-                                      get_version_xml(session, vmuuid))
+def update_docker_version(vm):
+    vm.update_other_config('docker_version', get_version_xml(vm.get_session(),
+                                                             vm.get_uuid()))
 
 
-def update_docker_ps(session, vmuuid, vmref):
-    api_helper.update_vm_other_config(session, vmref, 'docker_ps',
-                                      get_ps_xml(session, vmuuid))
+def update_docker_ps(vm):
+    vm.update_other_config('docker_ps', get_ps_xml(vm.get_session(),
+                                                   vm.get_uuid()))
 
 def wipe_docker_other_config(vm):
     vm.remove_from_other_config('docker_ps')
