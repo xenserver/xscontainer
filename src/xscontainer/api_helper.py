@@ -84,6 +84,8 @@ class LocalXenAPIClient(XenAPIClient):
 class XenAPIObject(object):
 
     OBJECT = None
+    ref = None
+    uuid = None
 
     def __init__(self, client, ref=None, uuid=None):
         if not ref and not uuid:
@@ -136,7 +138,9 @@ class VM(XenAPIObject):
     OBJECT = "VM"
 
     def get_uuid(self):
-        return self.get_session().xenapi.VM.get_uuid(self.ref)
+        if self.uuid == None:
+            self.uuid = self.get_session().xenapi.VM.get_uuid(self.ref)
+        return self.uuid
 
     def is_on_host(self, host):
         return host.ref == self.get_host().ref
