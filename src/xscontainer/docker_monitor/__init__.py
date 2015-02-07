@@ -14,12 +14,11 @@ import sys
 import XenAPI
 
 MONITORRETRYSLEEPINS = 15
-#MONITORVMRETRYTIMEOUTINS = 100
 REGISTRATION_KEY = "xscontainer-monitor"
 EVENT_FROM_TIMEOUT_S = 3600.0
 XAPIRETRYSLEEPINS = 10
 
-docker_monitor = None
+DOCKER_MONITOR = None
 
 
 class RegistrationError(Exception):
@@ -42,37 +41,37 @@ class DockerMonitor(object):
         teardown_requested = False
 
     def __init__(self, host=None):
-        self.VMS = {}
+        self.vms = {}
 
         if host:
             self.host = host
 
-    def register(self, vm):
-        if not self.is_registered(vm):
-            self.VMS[vm.get_id()] = vm
+    def register(self, thevm):
+        if not self.is_registered(thevm):
+            self.vms[thevm.get_id()] = thevm
         else:
             return RegistrationError("VM is already registered.")
 
-    def deregister(self, vm):
-        if self.is_registered(vm):
-            self.VMS.pop(vm.get_id())
+    def deregister(self, thevm):
+        if self.is_registered(thevm):
+            self.vms.pop(thevm.get_id())
         else:
             return DeregistrationError("VM was not previously registered.")
 
     def get_registered(self):
-        return self.VMS.values()
+        return self.vms.values()
 
     def get_vmwithpid_by_ref(self, vm_ref):
-        return self.VMS.get(vm_ref)
+        return self.vms.get(vm_ref)
 
-    def is_registered(self, vm):
+    def is_registered(self, thevm):
         """
         Return True if VM has already been registered.
         """
-        return self.is_registered_vm_ref(vm.get_id())
+        return self.is_registered_vm_ref(thevm.get_id())
 
     def is_registered_vm_ref(self, vm_ref):
-        return vm_ref in self.VMS.keys()
+        return vm_ref in self.vms.keys()
 
     def start_monitoring(self, vm_ref):
         log.info("Starting to monitor VM: %s" % vm_ref)
@@ -90,10 +89,11 @@ class DockerMonitor(object):
             pid = vmwithpid.pid
             if pid:
                 try:
-                    util.log.debug("Trying to sigterm %d" % (pid))
+                    util.log.info("Trying to sigterm %d" % (pid))
                     os.kill(pid, signal.SIGTERM)
-                except:
-                    pass
+                except OSError:
+                    util.log.exception("Error when running os.kill for %d"
+                                       %(pid))
             vmwithpid.teardown_requested = True
 
     def refresh(self):
@@ -144,7 +144,8 @@ class DockerMonitor(object):
                 try:
                     os.kill(pid, signal.SIGTERM)
                 except OSError:
-                    pass
+                    util.log.exception("Error when running os.kill for %d"
+                                       %(pid))
             entry.teardown_requested = True
         # Wait for children
         time.sleep(2)
@@ -156,36 +157,32 @@ class DockerMonitor(object):
                 try:
                     os.kill(pid, signal.SIGKILL)
                 except OSError:
-                    pass
+                    util.log.exception("Error when running os.kill for %d"
+                                       %(pid))
 
-    def monitor_vm(self, vm):
-        session = vm.get_session()
-        vmuuid = vm.get_uuid()
-        vmref = vm.get_id()
-        done = False
-        starttime = time.time()
-        while not vm.teardown_requested:
+    def monitor_vm(self, thevm):
+        session = thevm.get_session()
+        vmuuid = thevm.get_uuid()
+        while not thevm.teardown_requested:
             try:
-                docker.update_docker_ps(session, vmuuid, vmref)
-                docker.update_docker_info(session, vmuuid, vmref)
-                docker.update_docker_version(session, vmuuid, vmref)
-                done = True
-            except (XenAPI.Failure, util.XSContainerException), exception:
+                docker.update_docker_ps(thevm)
+                docker.update_docker_info(thevm)
+                docker.update_docker_version(thevm)
+            except (XenAPI.Failure, util.XSContainerException):
                 log.info("Could not connect to VM %s, retry" % (vmuuid))
             try:
-                monitor_vm_events(session, vm)
+                monitor_vm_events(session, thevm)
             except (XenAPI.Failure, util.XSContainerException):
                 log.exception("monitor_vm_events threw an exception, retry")
-            if not vm.teardown_requested:
+            if not thevm.teardown_requested:
                 time.sleep(MONITORRETRYSLEEPINS)
-        self.deregister(vm)
-        docker.wipe_docker_other_config(vm)
+        self.deregister(thevm)
+        docker.wipe_docker_other_config(thevm)
         log.info("monitor_vm returns from handling vm %s" % (vmuuid))
 
 
-def monitor_vm_events(session, vm):
-    vmuuid = vm.get_uuid()
-    vmref = vm.get_id()
+def monitor_vm_events(session, thevm):
+    vmuuid = thevm.get_uuid()
     request_cmds = docker.prepare_request_cmds('GET', '/events')
     cmds = api_helper.prepare_ssh_cmd(session, vmuuid, request_cmds)
     log.debug('monitor_vm is running: %s' % (cmds))
@@ -194,7 +191,7 @@ def monitor_vm_events(session, vm):
                                stderr=subprocess.PIPE,
                                stdin=subprocess.PIPE,
                                shell=False)
-    vm.pid = process.pid
+    thevm.pid = process.pid
     process.stdin.write("\n")
     data = ""
     # ToDo: Got to make this sane
@@ -212,20 +209,20 @@ def monitor_vm_events(session, vm):
         elif lastread == '}':
             openbrackets = openbrackets - 1
             if openbrackets == 0:
-                log.debug("monitor_vm received Event: %s" % data)
                 results = simplejson.loads(data)
                 if 'status' in results:
+                    log.debug("Received %s" %(results['status']))
                     if results['status'] in ['create', 'destroy', 'die',
                                              'kill', 'pause', 'restart',
                                              'start', 'stop', 'unpause']:
                         try:
-                            docker.update_docker_ps(session, vmuuid, vmref)
+                            docker.update_docker_ps(thevm)
                         except util.XSContainerException, exception:
                             # This can happen, when the docker daemon stops
                             log.exception(exception)
                     elif results['status'] in ['create', 'destroy', 'delete']:
                         try:
-                            docker.update_docker_info(session, vmuuid, vmref)
+                            docker.update_docker_info(thevm)
                         except util.XSContainerException, exception:
                             # This can happen, when the docker daemon stops
                             log.exception(exception)
@@ -234,7 +231,7 @@ def monitor_vm_events(session, vm):
         if len(data) >= 2048:
             raise(util.XSContainerException('monitor_vm buffer is full'))
         lastread = process.stdout.read(1)
-    vm.pid = None
+    thevm.pid = None
     process.poll()
     returncode = process.returncode
     log.debug('monitor_vm (%s) exited with rc %s' % (cmds, str(returncode)))
@@ -246,18 +243,17 @@ def interrupt_handler(signum, frame):
     monitoring. We need to do this as we don't want threads to be hanging
     around, after the docker_monitor has quit.
     """
-    if docker_monitor:
+    if DOCKER_MONITOR:
         util.log.warning("Signal %d received  - Tearing down monitoring"
                          % (signum))
-        docker_monitor.tear_down_all()
+        DOCKER_MONITOR.tear_down_all()
     sys.exit(0)
 
 
 def monitor_host():
+    global DOCKER_MONITOR
     session = None
     host = None
-    # Use the global the DockerMonitor
-    global docker_monitor
 
     signal.signal(signal.SIGTERM, interrupt_handler)
     signal.signal(signal.SIGINT, interrupt_handler)
@@ -269,14 +265,14 @@ def monitor_host():
                 client = api_helper.LocalXenAPIClient()
                 host = api_helper.Host(client,
                                        api_helper.get_this_host_ref(session))
-            if not docker_monitor:
-                docker_monitor = DockerMonitor(host)
+            if not DOCKER_MONITOR:
+                DOCKER_MONITOR = DockerMonitor(host)
             try:
                 # Avoid race conditions - get a current event token
                 event_from = session.xenapi.event_from(["vm"], '',  0.0)
                 token_from = event_from['token']
                 # Now load the VMs that are enabled for monitoring
-                docker_monitor.refresh()
+                DOCKER_MONITOR.refresh()
                 while True:
                     event_from = session.xenapi.event_from(["vm"], token_from,
                                                            EVENT_FROM_TIMEOUT_S)
@@ -288,7 +284,7 @@ def monitor_host():
                             # At this point the monitor may need to
                             # refresh it's monitoring state of a particular
                             # vm.
-                            docker_monitor.process_vmrecord(event['ref'],
+                            DOCKER_MONITOR.process_vmrecord(event['ref'],
                                                             event['snapshot'])
             finally:
                 try:

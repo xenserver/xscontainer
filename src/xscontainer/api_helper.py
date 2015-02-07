@@ -1,10 +1,11 @@
+from xscontainer import util
+from xscontainer.util import log
+
 import os
 import tempfile
-import time
-import xscontainer.util as util
-from xscontainer.util import log
-import XenAPI
 import threading
+import time
+import XenAPI
 
 XSCONTAINER_PRIVATE_SECRET_UUID = 'xscontainer-private-secret-uuid'
 XSCONTAINER_PUBLIC_SECRET_UUID = 'xscontainer-public-secret-uuid'
@@ -18,20 +19,17 @@ GLOBAL_XAPI_SESSION = None
 GLOBAL_XAPI_SESSION_LOCK = threading.Lock()
 
 
-"""
-Decorator method for refreshing the local session object if an exception
-is raised during the API call.
-"""
-
-
-def refresh_global_session_on_failure(func):
+def refresh_session_on_failure(func):
+    """
+    Decorator method for refreshing the local session object if an exception
+    is raised during the API call.
+    """
     def decorated(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except Exception, e:
+        except Exception, exception:
             log.debug("Caught exception '%s'. Retrying with new session."
-                      % (str(e)))
-            # Refresh the global XAPI session
+                      % (str(exception)))
             reinit_global_xapi_session()
             # Return the func undecorated
             return func(*args, **kwargs)
@@ -56,8 +54,8 @@ class XenAPIClient(object):
     def get_all_vm_records(self):
         return self.get_session().xenapi.VM.get_all_records()
 
-    @refresh_global_session_on_failure
-    def _api_call(self, object_name, method, *args):
+    @refresh_session_on_failure
+    def api_call(self, object_name, method, *args):
         method_args = (self.get_session_handle(),) + args
         method_name = "%s.%s" % (object_name, method)
         res = getattr(self.get_session(), method_name)(*method_args)
@@ -72,15 +70,15 @@ class LocalXenAPIClient(XenAPIClient):
 
     def __init__(self):
         session = get_local_api_session()
-        return super(LocalXenAPIClient, self).__init__(session)
+        super(LocalXenAPIClient, self).__init__(session)
 
     def get_session(self):
         return get_local_api_session()
 
-    @refresh_global_session_on_failure
-    def _api_call(self, object_name, method, *args):
-        return super(LocalXenAPIClient, self)._api_call(object_name, method,
-                                                        *args)
+    @refresh_session_on_failure
+    def api_call(self, object_name, method, *args):
+        return super(LocalXenAPIClient, self).api_call(object_name, method,
+                                                       *args)
 
 
 class XenAPIObject(object):
@@ -94,7 +92,7 @@ class XenAPIObject(object):
         self.client = client
 
         if uuid and not ref:
-            ref = self.client._api_call(self.OBJECT, "get_by_uuid", uuid)
+            ref = self.client.api_call(self.OBJECT, "get_by_uuid", uuid)
 
         self.ref = ref
         self.uuid = uuid
@@ -108,22 +106,20 @@ class XenAPIObject(object):
     def get_session_handle(self):
         return self.get_session().handle
 
-    """
-    @todo: for the case when a non-local global session is being used,
-    this decorator unnecessarily retries on exception.
-    """
-    @refresh_global_session_on_failure
-    def _api_call(self, method, *args):
+    # @todo: for the case when a non-local global session is being used,
+    # this decorator unnecessarily retries on exception.
+    @refresh_session_on_failure
+    def api_call(self, method, *args):
         method_args = (self.get_session_handle(), self.ref) + args
         method_name = "%s.%s" % (self.OBJECT, method)
         res = getattr(self.get_session(), method_name)(*method_args)
         return XenAPI._parse_result(res)
 
     def remove_from_other_config(self, key):
-        return self._api_call("remove_from_other_config", key)
+        return self.api_call("remove_from_other_config", key)
 
     def add_to_other_config(self, key, value):
-        return self._api_call("add_to_other_config", key, value)
+        return self.api_call("add_to_other_config", key, value)
 
 
 class Host(XenAPIObject):
@@ -163,7 +159,6 @@ class VM(XenAPIObject):
 
 def get_local_api_session():
     global GLOBAL_XAPI_SESSION
-
     # Prefer to use a global session object to keep all communication
     # with the host on the same ref.
     if GLOBAL_XAPI_SESSION == None:
@@ -180,7 +175,6 @@ def init_local_api_session():
 
 def reinit_global_xapi_session():
     global GLOBAL_XAPI_SESSION
-    global GLOBAL_XAPI_SESSION_LOCK
 
     # Make threadsafe
     GLOBAL_XAPI_SESSION_LOCK.acquire()
@@ -378,6 +372,14 @@ def get_value_from_vm_other_config(session, vmuuid, name):
         return other_config[name]
     else:
         return None
+
+
+def update_vm_other_config(session, vmref, name, value):
+    #session.xenapi.VM.remove_from_other_config(vmref, name)
+    #session.xenapi.VM.add_to_other_config(vmref, name, value)
+    other_config = session.xenapi.VM.get_other_config(vmref)
+    other_config[name] = value
+    session.xenapi.VM.set_other_config(vmref, other_config)
 
 
 def get_idrsa_secret(session, secret_type):

@@ -1,13 +1,13 @@
+from xscontainer import api_helper
+from xscontainer import util
+from xscontainer.util import log
+from xscontainer.docker_monitor import api as docker_monitor_api
+
 import os
 import shutil
 import random
 import re
 import tempfile
-
-import api_helper
-import xscontainer.util as util
-from xscontainer.util import log
-import docker_monitor.api as docker_monitor_api
 
 CLOUDCONFIG = """#cloud-config
 

@@ -1,7 +1,6 @@
-import api_helper
-import xscontainer.util as util
-from xscontainer.util import log
 from xscontainer import api_helper
+from xscontainer import util
+from xscontainer.util import log
 
 import re
 import simplejson
@@ -41,7 +40,7 @@ def _post_api(session, vmuuid, request):
     return stdout
 
 
-def _verify_or_throw_invalid_container(container):
+def _verify_or_throw_container(container):
     if not re.match('^[a-z0-9]+$', container):
         raise util.XSContainerException("Invalid container")
 
@@ -111,7 +110,7 @@ def passthrough(session, vmuuid, command):
 
 
 def get_inspect_dict(session, vmuuid, container):
-    _verify_or_throw_invalid_container(container)
+    _verify_or_throw_container(container)
     result = _get_api_json(session, vmuuid, '/containers/%s/json'
                                             % (container))
     return result
@@ -124,7 +123,7 @@ def get_inspect_xml(session, vmuuid, container):
 
 
 def get_top_dict(session, vmuuid, container):
-    _verify_or_throw_invalid_container(container)
+    _verify_or_throw_container(container)
     result = _get_api_json(session, vmuuid, '/containers/%s/top'
                                             % (container))
     titles = result['Titles']
@@ -147,7 +146,7 @@ def get_top_xml(session, vmuuid, container):
 
 
 def _run_container_cmd(session, vmuuid, container, command):
-    _verify_or_throw_invalid_container(container)
+    _verify_or_throw_container(container)
     result = _post_api(session, vmuuid,
                        '/containers/%s/%s' % (container, command))
     return result
@@ -178,22 +177,23 @@ def unpause(session, vmuuid, container):
     return result
 
 
-def update_docker_info(vm):
-    vm.update_other_config('docker_info', get_info_xml(vm.get_session(),
-                                                       vm.get_uuid()))
+def update_docker_info(thevm):
+    thevm.update_other_config('docker_info', get_info_xml(thevm.get_session(),
+                                                          thevm.get_uuid()))
 
 
-def update_docker_version(vm):
-    vm.update_other_config('docker_version', get_version_xml(vm.get_session(),
-                                                             vm.get_uuid()))
+def update_docker_version(thevm):
+    thevm.update_other_config('docker_version',
+                              get_version_xml(thevm.get_session(),
+                              thevm.get_uuid()))
 
 
-def update_docker_ps(vm):
-    vm.update_other_config('docker_ps', get_ps_xml(vm.get_session(),
-                                                   vm.get_uuid()))
+def update_docker_ps(thevm):
+    thevm.update_other_config('docker_ps', get_ps_xml(thevm.get_session(),
+                              thevm.get_uuid()))
 
 
-def wipe_docker_other_config(vm):
-    vm.remove_from_other_config('docker_ps')
-    vm.remove_from_other_config('docker_info')
-    vm.remove_from_other_config('docker_version')
+def wipe_docker_other_config(thevm):
+    thevm.remove_from_other_config('docker_ps')
+    thevm.remove_from_other_config('docker_info')
+    thevm.remove_from_other_config('docker_version')

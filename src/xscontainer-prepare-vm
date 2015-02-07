@@ -128,8 +128,9 @@ def push_ssh_key(session, vmuuid, username):
 def verify_monitoring(session, vmuuid, username):
     print('Attempting to refresh the state of the VM')
     try:
-        vmref = api_helper.get_vm_ref_by_uuid(session, vmuuid)
-        docker.update_docker_version(session, vmuuid, vmref)
+        client = api_helper.XenAPIClient(session)
+        thevm = api_helper.VM(client, uuid=vmuuid)
+        docker.update_docker_version(thevm)
         print("Success.")
         return 0
     except util.XSContainerException:
