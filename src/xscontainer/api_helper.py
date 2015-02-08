@@ -491,3 +491,11 @@ def execute_ssh(session, vmuuid, cmd):
     complete_cmd = prepare_ssh_cmd(session, vmuuid, cmd)
     stdout = util.runlocal(complete_cmd)[1]
     return str(stdout)
+
+
+def send_message(session, vm_uuid, title, body):
+    message_prio_warning = "3"
+    message_type_vm = "VM"
+    message_ref = session.xenapi.message.create(title, message_prio_warning,
+                                                message_type_vm, vm_uuid, body)
+    return message_ref

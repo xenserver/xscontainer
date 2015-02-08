@@ -12,7 +12,8 @@ def prepare_request_cmds(request_type, request):
     return request_cmds
 
 
-def _interact_with_api(session, vmuuid, request_type, request):
+def _interact_with_api(session, vmuuid, request_type, request,
+                       message_error = False):
     request_cmds = prepare_request_cmds(request_type, request)
     stdout = api_helper.execute_ssh(session, vmuuid, request_cmds)
     headerend = stdout.index('\r\n\r\n')
@@ -24,8 +25,17 @@ def _interact_with_api(session, vmuuid, request_type, request):
     statuscode = headersplits[1]
     if statuscode[0] != '2':
         status = ' '.join(headersplits[2:])
-        raise util.XSContainerException("Request %s led to bad status %s %s"
-                                        % (request_cmds, statuscode, status))
+        failure_title = "Container error"
+        failure_body = body.strip() + " (" + statuscode + ")"
+        if ":" in failure_body:
+            (failure_title, failure_body) = failure_body.split(":", 1)
+        if message_error:
+            api_helper.send_message(session, vmuuid, failure_title,
+                                    failure_body)
+        raise util.XSContainerException("Request %s led to failure %s - "
+                                         % (request_cmds, status)
+                                         +" %s: %s"
+                                          %(failure_title, failure_body))
     return body
 
 
@@ -36,7 +46,8 @@ def _get_api_json(session, vmuuid, request):
 
 
 def _post_api(session, vmuuid, request):
-    stdout = _interact_with_api(session, vmuuid, 'POST', request)
+    stdout = _interact_with_api(session, vmuuid, 'POST', request,
+                                message_error = True)
     return stdout
 
 
