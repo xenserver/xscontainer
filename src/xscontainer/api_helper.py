@@ -499,3 +499,6 @@ def send_message(session, vm_uuid, title, body):
     message_ref = session.xenapi.message.create(title, message_prio_warning,
                                                 message_type_vm, vm_uuid, body)
     return message_ref
+
+def destroy_message(session, message_ref):
+    session.xenapi.message.destroy(message_ref)

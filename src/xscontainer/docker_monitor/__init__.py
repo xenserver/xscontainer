@@ -14,6 +14,7 @@ import sys
 import XenAPI
 
 MONITORRETRYSLEEPINS = 15
+MONITOR_TIMEOUT_WARNING_S = 75.0
 REGISTRATION_KEY = "xscontainer-monitor"
 EVENT_FROM_TIMEOUT_S = 3600.0
 XAPIRETRYSLEEPINS = 10
@@ -165,14 +166,36 @@ class DockerMonitor(object):
                                        %(pid))
 
     def monitor_vm(self, thevm):
+        # ToDo: not needed and not safe - doesn't survive XAPI restarts
         session = thevm.get_session()
         vmuuid = thevm.get_uuid()
+        start_time = time.time()
+        error_message = None
         while not thevm.teardown_requested:
+            docker.wipe_docker_other_config(thevm)
             try:
                 docker.update_docker_ps(thevm)
                 docker.update_docker_info(thevm)
                 docker.update_docker_version(thevm)
+                if error_message:
+                    # if we got past the above, it's about time to delete the
+                    # error message, as all appears to be working again
+                    try:
+                        api_helper.destroy_message(thevm.get_session(),
+                                                   error_message)
+                    except XenAPI.Failure:
+                        # this can fail, if the user deleted the message in the
+                        # meantime manually
+                        pass
+                    error_message = None
             except (XenAPI.Failure, util.XSContainerException):
+                passed_time = time.time()-start_time
+                if (not error_message
+                    and passed_time >= MONITOR_TIMEOUT_WARNING_S):
+                    cause = docker.determine_error_cause(session, vmuuid)
+                    error_message = api_helper.send_message(session,
+                        thevm.get_uuid(), "Cannot monitor containers on VM",
+                        cause)
                 log.info("Could not connect to VM %s, retry" % (vmuuid))
             try:
                 monitor_vm_events(session, thevm)
@@ -215,7 +238,6 @@ def monitor_vm_events(session, thevm):
             if openbrackets == 0:
                 results = simplejson.loads(data)
                 if 'status' in results:
-                    log.debug("Received %s" %(results['status']))
                     if results['status'] in ['create', 'destroy', 'die',
                                              'kill', 'pause', 'restart',
                                              'start', 'stop', 'unpause']:
