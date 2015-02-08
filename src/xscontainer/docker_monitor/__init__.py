@@ -167,7 +167,6 @@ class DockerMonitor(object):
 
     def monitor_vm(self, thevm):
         # ToDo: not needed and not safe - doesn't survive XAPI restarts
-        session = thevm.get_session()
         vmuuid = thevm.get_uuid()
         start_time = time.time()
         error_message = None
@@ -184,21 +183,27 @@ class DockerMonitor(object):
                         api_helper.destroy_message(thevm.get_session(),
                                                    error_message)
                     except XenAPI.Failure:
-                        # this can fail, if the user deleted the message in the
-                        # meantime manually
+                        # this can happen if the user deleted the message in the
+                        # meantime manually, or if XAPI is down
                         pass
                     error_message = None
             except (XenAPI.Failure, util.XSContainerException):
                 passed_time = time.time()-start_time
                 if (not error_message
                     and passed_time >= MONITOR_TIMEOUT_WARNING_S):
-                    cause = docker.determine_error_cause(session, vmuuid)
-                    error_message = api_helper.send_message(session,
-                        thevm.get_uuid(), "Cannot monitor containers on VM",
-                        cause)
+                    try:
+                        session = thevm.get_session()
+                        cause = docker.determine_error_cause(session, vmuuid)
+                        error_message = api_helper.send_message(session,
+                            thevm.get_uuid(),
+                            "Cannot monitor containers on VM",
+                            cause)
+                    except (XenAPI.Failure):
+                        # this can happen when XAPI is not running
+                        pass
                 log.info("Could not connect to VM %s, retry" % (vmuuid))
             try:
-                monitor_vm_events(session, thevm)
+                monitor_vm_events(thevm)
             except (XenAPI.Failure, util.XSContainerException):
                 log.exception("monitor_vm_events threw an exception, retry")
             if not thevm.teardown_requested:
@@ -208,7 +213,8 @@ class DockerMonitor(object):
         log.info("monitor_vm returns from handling vm %s" % (vmuuid))
 
 
-def monitor_vm_events(session, thevm):
+def monitor_vm_events(thevm):
+    session = thevm.get_session()
     vmuuid = thevm.get_uuid()
     request_cmds = docker.prepare_request_cmds('GET', '/events')
     cmds = api_helper.prepare_ssh_cmd(session, vmuuid, request_cmds)
