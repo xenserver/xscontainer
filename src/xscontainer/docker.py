@@ -180,11 +180,13 @@ def restart(session, vmuuid, container):
 
 def pause(session, vmuuid, container):
     result = _run_container_cmd(session, vmuuid, container, 'pause')
+    update_docker_ps_workaround(session, vmuuid)
     return result
 
 
 def unpause(session, vmuuid, container):
     result = _run_container_cmd(session, vmuuid, container, 'unpause')
+    update_docker_ps_workaround(session, vmuuid)
     return result
 
 
@@ -204,10 +206,23 @@ def update_docker_ps(thevm):
                               thevm.get_uuid()))
 
 
+def update_docker_ps_workaround(session, vm_uuid):
+    """
+    Only recent docker versions support sending events for pause and unpause.
+    This works around this - at least when we post the command.
+    """
+    client = api_helper.XenAPIClient(session)
+    thevm = api_helper.VM(client, uuid=vm_uuid)
+    record = thevm.get_other_config()
+    if 'docker_ps' in record:
+        update_docker_ps(thevm)
+
+
 def wipe_docker_other_config(thevm):
     thevm.remove_from_other_config('docker_ps')
     thevm.remove_from_other_config('docker_info')
     thevm.remove_from_other_config('docker_version')
+
 
 def determine_error_cause(session, vmuuid):
     cause = ""
