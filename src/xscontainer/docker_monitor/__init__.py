@@ -12,6 +12,7 @@ import signal
 import socket
 import sys
 import XenAPI
+import xmlrpclib
 
 MONITORRETRYSLEEPINS = 15
 MONITOR_TIMEOUT_WARNING_S = 75.0
@@ -325,7 +326,7 @@ def monitor_host():
                     session.xenapi.session.logout()
                 except XenAPI.Failure:
                     log.exception("Failed when trying to logout")
-        except (socket.error, XenAPI.Failure):
+        except (socket.error, XenAPI.Failure, xmlrpclib.ProtocolError):
             if session is not None:
                 log.info("Could not connect to XAPI - Is XAPI running? " +
                          "Will retry in %d" % (XAPIRETRYSLEEPINS))
