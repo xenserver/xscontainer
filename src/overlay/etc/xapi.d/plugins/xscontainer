@@ -9,6 +9,7 @@ sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.api_helper as api_helper
 import xscontainer.coreos as coreos
 import xscontainer.docker as docker
+import xscontainer.util.log as log
 
 from xscontainer.docker_monitor import api as docker_monitor_api
 
@@ -117,11 +118,14 @@ def redirect_per_vm_operation_owned_by_other_slave(argv):
     if 'vmuuid' in args:
         vmuuid = args['vmuuid']
         vmrecord = api_helper.get_vm_record_by_uuid(session, vmuuid)
+        this_hostref = api_helper.get_this_host_ref(session)
         hostref = vmrecord['resident_on']
         if (hostref != api_helper.NULLREF
-            and hostref != api_helper.get_this_host_ref(session)):
+            and hostref != this_hostref):
             # Redirect the call
             try:
+                log.info("Forwarding request %s from %s to %s"
+                         % (args, this_hostref, hostref))
                 result = session.xenapi.host.call_plugin(
                     hostref, 'xscontainer', methodname, args)
                 print XenAPIPlugin.success_message(result)
