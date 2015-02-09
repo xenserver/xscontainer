@@ -48,10 +48,10 @@ def exception(message):
 def handle_unhandled_exceptions(exception_type, exception_value,
                                 exception_traceback):
     if not issubclass(exception_type, KeyboardInterrupt):
-        _LOGGER.error("Nobody caught exception: %s"
-                      % (traceback.format_exception(exception_type,
-                                                    exception_value,
-                                                    exception_traceback)))
+        _LOGGER.error("Nobody caught exception: %s" % (exception_type))
+        _LOGGER.error(traceback.format_exception(exception_type,
+                                                  exception_value,
+                                                  exception_traceback))
     sys.__excepthook__(exception_type, exception_value, exception_traceback)
 
 _LOGGER = logging.getLogger()
