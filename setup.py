@@ -23,7 +23,7 @@ if __name__ == "__main__":
     setup(name='xscontainer',
           version=version,
           description='Container integration for XenServer.',
-          author='Citrix Systems Inc., Robert Breker',
+          author='Citrix Systems, Inc.',
           license = 'BSD',
           url='http://github.com/xenserver/xscontainer',
           packages=['xscontainer', 'xscontainer.util', 'xscontainer.docker_monitor'],
