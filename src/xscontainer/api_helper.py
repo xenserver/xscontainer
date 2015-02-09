@@ -248,8 +248,20 @@ def get_hi_preferene_on(session):
     return False
 
 
+def get_this_host_uuid():
+    # ToDo: There must be a better way that also works with plugins?!?
+    uuid = None
+    filehandler = open("/etc/xensource-inventory", 'r')
+    for line in filehandler.readlines():
+        if line.startswith("INSTALLATION_UUID"):
+            uuid = line.split("'")[1]
+            filehandler.close()
+            return uuid
+
+
 def get_this_host_ref(session):
-    host_ref = session.xenapi.session.get_this_host(session.handle)
+    host_uuid = get_this_host_uuid()
+    host_ref = session.xenapi.host.get_by_uuid(host_uuid)
     return host_ref
 
 
