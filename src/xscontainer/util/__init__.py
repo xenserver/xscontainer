@@ -45,9 +45,19 @@ def converttoxml(node, parentelement=None, dom=None):
         parentelement.appendChild(textnode)
     elif type(node) == type({}):
         for key, value in node.iteritems():
-            element = dom.createElement(xml.sax.saxutils.escape(key))
-            parentelement.appendChild(element)
-            converttoxml(value, parentelement=element, dom=dom)
+            if value == None or value == {}:
+                textnode = dom.createTextNode(xml.sax.saxutils.escape(str(key)))
+                parentelement.appendChild(textnode)
+            else:
+                element = dom.createElement(xml.sax.saxutils.escape(key))
+                parentelement.appendChild(element)
+                converttoxml(value, parentelement=element, dom=dom)
+    elif type(node) == type(True):
+        converttoxml(str(node), parentelement=parentelement, dom=dom)
+    elif node == None:
+        pass
+    else:
+        log.error("util.convertoxml does not know what to do with %s" % node)
 
 
 def create_idrsa():
