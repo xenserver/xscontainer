@@ -4,6 +4,7 @@ import XenAPI
 import XenAPIPlugin
 import sys
 import xmlrpclib
+import os
 # ToDo: hack for building on Fedora
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.api_helper as api_helper
@@ -12,6 +13,20 @@ import xscontainer.docker as docker
 import xscontainer.util.log as log
 
 from xscontainer.docker_monitor import api as docker_monitor_api
+
+ENABLE_DEV_CALLS_FILE = "/opt/xensource/packages/files/xscontainer/devmode_enabled"
+
+
+def devmode_only(func):
+    """
+    Decorator method for returning an exception if 'dev mode' is not enabled
+    in this plugin (global variable).
+    """
+    def decorated(*args, **kwargs):
+        if not os.path.exists(ENABLE_DEV_CALLS_FILE):
+            return "ERROR: This call is only enabled when in dev mode."
+        return func(*args, **kwargs)
+    return decorated
 
 def check_args(reqs, args):
     for req in reqs:
@@ -102,7 +117,7 @@ def unpause(session, args):
     return prepare_output(docker.unpause(session, args['vmuuid'],
                                          args['container']))
 
-
+@devmode_only
 def passthrough(session, args):
     check_args(['vmuuid', 'command'], args)
     return prepare_output(docker.passthrough(session, args['vmuuid'],
