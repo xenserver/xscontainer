@@ -28,6 +28,7 @@ if __name__ == "__main__":
           url='http://github.com/xenserver/xscontainer',
           packages=['xscontainer', 'xscontainer.util', 'xscontainer.docker_monitor'],
           package_dir = {'xscontainer': 'src/xscontainer'},
+          package_data = {'xscontainer': ['data/*.template']},
           scripts = ['src/xscontainer-prepare-vm',
                      'src/xscontainer-monitor',
                      'src/scripts/xscontainer-pluginexample',
