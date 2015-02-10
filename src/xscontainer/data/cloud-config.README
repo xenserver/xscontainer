@@ -1,0 +1,12 @@
+*** Please DO NOT override the template file in this directory ***
+
+Overriding the default cloud-config template
+============================================
+
+It is possible to update the default template returned by xscontainer by
+creating a file at this location:
+    /opt/xensource/packages/files/xscontainer/cloud-config.template
+
+Note:
+* The same template must be replicated on every host in the pool.
+* The directory 'xscontainer' may not already exist, and may need to be created.

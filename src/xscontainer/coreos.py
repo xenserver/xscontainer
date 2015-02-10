@@ -10,6 +10,8 @@ import re
 import tempfile
 
 
+CLOUD_CONFIG_OVERRIDE_PATH = "/opt/xensource/packages/files/xscontainer/cloud-config.template"
+
 def remove_disks_in_vm_provisioning(session, vm_ref):
     """Re-write the xml for provisioning disks to set a SR"""
     other_config = session.xenapi.VM.get_other_config(vm_ref)
@@ -86,12 +88,27 @@ def customize_userdata(session, userdata, vmuuid):
         userdata = filterxshinexists(userdata)
     return userdata
 
-def load_cloud_config_template():
-    this_dir, _ = os.path.split(__file__)
-    template_file = os.path.join(this_dir, "data", "cloud-config.template")
-    fh = open(template_file)
+def load_cloud_config_template(template_path=None):
+    if template_path:
+        # Do nothing, specifying the path takes precedence.
+        pass
+    elif os.path.exists(CLOUD_CONFIG_OVERRIDE_PATH):
+        # Use the override file
+        template_path = CLOUD_CONFIG_OVERRIDE_PATH
+    else:
+        # Use the inbuilt default template
+        this_dir, _ = os.path.split(__file__)
+        template_path = os.path.join(this_dir, "data", "cloud-config.template")
+
+    fh = open(template_path)
     template_data = fh.read()
     fh.close()
+
+    # Append template location to make it clear where it was loaded from.
+    template_data = "%s\n\n# Template loaded from %s" % \
+                        (template_data,
+                         template_path)
+
     return template_data
 
 def get_config_drive_default(session):
