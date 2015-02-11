@@ -86,6 +86,9 @@ def read_file(filepath):
 
 
 def write_file(filepath, content):
+    dirpath, _ = os.path.split(filepath)
+    if not os.path.exists(dirpath):
+        os.makedirs(dirpath)
     filehandle = open(filepath, "w+")
     filehandle.write(content)
     filehandle.close()
