@@ -11,7 +11,7 @@ XSCONTAINER_PRIVATE_SECRET_UUID = 'xscontainer-private-secret-uuid'
 XSCONTAINER_PUBLIC_SECRET_UUID = 'xscontainer-public-secret-uuid'
 XSCONTAINER_USERNAME = 'xscontainer-username'
 
-IDRSAFILENAME = '/tmp/xscontainer-idrsa'
+IDRSAFILENAME = '/opt/xensource/packages/files/xscontainer/xscontainer-idrsa'
 
 NULLREF = 'OpaqueRef:NULL'
 
