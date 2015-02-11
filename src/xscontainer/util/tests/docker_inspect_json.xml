@@ -1,0 +1,117 @@
+[{
+    "AppArmorProfile": "",
+    "Args": [],
+    "Config": {
+        "AttachStderr": false,
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "Cmd": [
+            "nginx"
+        ],
+        "CpuShares": 0,
+        "Cpuset": "",
+        "Domainname": "",
+        "Entrypoint": null,
+        "Env": [
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "HOME=/root"
+        ],
+        "ExposedPorts": {
+            "443/tcp": {},
+            "80/tcp": {}
+        },
+        "Hostname": "e9c2212c65c3",
+        "Image": "dockerfile/nginx",
+        "MacAddress": "",
+        "Memory": 0,
+        "MemorySwap": 0,
+        "NetworkDisabled": false,
+        "OnBuild": null,
+        "OpenStdin": false,
+        "PortSpecs": null,
+        "StdinOnce": false,
+        "Tty": false,
+        "User": "",
+        "Volumes": {
+            "/etc/nginx/certs": {},
+            "/etc/nginx/conf.d": {},
+            "/etc/nginx/sites-enabled": {},
+            "/var/log/nginx": {},
+            "/var/www/html": {}
+        },
+        "WorkingDir": "/etc/nginx"
+    },
+    "Created": "2015-02-11T06:45:59.839369239Z",
+    "Driver": "btrfs",
+    "ExecDriver": "native-0.2",
+    "HostConfig": {
+        "Binds": null,
+        "CapAdd": null,
+        "CapDrop": null,
+        "ContainerIDFile": "",
+        "Devices": [],
+        "Dns": null,
+        "DnsSearch": null,
+        "ExtraHosts": null,
+        "IpcMode": "",
+        "Links": null,
+        "LxcConf": [],
+        "NetworkMode": "bridge",
+        "PortBindings": {},
+        "Privileged": false,
+        "PublishAllPorts": false,
+        "RestartPolicy": {
+            "MaximumRetryCount": 0,
+            "Name": ""
+        },
+        "SecurityOpt": null,
+        "VolumesFrom": null
+    },
+    "HostnamePath": "/var/lib/docker/containers/e9c2212c65c387bba7c216c56cd19ffaa1cdb73cf5885f3259a6b1ae7747c834/hostname",
+    "HostsPath": "/var/lib/docker/containers/e9c2212c65c387bba7c216c56cd19ffaa1cdb73cf5885f3259a6b1ae7747c834/hosts",
+    "Id": "e9c2212c65c387bba7c216c56cd19ffaa1cdb73cf5885f3259a6b1ae7747c834",
+    "Image": "059a29f589a1c20307f299e1031a740eebef902ef8db2f585d6492b171d9ed0c",
+    "MountLabel": "",
+    "Name": "/nginx",
+    "NetworkSettings": {
+        "Bridge": "docker0",
+        "Gateway": "172.17.42.1",
+        "IPAddress": "172.17.0.5",
+        "IPPrefixLen": 16,
+        "MacAddress": "02:42:ac:11:00:05",
+        "PortMapping": null,
+        "Ports": {
+            "443/tcp": null,
+            "80/tcp": null
+        }
+    },
+    "Path": "nginx",
+    "ProcessLabel": "",
+    "ResolvConfPath": "/var/lib/docker/containers/e9c2212c65c387bba7c216c56cd19ffaa1cdb73cf5885f3259a6b1ae7747c834/resolv.conf",
+    "State": {
+        "Error": "",
+        "ExitCode": 0,
+        "FinishedAt": "2015-02-11T07:01:10.569768857Z",
+        "OOMKilled": false,
+        "Paused": false,
+        "Pid": 3308,
+        "Restarting": false,
+        "Running": true,
+        "StartedAt": "2015-02-11T07:06:11.905689871Z"
+    },
+    "Volumes": {
+        "/etc/nginx/certs": "/var/lib/docker/vfs/dir/9561561e92c28f4d4ed59fa40f177d0a4e10c88f02855a56442c8a4e2db24793",
+        "/etc/nginx/conf.d": "/var/lib/docker/vfs/dir/2f03e75105f5e29bb7b37afa35591e792edd3fc8e6e6aa76843ea20696d19e93",
+        "/etc/nginx/sites-enabled": "/var/lib/docker/vfs/dir/73a81bce816ecff14e861ca04a59efed0bcfa31c0602ac52e22b72b7d3e4b27e",
+        "/var/log/nginx": "/var/lib/docker/vfs/dir/c00ed2f80ba6e055023769f347f4d8c845d5ac2573d9057dc934dbb512da9f59",
+        "/var/www/html": "/var/lib/docker/vfs/dir/7fe8453b088d5f90fc1235f40bdcc0792ddc31db646813c811b5007add0572d6"
+    },
+    "VolumesRW": {
+        "/etc/nginx/certs": true,
+        "/etc/nginx/conf.d": true,
+        "/etc/nginx/sites-enabled": true,
+        "/var/log/nginx": true,
+        "/var/www/html": true
+    }
+}
+]

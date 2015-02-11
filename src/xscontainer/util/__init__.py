@@ -37,27 +37,34 @@ def converttoxml(node, parentelement=None, dom=None):
         converttoxml(node, parentelement=dom, dom=dom)
         return dom.toxml()
 
-    if type(node) == type([]):
+    if type(node) == list:
         for item in node:
             converttoxml(item, parentelement=parentelement, dom=dom)
-    elif type(node) in [type(''), type(1), type(1.1)]:
-        textnode = dom.createTextNode(xml.sax.saxutils.escape(str(node)))
-        parentelement.appendChild(textnode)
-    elif type(node) == type({}):
+    elif type(node) == dict:
         for key, value in node.iteritems():
-            if value == None or value == {}:
-                textnode = dom.createTextNode(xml.sax.saxutils.escape(str(key)))
-                parentelement.appendChild(textnode)
+            # Workaround: XML element names may not
+            # - start with numbers, may
+            # - contain slashes
+            # - start with punctuations, or 'xml'.
+            # Package these in a special element 'SPECIAL_XS_ENCODED_ELEMENT'
+            # and take the name as a key instead
+            # @todo: add a faster regular expression for this
+            if (key[0].isdigit()
+                or '/' in key
+                or key[0] in ['.', ':', '!', '?']
+                or key.lower().startswith('xml')):
+                element = dom.createElement('SPECIAL_XS_ENCODED_ELEMENT')
+                element.setAttribute('name', key)
             else:
                 element = dom.createElement(xml.sax.saxutils.escape(key))
-                parentelement.appendChild(element)
-                converttoxml(value, parentelement=element, dom=dom)
-    elif type(node) == type(True):
-        converttoxml(str(node), parentelement=parentelement, dom=dom)
-    elif node == None:
-        pass
+            parentelement.appendChild(element)
+            converttoxml(value, parentelement=element, dom=dom)
+    elif type(node) in [str, bool, float, int] or node == None:
+        textnode = dom.createTextNode(xml.sax.saxutils.escape(str(node)))
+        parentelement.appendChild(textnode)
     else:
-        log.error("util.convertoxml does not know what to do with %s" % node)
+        # ignore
+        pass
 
 
 def create_idrsa():

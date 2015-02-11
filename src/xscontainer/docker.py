@@ -129,7 +129,7 @@ def get_inspect_dict(session, vmuuid, container):
 
 def get_inspect_xml(session, vmuuid, container):
     result = {'docker_inspect': get_inspect_dict(session, vmuuid, container)}
-    # ToDo: util.converttoxml doesn't quite produce valid xml for inspect
+    log.debug(result)
     return util.converttoxml(result)
 
 
