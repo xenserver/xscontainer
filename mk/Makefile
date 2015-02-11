@@ -7,9 +7,16 @@ include $(B_BASE)/rpmbuild.mk
 REPO = $(call git_loc,xscontainer)
 RPM_BINDIR = $(RPM_RPMSDIR)/$(DOMAIN0_ARCH_OPTIMIZED)
 CSET_NUMBER := $(shell $(shell $(call git_cset_number,xscontainer)); echo $$CSET_NUMBER)
-VERSION := $(PLATFORM_VERSION)
-RELEASE := $(CSET_NUMBER)
+VERSION := $(PRODUCT_VERSION)
+RELEASE := $(BUILD_VERSION)
+
+# RELEASE may be defined, but empty
+ifeq ($(strip $(RELEASE)),)
+RELEASE := 0
+endif
+
 COMPLETE_VERSION := $(VERSION)-$(RELEASE)
+
 
 RPMPREFIX := xscontainer-$(COMPLETE_VERSION)
 RPM := $(RPMPREFIX).noarch.rpm
@@ -62,8 +69,8 @@ $(SUPP_PACK): $(XSCONTAINER_STAMP)
 	mkisofs -A "Citrix" -V "xscontainer" -J -joliet-long -r -o $(SUPP_PACK_SOURCES) $(MY_OBJ_DIR)/ISO-SOURCES
 	./make-supp-pack --out $(dir $@) \
 	                 --pdn $(PRODUCT_BRAND) \
-	                 --pdv $(PRODUCT_VERSION) \
-	                 --bld $(CSET_NUMBER) \
+	                 --pdv $(VERSION) \
+	                 --bld $(RELEASE) \
 	                 --spn $(notdir $@) \
 	                 --spd "XSContainer" \
 	                 --rxv "6.5" \
