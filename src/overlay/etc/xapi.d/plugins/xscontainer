@@ -38,6 +38,7 @@ def prepare_output(output):
     return "True%s" % (output)
 
 
+@devmode_only
 def install_vm(session, args):
     check_args(['url', 'sruuid'],  args)
     return prepare_output(coreos.install_vm(session,
