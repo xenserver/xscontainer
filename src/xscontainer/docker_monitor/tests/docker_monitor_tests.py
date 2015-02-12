@@ -119,18 +119,17 @@ class TestDockerMonitorThreads(unittest.TestCase):
         dm.start_monitoring(mvm_ref)
         registered = dm.get_registered()[0]
 
-        mstart_new_thread.assert_called_with(dm.monitor_vm, (registered,))
+        mstart_new_thread.assert_called_with(registered._monitoring_loop,
+                                             tuple())
 
     @patch("xscontainer.util.log.info")
     @patch("os.kill")
     def test_stop_monitoring(self, mos_kill, log_info):
         mvm_ref = MagicMock()
         dm = DockerMonitor()
-        thevm = DockerMonitor.VMWithPid(MagicMock(), ref=mvm_ref)
-        pid = 1200
-        thevm.pid = pid
-        dm.register(thevm)
+        thevm = MonitoredVM(MagicMock(), ref=mvm_ref)
 
+        dm.register(thevm)
         dm.stop_monitoring(mvm_ref)
 
-        mos_kill.assert_called_with(pid, signal.SIGTERM)
+        self.assertEqual(thevm._stop_monitoring_request, True)

@@ -21,7 +21,7 @@ def main():
     srref = api_helper.get_default_sr(session)
     sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = coreos.install_vm(session, url, sruuid)
-    vmuuid = '08915ddc-8fbc-a176-c59f-d0a5bb654273'
+    vmuuid = '89f83427-7567-d197-9fbd-f390ff49d129'
     client = api_helper.LocalXenAPIClient()
     vm = api_helper.VM(client, uuid = vmuuid)
     docker_monitor_api.deregister_vm(vmuuid, session)

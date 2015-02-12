@@ -38,17 +38,17 @@ class DeregistrationError(Exception):
 class MonitoredVM(api_helper.VM):
 
     """A VM class that can be monitored."""
-    __stop_monitoring_request = False
-    __children_pid = None
+    _stop_monitoring_request = False
+    _children_pid = None
 
 
     def start_monitoring(self):
-        thread.start_new_thread(self.__monitoring_loop, tuple())
+        thread.start_new_thread(self._monitoring_loop, tuple())
 
     def stop_monitoring(self, force=False):
-        self.__stop_monitoring_request = True
+        self._stop_monitoring_request = True
         if force:
-            pid = self.__children_pid
+            pid = self._children_pid
             if pid:
                 util.log.warning("Trying to sigkill %d" % (pid))
                 try:
@@ -57,12 +57,12 @@ class MonitoredVM(api_helper.VM):
                     util.log.exception("Error when running os.kill for %d"
                                        % (pid))
 
-    def __monitoring_loop(self):
+    def _monitoring_loop(self):
         # ToDo: not needed and not safe - doesn't survive XAPI restarts
         vmuuid = self.get_uuid()
         start_time = time.time()
         error_message = None
-        while not self.__stop_monitoring_request:
+        while not self._stop_monitoring_request:
             docker.wipe_docker_other_config(self)
             try:
                 docker.update_docker_ps(self)
@@ -99,7 +99,7 @@ class MonitoredVM(api_helper.VM):
                 self.__monitor_vm_events()
             except (XenAPI.Failure, util.XSContainerException):
                 log.exception("monitor_vm_events threw an exception, retry")
-            if not self.__stop_monitoring_request:
+            if not self._stop_monitoring_request:
                 time.sleep(MONITORRETRYSLEEPINS)
         docker.wipe_docker_other_config(self)
         log.info("monitor_vm returns from handling vm %s" % (vmuuid))
@@ -115,7 +115,7 @@ class MonitoredVM(api_helper.VM):
                                    stderr=subprocess.PIPE,
                                    stdin=subprocess.PIPE,
                                    shell=False)
-        self.__children_pid = process.pid
+        self._children_pid = process.pid
         process.stdin.write("\n")
         data = ""
         # set unblocking io for select.select
@@ -126,7 +126,7 @@ class MonitoredVM(api_helper.VM):
         # @todo: should make this more sane
         skippedheader = False
         openbrackets = 0
-        while not self.__stop_monitoring_request:
+        while not self._stop_monitoring_request:
             rlist, _, _ = select.select([process_fd], [], [],
                                         MONITOR_EVENTS_POLL_INTERVAL)
             if not rlist:
@@ -156,7 +156,7 @@ class MonitoredVM(api_helper.VM):
                     data = ""
             if len(data) >= 2048:
                 raise util.XSContainerException('monitor_vm buffer is full')
-        if self.__stop_monitoring_request:
+        if self._stop_monitoring_request:
             try:
                 if getattr(process, 'kill', None):
                     # Only availiable on newer version of python
@@ -233,14 +233,14 @@ class DockerMonitor(object):
     def is_registered_vm_ref(self, vm_ref):
         return vm_ref in self.vms.keys()
 
-    def _start_monitoring(self, vm_ref):
+    def start_monitoring(self, vm_ref):
         log.info("Starting to monitor VM: %s" % vm_ref)
         thevm = MonitoredVM(self.host.client, ref=vm_ref)
         self.register(thevm)
         thevm.start_monitoring()
         return
 
-    def _stop_monitoring(self, vm_ref):
+    def stop_monitoring(self, vm_ref):
         log.info("Removing monitor for VM ref: %s"
                  % vm_ref)
         thevm = self.get_vm_by_ref(vm_ref)
@@ -284,9 +284,9 @@ class DockerMonitor(object):
         is_monitored = self.is_registered_vm_ref(vmref)
         should_monitor = self._should_monitor(vmrecord)
         if not is_monitored and should_monitor:
-            self._start_monitoring(vmref)
+            self.start_monitoring(vmref)
         elif is_monitored and not should_monitor:
-            self._stop_monitoring(vmref)
+            self.stop_monitoring(vmref)
 
     def tear_down_all(self):
         for entry in self.get_registered():
