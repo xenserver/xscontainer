@@ -24,7 +24,7 @@ def install_vm(session, urlvhdbz2, sruuid,
                templatename='CoreOS'):
     atempfile = tempfile.mkstemp(suffix='.vhd.bz2')[1]
     atempfileunpacked = atempfile.replace('.bz2', '')
-    # ToDo: pipe instead, so the file never actually touches Dom0
+    # @todo: pipe instead, so the file never actually touches Dom0
     cmd = ['curl', '-o', atempfile, urlvhdbz2]
     util.runlocal(cmd)
     cmd = ['bzip2', '-d', atempfile]

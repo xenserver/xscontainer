@@ -5,10 +5,17 @@ from xscontainer.util import log
 import re
 import simplejson
 
+DOCKER_SOCKET_PATH = '/var/run/docker.sock'
+ERROR_CAUSE_NETWORK = (
+    "Error: Cannot find a valid IP that allows SSH connections to "
+    "the VM. Please make sure that Tools are installed, a "
+    "network route is set up, there is a SSH server running inside "
+    "the VM that is reachable from Dom0.")
+
 def prepare_request_cmds(request_type, request):
-    # ToDo: Must really not pipe (!!!)
+    # @todo: can we do something smarter then piping?
     request_cmds = ['echo -e "%s %s HTTP/1.0\r\n"' % (request_type, request) +
-                    '| ncat -U /var/run/docker.sock']
+                    '| ncat -U %s' %(DOCKER_SOCKET_PATH)]
     return request_cmds
 
 
@@ -25,7 +32,7 @@ def _interact_with_api(session, vmuuid, request_type, request,
     statuscode = headersplits[1]
     if statuscode[0] != '2':
         status = ' '.join(headersplits[2:])
-        failure_title = "Container error"
+        failure_title = "Container enlightenment error"
         failure_body = body.strip() + " (" + statuscode + ")"
         if ":" in failure_body:
             (failure_title, failure_body) = failure_body.split(":", 1)
@@ -229,10 +236,7 @@ def determine_error_cause(session, vmuuid):
     try:
         api_helper.get_suitable_vm_ip(session, vmuuid)
     except util.XSContainerException:
-        cause = ("Cannot find a valid IP that allows SSH connections to "
-                 "the VM. Please make sure that Tools are installed, the "
-                 "network is set up, there is a SSH server running inside "
-                 "the VM that it is reachable from Dom0.")
+        cause = ERROR_CAUSE_NETWORK
         return cause
     try:
         api_helper.execute_ssh(session, vmuuid, ['echo', 'hello world'])
@@ -240,23 +244,24 @@ def determine_error_cause(session, vmuuid):
         cause = (cause + "Can't connect at all with the ssh key. Please check" +
                  " the logs inside the VM.")
         return cause
+    # @todo: we could probably prepare this as part of xscontainer-prepare-vm
     try:
         api_helper.execute_ssh(session, vmuuid, ['command -v socat || ' +
                                                  'command -v ncat'])
     except util.XSContainerException:
         cause = (cause + "Can't find either socat or ncat in the VM. Please " +
                  "install socat or ncat.")
-    dockersocket = "/var/run/docker.sock"
     try:
-        api_helper.execute_ssh(session, vmuuid, ['test', '-S', dockersocket])
+        api_helper.execute_ssh(session, vmuuid, ['test', '-S',
+                                                 DOCKER_SOCKET_PATH])
     except util.XSContainerException:
         cause = (cause + "Can't find the docker's unix socket at %s."
-                         % (dockersocket) +
+                         % (DOCKER_SOCKET_PATH) +
                          " Please install and run Docker.")
     try:
         api_helper.execute_ssh(session, vmuuid, ['test -r "%s" && test -w "%s" '
-                                                 % (dockersocket, dockersocket)
-                                                 ])
+                                                 % (DOCKER_SOCKET_PATH,
+                                                    DOCKER_SOCKET_PATH)])
     except util.XSContainerException:
         cause = (cause + "Can't access docker's unix socket. Please add the " +
                          " user to the docker group to provide access.")

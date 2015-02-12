@@ -39,21 +39,22 @@ def ask_yes_or_no():
 
 def ask_before_starting():
     print("Would you like to push a pool-specific public SSH key in the "
-          + "~/.ssh/authorized_keys-file of the specified VM and user, to "
-          + "allow XS to interact with the containers inside the VM?")
+          + "~/.ssh/authorized_keys-file of the specified VM and user to "
+          + "allow Xenservers to interact with the containers inside the VM?")
     return ask_yes_or_no()
 
 
 def parse_options():
     print(os.path.basename(__file__)
           +
-          " is a tool that simplifies the configuration of RHEL7/CentOS7/OEL7"
-          + "and Ubuntu 14.04 VMs to work with the XenServer container addon.\n")
+          " is a tool that prepares RHEL7/CentOS7/OEL7 and Ubuntu 14.04 VMs to"
+          " work with the XenServer Container enlightenment.\n")
     parser = optparse.OptionParser()
     parser.add_option("-v", "--vmuuid", dest="vmuuid", help="UUID of the VM "
-                      + "that should be enabled with the XS container integration.")
+                      + "that shall be prepared for the XS container "
+                      + "enlightenment.")
     parser.add_option("-u", "--username", dest="username",
-                      help="Username which should be used on the VM")
+                      help="Existing username which shall be used.")
     options = parser.parse_args()[0]
     check_parameters(parser, options, ['vmuuid', 'username'])
     return options
@@ -63,14 +64,11 @@ def push_ssh_key(session, vmuuid, username):
     try:
         host = api_helper.get_suitable_vm_ip(session, vmuuid)
     except util.XSContainerException:
-        print("Error: Cannot find a valid IP that allows SSH connections to "
-              "the VM. Please make sure that Tools are installed, the "
-              "network is set up, there is a SSH server running inside "
-              "the VM that it is reachable from Dom0.")
+        print(docker.ERROR_CAUSE_NETWORK)
         return 1
     api_helper.set_vm_xscontainer_username(session, vmuuid, username)
     api_helper.ensure_idrsa(session)
-    print('Attempting to push the public xscontainer key to %s@%s'
+    print('Attempting to push the public xscontainer key to %s@%s.'
           % (username, host))
     key = api_helper.get_idrsa_secret_public(session)
     # The following command is derived from OpenSSH-Client's ssh-copy-id
@@ -85,10 +83,10 @@ def push_ssh_key(session, vmuuid, username):
     process = subprocess.Popen(cmd)
     process.communicate()
     if process.returncode == 0:
-        print('Success')
+        print('Success.')
         return 0
     else:
-        print('Error: Failed to push the public xscontainer key to %s@%s'
+        print('Error: Failed to push the public xscontainer key to %s@%s.'
               % (username, host))
         return 1
 
@@ -103,8 +101,8 @@ def verify_monitoring(session, vmuuid, username):
         return 0
     except util.XSContainerException:
         cause = docker.determine_error_cause(session, vmuuid)
-        print("Suspected problem: %s" % (cause))
-        log.exception("Could not monitor vm %s via %s due to: %s"
+        print("Suspected diagnosis: %s" % (cause))
+        log.exception("Could not monitor vm %s via %s due to: %s."
                       % (vmuuid, username, cause))
         return 1
 
@@ -119,6 +117,7 @@ def register_vm_for_monitoring(session, vmuuid):
 def main(argv=None):
     options = parse_options()
     if not ask_before_starting():
+        w
         return 1
     session = None
     try:
