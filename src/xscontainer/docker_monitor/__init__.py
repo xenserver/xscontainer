@@ -35,13 +35,14 @@ class DeregistrationError(Exception):
     pass
 
 
-class VMEventMonitorMixin:
+class MonitoredVM(api_helper.VM):
 
-    """VM Docker Events Monitor Mixin"""
+    """A VM class that can be monitored."""
+    __stop_monitoring_request = False
+    __children_pid = None
+
 
     def start_monitoring(self):
-        self.__stop_monitoring_request = False
-        self.__children_pid = None
         thread.start_new_thread(self.__monitoring_loop, tuple())
 
     def stop_monitoring(self, force=False):
@@ -117,30 +118,21 @@ class VMEventMonitorMixin:
         self.__children_pid = process.pid
         process.stdin.write("\n")
         data = ""
-        # ToDo: Got to make this sane
-        skippedheader = False
-        openbrackets = 0
-        # set unblocing io for select.select
+        # set unblocking io for select.select
         process_fd = process.stdout.fileno()
         fcntl.fcntl(process_fd,
                     fcntl.F_SETFL,
                     os.O_NONBLOCK | fcntl.fcntl(process_fd, fcntl.F_GETFL))
-        while True:
+        # @todo: should make this more sane
+        skippedheader = False
+        openbrackets = 0
+        while not self.__stop_monitoring_request:
             rlist, _, _ = select.select([process_fd], [], [],
                                         MONITOR_EVENTS_POLL_INTERVAL)
-            if self.__stop_monitoring_request:
-                try:
-                    if getattr(process, 'kill', None):
-                        process.kill()
-                    else:
-                        os.kill(process.pid, signal.SIGKILL)
-                except OSError:
-                    util.log.exception("Error when running os.kill for %d"
-                                       % (pid))
-                break
             if not rlist:
                 continue
             try:
+                # @todo: should read more than one char at once
                 lastread = process.stdout.read(1)
             except IOError, e:
                 if e[0] not in (errno.EAGAIN, errno.EINTR):
@@ -164,7 +156,18 @@ class VMEventMonitorMixin:
                     data = ""
             if len(data) >= 2048:
                 raise util.XSContainerException('monitor_vm buffer is full')
-        process.poll()
+        if self.__stop_monitoring_request:
+            try:
+                if getattr(process, 'kill', None):
+                    # Only availiable on newer version of python
+                    process.kill()
+                else:
+                    log.debug("I kill")
+                    os.kill(process.pid, signal.SIGTERM)
+            except OSError:
+                util.log.exception("Error when running os.kill for %d"
+                                   % (process.pid))
+        process.wait()
         returncode = process.returncode
         log.debug('monitor_vm (%s) exited with rc %s' %
                   (cmds, str(returncode)))
@@ -194,9 +197,6 @@ class DockerMonitor(object):
     """
 
     host = None
-
-    class VM(VMEventMonitorMixin, api_helper.VM):
-        pass
 
     def __init__(self, host=None):
         self.vms = {}
@@ -233,20 +233,20 @@ class DockerMonitor(object):
     def is_registered_vm_ref(self, vm_ref):
         return vm_ref in self.vms.keys()
 
-    def start_monitoring(self, vm_ref):
+    def _start_monitoring(self, vm_ref):
         log.info("Starting to monitor VM: %s" % vm_ref)
-        vm = DockerMonitor.VM(self.host.client, ref=vm_ref)
-        self.register(vm)
-        vm.start_monitoring()
+        thevm = MonitoredVM(self.host.client, ref=vm_ref)
+        self.register(thevm)
+        thevm.start_monitoring()
         return
 
-    def stop_monitoring(self, vm_ref):
+    def _stop_monitoring(self, vm_ref):
         log.info("Removing monitor for VM ref: %s"
                  % vm_ref)
-        vm = self.get_vm_by_ref(vm_ref)
-        if vm:
-            self.deregister(vm)
-            vm.stop_monitoring()
+        thevm = self.get_vm_by_ref(vm_ref)
+        if thevm:
+            self.deregister(thevm)
+            thevm.stop_monitoring()
 
     def refresh(self):
         vm_records = self.host.client.get_all_vm_records()
@@ -284,9 +284,9 @@ class DockerMonitor(object):
         is_monitored = self.is_registered_vm_ref(vmref)
         should_monitor = self._should_monitor(vmrecord)
         if not is_monitored and should_monitor:
-            self.start_monitoring(vmref)
+            self._start_monitoring(vmref)
         elif is_monitored and not should_monitor:
-            self.stop_monitoring(vmref)
+            self._stop_monitoring(vmref)
 
     def tear_down_all(self):
         for entry in self.get_registered():
