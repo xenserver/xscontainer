@@ -21,7 +21,7 @@ def remove_disks_in_vm_provisioning(session, vm_ref):
 
 def install_vm(session, urlvhdbz2, sruuid,
                vmname='CoreOs-%d' % (random.randint(0, 1000)),
-               templatename='CoreOS (experimental)'):
+               templatename='CoreOS'):
     atempfile = tempfile.mkstemp(suffix='.vhd.bz2')[1]
     atempfileunpacked = atempfile.replace('.bz2', '')
     # ToDo: pipe instead, so the file never actually touches Dom0
