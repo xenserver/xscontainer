@@ -21,6 +21,8 @@ MONITORRETRYSLEEPINS = 15
 MONITOR_EVENTS_POLL_INTERVAL = 0.5
 MONITOR_TIMEOUT_WARNING_S = 75.0
 REGISTRATION_KEY = "xscontainer-monitor"
+REGISTRATION_KEY_ON = 'True'
+REGISTRATION_KEY_OFF = 'False'
 EVENT_FROM_TIMEOUT_S = 3600.0
 XAPIRETRYSLEEPINS = 10
 
@@ -257,7 +259,8 @@ class DockerMonitor(object):
     def _should_monitor(self, vmrecord):
         # Check the VM is registered for monitoring
         if (REGISTRATION_KEY not in vmrecord['other_config'] or
-                vmrecord['other_config'][REGISTRATION_KEY] != 'True'):
+                (vmrecord['other_config'][REGISTRATION_KEY] !=
+                 REGISTRATION_KEY_ON)):
             return False
 
         # Only process events for running machines.

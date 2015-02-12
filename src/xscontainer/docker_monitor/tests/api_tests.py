@@ -1,4 +1,5 @@
 import unittest
+from xscontainer import docker_monitor
 from xscontainer.docker_monitor import DockerMonitor, api, REGISTRATION_KEY
 from xscontainer.docker_monitor.api import *
 from mock import patch, MagicMock
@@ -18,7 +19,7 @@ class TestAPIRegistration(unittest.TestCase):
         mock_vm.assert_called_with(client_inst, uuid=vm_uuid)
 
         vm_inst.update_other_config.assert_called_once_with(REGISTRATION_KEY,
-                                                            "True")
+            docker_monitor.REGISTRATION_KEY_ON)
 
     @patch('xscontainer.docker_monitor.api.VM')
     @patch('xscontainer.docker_monitor.api.XenAPIClient')
@@ -32,4 +33,4 @@ class TestAPIRegistration(unittest.TestCase):
         mock_vm.assert_called_with(client_inst, uuid=vm_uuid)
 
         vm_inst.update_other_config.assert_called_once_with(REGISTRATION_KEY,
-                                                            "False")
+            docker_monitor.REGISTRATION_KEY_OFF)

@@ -10,7 +10,10 @@ import re
 import tempfile
 
 
-CLOUD_CONFIG_OVERRIDE_PATH = "/opt/xensource/packages/files/xscontainer/cloud-config.template"
+CLOUD_CONFIG_OVERRIDE_PATH = (
+    "/opt/xensource/packages/files/xscontainer/cloud-config.template")
+XS_TOOLS_ISO_PATH = '/opt/xensource/packages/iso/xs-tools-6.5.0.iso'
+OTHER_CONFIG_CONFIG_DRIVE_KEY = "config-drive"
 
 def remove_disks_in_vm_provisioning(session, vm_ref):
     """Re-write the xml for provisioning disks to set a SR"""
@@ -131,7 +134,7 @@ def create_config_drive_iso(session, userdata, vmuuid):
     # Also add the Linux guest agent
     temptoolsisodir = tempfile.mkdtemp()
     cmd = ['mount', '-o', 'loop',
-           '/opt/xensource/packages/iso/xs-tools-6.5.0.iso',  temptoolsisodir]
+           XS_TOOLS_ISO_PATH,  temptoolsisodir]
     util.runlocal(cmd)
     agentpath = os.path.join(tempisodir, 'agent')
     os.makedirs(agentpath)
@@ -181,8 +184,8 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     isofile = create_config_drive_iso(session, userdata, vmuuid)
     configdisk_namelabel = 'Automatic Config Drive'
     vdiref = api_helper.import_disk(session, sruuid, isofile, 'raw',
-                                    configdisk_namelabel,
-                                    other_config_keys={'config-drive':'True'})
+        configdisk_namelabel,
+        other_config_keys = {OTHER_CONFIG_CONFIG_DRIVE_KEY: 'True'})
     os.remove(isofile)
     remove_config_drive(session, vmrecord, configdisk_namelabel)
     vbdref = api_helper.create_vbd(session, vmref, vdiref, 'ro', False)
