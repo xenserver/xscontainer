@@ -36,6 +36,7 @@ class DeregistrationError(Exception):
 
 
 class VMEventMonitorMixin:
+
     """VM Docker Events Monitor Mixin"""
 
     def start_monitoring(self):
@@ -53,7 +54,7 @@ class VMEventMonitorMixin:
                     os.kill(pid, signal.SIGKILL)
                 except OSError:
                     util.log.exception("Error when running os.kill for %d"
-                                       %(pid))
+                                       % (pid))
 
     def __monitoring_loop(self):
         # ToDo: not needed and not safe - doesn't survive XAPI restarts
@@ -78,16 +79,17 @@ class VMEventMonitorMixin:
                         pass
                     error_message = None
             except (XenAPI.Failure, util.XSContainerException):
-                passed_time = time.time()-start_time
+                passed_time = time.time() - start_time
                 if (not error_message
-                    and passed_time >= MONITOR_TIMEOUT_WARNING_S):
+                        and passed_time >= MONITOR_TIMEOUT_WARNING_S):
                     try:
                         session = self.get_session()
                         cause = docker.determine_error_cause(session, vmuuid)
-                        error_message = api_helper.send_message(session,
-                                            self.get_uuid(),
-                                            "Cannot monitor containers on VM",
-                                            cause)
+                        error_message = api_helper.send_message(
+                            session,
+                            self.get_uuid(),
+                            "Cannot monitor containers on VM",
+                            cause)
                     except (XenAPI.Failure):
                         # this can happen when XAPI is not running
                         pass
@@ -134,7 +136,7 @@ class VMEventMonitorMixin:
                         os.kill(process.pid, signal.SIGKILL)
                 except OSError:
                     util.log.exception("Error when running os.kill for %d"
-                                       %(pid))
+                                       % (pid))
                 break
             if not rlist:
                 continue
@@ -164,7 +166,8 @@ class VMEventMonitorMixin:
                 raise util.XSContainerException('monitor_vm buffer is full')
         process.poll()
         returncode = process.returncode
-        log.debug('monitor_vm (%s) exited with rc %s' % (cmds, str(returncode)))
+        log.debug('monitor_vm (%s) exited with rc %s' %
+                  (cmds, str(returncode)))
 
     def handle_docker_event(self, event):
         if 'status' in event:
