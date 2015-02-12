@@ -3,16 +3,18 @@ from xscontainer import util
 from xscontainer.util import log
 from xscontainer.docker_monitor import api as docker_monitor_api
 
+import distutils.version
+import glob
 import os
-import shutil
 import random
 import re
+import shutil
 import tempfile
 
 
 CLOUD_CONFIG_OVERRIDE_PATH = (
     "/opt/xensource/packages/files/xscontainer/cloud-config.template")
-XS_TOOLS_ISO_PATH = '/opt/xensource/packages/iso/xs-tools-6.5.0.iso'
+XS_TOOLS_ISO_PATH = '/opt/xensource/packages/iso/xs-tools-*.iso'
 OTHER_CONFIG_CONFIG_DRIVE_KEY = "config-drive"
 
 def remove_disks_in_vm_provisioning(session, vm_ref):
@@ -133,8 +135,16 @@ def create_config_drive_iso(session, userdata, vmuuid):
     log.debug("Userdata: %s" % (userdata))
     # Also add the Linux guest agent
     temptoolsisodir = tempfile.mkdtemp()
+    # First find the latest tools ISO
+    tools_iso_paths = glob.glob(XS_TOOLS_ISO_PATH)
+    if len(tools_iso_paths)<1:
+        raise util.XSContainerException("Can't locate XS tools in %s."
+                                        % (XS_TOOLS_ISO_PATH))
+    tools_iso_paths.sort(key = distutils.version.LooseVersion)
+    tools_iso_path = tools_iso_paths[-1]
+    # Then copy it
     cmd = ['mount', '-o', 'loop',
-           XS_TOOLS_ISO_PATH,  temptoolsisodir]
+           tools_iso_path,  temptoolsisodir]
     util.runlocal(cmd)
     agentpath = os.path.join(tempisodir, 'agent')
     os.makedirs(agentpath)
