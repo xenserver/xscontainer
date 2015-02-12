@@ -331,7 +331,7 @@ def create_vbd(session, vmref, vdiref, vbdmode, bootable):
 
 
 # ToDo: Ugly - this function may modify the file specified as filename
-def import_disk(session, sruuid, filename, fileformat, namelabel):
+def import_disk(session, sruuid, filename, fileformat, namelabel, other_config_keys={}):
     targetsr = session.xenapi.SR.get_by_uuid(sruuid)
     sizeinb = None
     if fileformat == "vhd":
@@ -358,6 +358,12 @@ def import_disk(session, sruuid, filename, fileformat, namelabel):
                'sharable': False, 'read_only': False, 'other_config': {},
                'name_label': namelabel}
     vdiref = session.xenapi.VDI.create(vdiconf)
+
+    other_config = session.xenapi.VDI.get_other_config(vdiref)
+    for key, value in other_config_keys.iteritems():
+        other_config[key] = value
+    session.xenapi.VDI.set_other_config(vdiref, other_config)
+
     vdiuuid = session.xenapi.VDI.get_record(vdiref)['uuid']
     cmd = ['curl', '-k', '--upload', filename,
            'https://localhost/import_raw_vdi?session_id=%s&vdi=%s&format=%s'

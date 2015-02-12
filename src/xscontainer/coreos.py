@@ -181,7 +181,8 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     isofile = create_config_drive_iso(session, userdata, vmuuid)
     configdisk_namelabel = 'Automatic Config Drive'
     vdiref = api_helper.import_disk(session, sruuid, isofile, 'raw',
-                                    configdisk_namelabel)
+                                    configdisk_namelabel,
+                                    other_config_keys={'config-drive':'True'})
     os.remove(isofile)
     remove_config_drive(session, vmrecord, configdisk_namelabel)
     vbdref = api_helper.create_vbd(session, vmref, vdiref, 'ro', False)
