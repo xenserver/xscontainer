@@ -23,7 +23,6 @@ RPM := $(RPMPREFIX).noarch.rpm
 SRPM := $(RPMPREFIX).src.rpm
 SUPP_PACK := $(MY_OUTPUT_DIR)/xscontainer-supp-pack-$(COMPLETE_VERSION)
 SUPP_PACK_SOURCES := $(MY_OUTPUT_DIR)/xscontainer-supp-pack-sources-$(COMPLETE_VERSION).iso
-
 XSCONTAINER_STAMP := $(MY_OBJ_DIR)/.rpmbuild.stamp
 
 
@@ -47,8 +46,6 @@ $(XSCONTAINER_STAMP): $(MY_SOURCES)/MANIFEST
         | bzip2 > $(RPM_SOURCESDIR)/xscontainer-$(COMPLETE_VERSION).tar.bz2
 	REPO=$(REPO) MY_OUTPUT_DIR=$(MY_OUTPUT_DIR) RELEASE=$(RELEASE) \
 		VERSION=$(VERSION) $(MAKE) -C $(REPO) bdist_rpm
-	mv $(MY_OUTPUT_DIR)/$(RPM) $(MY_MAIN_PACKAGES)
-	mv $(MY_OUTPUT_DIR)/$(SRPM) $(RPM_SRPMSDIR)
 	touch $@
 
 .PHONY: $(MY_SOURCES)/MANIFEST
@@ -74,5 +71,5 @@ $(SUPP_PACK): $(XSCONTAINER_STAMP)
 	                 --spn $(notdir $@) \
 	                 --spd "XSContainer" \
 	                 --rxv "6.5" \
-	                 "$(MY_MAIN_PACKAGES)/$(RPM)" \
+	                 $(MY_OUTPUT_DIR)/$(RPM) \
 	                 $(DOM0_RPMS)
