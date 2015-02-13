@@ -28,6 +28,7 @@ def devmode_only(func):
         return func(*args, **kwargs)
     return decorated
 
+
 def check_args(reqs, args):
     for req in reqs:
         if req not in args:
@@ -72,10 +73,12 @@ def get_inspect(session, args):
     return prepare_output(docker.get_inspect_xml(session, args['vmuuid'],
                                                  args['object']))
 
+
 def get_top(session, args):
     check_args(['vmuuid', 'object'], args)
     return prepare_output(docker.get_top_xml(session, args['vmuuid'],
                                              args['object']))
+
 
 def register(session, args):
     check_args(['vmuuid'], args)
@@ -118,6 +121,7 @@ def unpause(session, args):
     return prepare_output(docker.unpause(session, args['vmuuid'],
                                          args['container']))
 
+
 @devmode_only
 def passthrough(session, args):
     check_args(['vmuuid', 'command'], args)
@@ -137,7 +141,7 @@ def redirect_per_vm_operation_owned_by_other_slave(argv):
         this_hostref = api_helper.get_this_host_ref(session)
         hostref = vmrecord['resident_on']
         if (hostref != api_helper.NULLREF
-            and hostref != this_hostref):
+                and hostref != this_hostref):
             # Redirect the call
             try:
                 log.info("Forwarding request %s from %s to %s"

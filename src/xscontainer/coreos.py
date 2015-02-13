@@ -17,6 +17,7 @@ CLOUD_CONFIG_OVERRIDE_PATH = (
 XS_TOOLS_ISO_PATH = '/opt/xensource/packages/iso/xs-tools-*.iso'
 OTHER_CONFIG_CONFIG_DRIVE_KEY = "config-drive"
 
+
 def remove_disks_in_vm_provisioning(session, vm_ref):
     """Re-write the xml for provisioning disks to set a SR"""
     other_config = session.xenapi.VM.get_other_config(vm_ref)
@@ -93,6 +94,7 @@ def customize_userdata(session, userdata, vmuuid):
         userdata = filterxshinexists(userdata)
     return userdata
 
+
 def load_cloud_config_template(template_path=None):
     if template_path:
         # Do nothing, specifying the path takes precedence.
@@ -110,11 +112,11 @@ def load_cloud_config_template(template_path=None):
     fh.close()
 
     # Append template location to make it clear where it was loaded from.
-    template_data = "%s\n\n# Template loaded from %s" % \
-                        (template_data,
-                         template_path)
+    template_data = ("%s\n\n# Template loaded from %s"
+                     % (template_data, template_path))
 
     return template_data
+
 
 def get_config_drive_default(session):
     userdata = load_cloud_config_template()
@@ -137,10 +139,10 @@ def create_config_drive_iso(session, userdata, vmuuid):
     temptoolsisodir = tempfile.mkdtemp()
     # First find the latest tools ISO
     tools_iso_paths = glob.glob(XS_TOOLS_ISO_PATH)
-    if len(tools_iso_paths)<1:
+    if len(tools_iso_paths) < 1:
         raise util.XSContainerException("Can't locate XS tools in %s."
                                         % (XS_TOOLS_ISO_PATH))
-    tools_iso_paths.sort(key = distutils.version.LooseVersion)
+    tools_iso_paths.sort(key=distutils.version.LooseVersion)
     tools_iso_path = tools_iso_paths[-1]
     # Then copy it
     cmd = ['mount', '-o', 'loop',
@@ -192,9 +194,10 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     prepare_vm_for_config_drive(session, vmref, vmuuid)
     isofile = create_config_drive_iso(session, userdata, vmuuid)
     configdisk_namelabel = 'Automatic Config Drive'
+    other_config_keys = {OTHER_CONFIG_CONFIG_DRIVE_KEY: 'True'}
     vdiref = api_helper.import_disk(session, sruuid, isofile, 'raw',
-        configdisk_namelabel,
-        other_config_keys = {OTHER_CONFIG_CONFIG_DRIVE_KEY: 'True'})
+                                    configdisk_namelabel,
+                                    other_config_keys=other_config_keys)
     os.remove(isofile)
     remove_config_drive(session, vmrecord, configdisk_namelabel)
     vbdref = api_helper.create_vbd(session, vmref, vdiref, 'ro', False)

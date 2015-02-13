@@ -2,7 +2,9 @@ from xscontainer import api_helper
 import unittest
 from mock import MagicMock, patch, call
 
+
 class TestRefreshSessionOnFailureDecorator(unittest.TestCase):
+
     """
     Test class for validating the refresh decorator responds correctly under
     a series of exceptions.
@@ -42,7 +44,6 @@ class TestRefreshSessionOnFailureDecorator(unittest.TestCase):
             api_helper.refresh_session_on_failure(test_func)()
 
 
-
 class TestLocalXenAPIClient(unittest.TestCase):
 
     @patch("xscontainer.api_helper.get_local_api_session")
@@ -55,4 +56,4 @@ class TestLocalXenAPIClient(unittest.TestCase):
         client = api_helper.LocalXenAPIClient()
         client.get_session()
         # Make sure it get's the local session and doesn't cache it
-        mget_local_api_session.assert_has_calls([call(),call()])
+        mget_local_api_session.assert_has_calls([call(), call()])

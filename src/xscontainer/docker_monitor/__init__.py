@@ -43,7 +43,6 @@ class MonitoredVM(api_helper.VM):
     _stop_monitoring_request = False
     _ssh_client = None
 
-
     def start_monitoring(self):
         thread.start_new_thread(self._monitoring_loop, tuple())
 

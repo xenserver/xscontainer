@@ -149,7 +149,8 @@ class VM(XenAPIObject):
         return host.ref == self.get_host().ref
 
     def get_host(self):
-        host_ref = self.client.get_session().xenapi.VM.get_resident_on(self.ref)
+        host_ref = self.client.get_session(
+        ).xenapi.VM.get_resident_on(self.ref)
         return Host(self.client, host_ref)
 
     def get_other_config(self):
@@ -500,7 +501,8 @@ def prepare_ssh_client(session, vmuuid):
     host = get_suitable_vm_ip(session, vmuuid)
     ensure_idrsa(session)
     client = paramiko.SSHClient()
-    pkey = paramiko.rsakey.RSAKey.from_private_key(StringIO.StringIO(get_idrsa_secret_private(session)))
+    pkey = paramiko.rsakey.RSAKey.from_private_key(
+        StringIO.StringIO(get_idrsa_secret_private(session)))
     client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
     client.connect(host, port=22, username=username, pkey=pkey)
     return client
@@ -516,7 +518,8 @@ def execute_ssh(session, vmuuid, cmd):
         _, stdout, _ = client.exec_command(cmd)
         output = stdout.read(max_read_size)
         if stdout.read(1) != "":
-            raise Exception("too much data was returned when executing '%s'" % cmd)
+            raise Exception("too much data was returned when executing '%s'"
+                            % (cmd))
         client.close()
         return output
     except Exception, exception:
@@ -531,6 +534,7 @@ def send_message(session, vm_uuid, title, body):
     message_ref = session.xenapi.message.create(title, message_prio_warning,
                                                 message_type_vm, vm_uuid, body)
     return message_ref
+
 
 def destroy_message(session, message_ref):
     session.xenapi.message.destroy(message_ref)

@@ -12,15 +12,16 @@ ERROR_CAUSE_NETWORK = (
     "network route is set up, there is a SSH server running inside "
     "the VM that is reachable from Dom0.")
 
+
 def prepare_request_cmds(request_type, request):
     # @todo: can we do something smarter then piping?
     request_cmds = ['echo -e "%s %s HTTP/1.0\r\n"' % (request_type, request) +
-                    '| ncat -U %s' %(DOCKER_SOCKET_PATH)]
+                    '| ncat -U %s' % (DOCKER_SOCKET_PATH)]
     return request_cmds
 
 
 def _interact_with_api(session, vmuuid, request_type, request,
-                       message_error = False):
+                       message_error=False):
     request_cmds = prepare_request_cmds(request_type, request)
     stdout = api_helper.execute_ssh(session, vmuuid, request_cmds)
     headerend = stdout.index('\r\n\r\n')
@@ -40,9 +41,9 @@ def _interact_with_api(session, vmuuid, request_type, request,
             api_helper.send_message(session, vmuuid, failure_title,
                                     failure_body)
         raise util.XSContainerException("Request %s led to failure %s - "
-                                         % (request_cmds, status)
-                                         +" %s: %s"
-                                          %(failure_title, failure_body))
+                                        % (request_cmds, status)
+                                        + " %s: %s"
+                                          % (failure_title, failure_body))
     return body
 
 
@@ -54,13 +55,14 @@ def _get_api_json(session, vmuuid, request):
 
 def _post_api(session, vmuuid, request):
     stdout = _interact_with_api(session, vmuuid, 'POST', request,
-                                message_error = True)
+                                message_error=True)
     return stdout
 
 
 def _verify_or_throw_container(container):
     if not re.match('^[a-z0-9]+$', container):
         raise util.XSContainerException("Invalid container")
+
 
 def patch_docker_ps_status(ps_dict):
     """
@@ -80,6 +82,7 @@ def patch_docker_ps_status(ps_dict):
         else:
             ps_dict["Status"] = "Up"
     return
+
 
 def get_ps_dict(session, vmuuid):
     container_results = _get_api_json(session, vmuuid,
@@ -205,7 +208,7 @@ def update_docker_info(thevm):
 def update_docker_version(thevm):
     thevm.update_other_config('docker_version',
                               get_version_xml(thevm.get_session(),
-                              thevm.get_uuid()))
+                                              thevm.get_uuid()))
 
 
 def update_docker_ps(thevm):
