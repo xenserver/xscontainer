@@ -507,13 +507,16 @@ def prepare_ssh_client(session, vmuuid):
 
 
 def execute_ssh(session, vmuuid, cmd):
+    max_read_size = 4 * 1024
     client = None
     try:
         client = prepare_ssh_client(session, vmuuid)
         if isinstance(cmd, list):
             cmd = ' '.join(cmd)
         _, stdout, _ = client.exec_command(cmd)
-        output = stdout.read()
+        output = stdout.read(max_read_size)
+        if stdout.read(1) != "":
+            raise Exception("too much data was returned when executing '%s'" % cmd)
         client.close()
         return output
     except Exception, exception:
