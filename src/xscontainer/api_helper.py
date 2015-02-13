@@ -2,6 +2,9 @@ from xscontainer import util
 from xscontainer.util import log
 
 import os
+import paramiko
+import paramiko.rsakey
+import StringIO
 import tempfile
 import threading
 import time
@@ -492,23 +495,31 @@ def set_vm_xscontainer_username(session, vmuuid, newusername):
     update_vm_other_config(session, vmref, XSCONTAINER_USERNAME, newusername)
 
 
-def prepare_ssh_cmd(session, vmuuid, cmd):
+def prepare_ssh_client(session, vmuuid):
     username = get_vm_xscontainer_username(session, vmuuid)
     host = get_suitable_vm_ip(session, vmuuid)
     ensure_idrsa(session)
-    complete_cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
-                    '-o', 'StrictHostKeyChecking=no',
-                    '-o', 'PasswordAuthentication=no',
-                    '-o', 'LogLevel=quiet',
-                    '-o', 'ConnectTimeout=10',
-                    '-i', IDRSAFILENAME, '%s@%s' % (username, host)] + cmd
-    return complete_cmd
+    client = paramiko.SSHClient()
+    pkey = paramiko.rsakey.RSAKey.from_private_key(StringIO.StringIO(get_idrsa_secret_private(session)))
+    client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
+    client.connect(host, port=22, username=username, pkey=pkey)
+    return client
 
 
 def execute_ssh(session, vmuuid, cmd):
-    complete_cmd = prepare_ssh_cmd(session, vmuuid, cmd)
-    stdout = util.runlocal(complete_cmd)[1]
-    return str(stdout)
+    client = None
+    try:
+        client = prepare_ssh_client(session, vmuuid)
+        if isinstance(cmd, list):
+            cmd = ' '.join(cmd)
+        _, stdout, _ = client.exec_command(cmd)
+        output = stdout.read()
+        client.close()
+        return output
+    except Exception, exception:
+        if client:
+            client.close()
+        raise util.XSContainerException("execute_ssh error: %r" % exception)
 
 
 def send_message(session, vm_uuid, title, body):

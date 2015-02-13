@@ -41,7 +41,7 @@ class MonitoredVM(api_helper.VM):
 
     """A VM class that can be monitored."""
     _stop_monitoring_request = False
-    _children_pid = None
+    _ssh_client = None
 
 
     def start_monitoring(self):
@@ -49,15 +49,9 @@ class MonitoredVM(api_helper.VM):
 
     def stop_monitoring(self, force=False):
         self._stop_monitoring_request = True
-        if force:
-            pid = self._children_pid
-            if pid:
-                util.log.warning("Trying to sigkill %d" % (pid))
-                try:
-                    os.kill(pid, signal.SIGKILL)
-                except OSError:
-                    util.log.exception("Error when running os.kill for %d"
-                                       % (pid))
+        ssh_client = self._ssh_client
+        if ssh_client:
+            ssh_client.close()
 
     def _monitoring_loop(self):
         # ToDo: not needed and not safe - doesn't survive XAPI restarts
@@ -109,33 +103,30 @@ class MonitoredVM(api_helper.VM):
     def __monitor_vm_events(self):
         session = self.get_session()
         vmuuid = self.get_uuid()
-        request_cmds = docker.prepare_request_cmds('GET', '/events')
-        cmds = api_helper.prepare_ssh_cmd(session, vmuuid, request_cmds)
-        log.debug('monitor_vm is running: %s' % (cmds))
-        process = subprocess.Popen(cmds,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   stdin=subprocess.PIPE,
-                                   shell=False)
-        self._children_pid = process.pid
-        process.stdin.write("\n")
+        ssh_client = api_helper.prepare_ssh_client(session, vmuuid)
+        cmd = "ncat -U /var/run/docker.sock"
+        stdin, stdout, _ = ssh_client.exec_command(cmd)
+        stdin.write("GET /events HTTP/1.0\r\n\r\n")
+        log.debug("monitor_vm at %r is running: %r"
+                  % (ssh_client.get_transport().getpeername(), cmd))
+        self._ssh_client = ssh_client
         data = ""
         # set unblocking io for select.select
-        process_fd = process.stdout.fileno()
-        fcntl.fcntl(process_fd,
+        stdout_fd = stdout.channel.fileno()
+        fcntl.fcntl(stdout_fd,
                     fcntl.F_SETFL,
-                    os.O_NONBLOCK | fcntl.fcntl(process_fd, fcntl.F_GETFL))
+                    os.O_NONBLOCK | fcntl.fcntl(stdout_fd, fcntl.F_GETFL))
         # @todo: should make this more sane
         skippedheader = False
         openbrackets = 0
         while not self._stop_monitoring_request:
-            rlist, _, _ = select.select([process_fd], [], [],
+            rlist, _, _ = select.select([stdout_fd], [], [],
                                         MONITOR_EVENTS_POLL_INTERVAL)
             if not rlist:
                 continue
             try:
                 # @todo: should read more than one char at once
-                lastread = process.stdout.read(1)
+                lastread = stdout.read(1)
             except IOError, e:
                 if e[0] not in (errno.EAGAIN, errno.EINTR):
                     raise
@@ -160,19 +151,11 @@ class MonitoredVM(api_helper.VM):
                 raise util.XSContainerException('monitor_vm buffer is full')
         if self._stop_monitoring_request:
             try:
-                if getattr(process, 'kill', None):
-                    # Only availiable on newer version of python
-                    process.kill()
-                else:
-                    log.debug("I kill")
-                    os.kill(process.pid, signal.SIGTERM)
-            except OSError:
-                util.log.exception("Error when running os.kill for %d"
-                                   % (process.pid))
-        process.wait()
-        returncode = process.returncode
-        log.debug('monitor_vm (%s) exited with rc %s' %
-                  (cmds, str(returncode)))
+                ssh_client.close()
+            except Exception:
+                util.log.exception("Error when closeing ssh_client for %r"
+                                   % ssh_client)
+        log.debug('monitor_vm (%s) exited' % cmd)
 
     def handle_docker_event(self, event):
         if 'status' in event:
