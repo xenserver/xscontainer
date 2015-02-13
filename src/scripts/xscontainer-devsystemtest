@@ -21,7 +21,7 @@ def main():
     srref = api_helper.get_default_sr(session)
     sruuid = session.xenapi.SR.get_record(srref)['uuid']
     #vmuuid = coreos.install_vm(session, url, sruuid)
-    vmuuid = '89f83427-7567-d197-9fbd-f390ff49d129'
+    vmuuid = 'ee6cb110-4649-27fb-db69-a825088317c8'
     client = api_helper.LocalXenAPIClient()
     vm = api_helper.VM(client, uuid = vmuuid)
     docker_monitor_api.deregister_vm(vmuuid, session)
@@ -31,7 +31,8 @@ def main():
     #    session.xenapi.VM.clean_shutdown(vmref)
     #except:
     #    pass
-    #coreos.create_config_drive(session, vmuuid, sruuid, coreos.CLOUDCONFIG)
+    #coreos.create_config_drive(session, vmuuid, sruuid,
+    #                           coreos.get_config_drive_default(session))
     #session.xenapi.VM.start(vmref, False, True)
     connected = False
     while not connected:
