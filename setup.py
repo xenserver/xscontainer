@@ -40,5 +40,5 @@ if __name__ == "__main__":
                          [datapath('src/overlay/etc/rc.d/init.d/xscontainer-monitor')])],
           options = {'bdist_rpm': {'post_install': 'mk/post-install-script',
                                    'pre_uninstall' : 'mk/pre-uninstall-script',
-                                   'requires': 'mkisofs'}},
+                                   'requires': 'mkisofs gmp python-crypto python-paramiko'}},
     )
