@@ -179,8 +179,7 @@ def remove_config_drive(session, vmrecord, configdisk_namelabel):
         vdirecord = None
         if vbdrecord['VDI'] != api_helper.NULLREF:
             vdirecord = session.xenapi.VDI.get_record(vbdrecord['VDI'])
-            # ToDo: Should rather base this on a other-config key
-            if vdirecord['name_label'] == configdisk_namelabel:
+            if OTHER_CONFIG_CONFIG_DRIVE_KEY in vdirecord['other_config']:
                 if vbdrecord['currently_attached']:
                     session.xenapi.VBD.unplug(vbd)
                 session.xenapi.VBD.destroy(vbd)
