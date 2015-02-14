@@ -8,12 +8,7 @@ REPO = $(call git_loc,xscontainer)
 RPM_BINDIR = $(RPM_RPMSDIR)/$(DOMAIN0_ARCH_OPTIMIZED)
 CSET_NUMBER := $(shell $(shell $(call git_cset_number,xscontainer)); echo $$CSET_NUMBER)
 VERSION := $(PRODUCT_VERSION)
-RELEASE := $(BUILD_VERSION)
-
-# RELEASE may be defined, but empty
-ifeq ($(strip $(RELEASE)),)
-RELEASE := 0
-endif
+RELEASE := $(CSET_NUMBER)
 
 COMPLETE_VERSION := $(VERSION)-$(RELEASE)
 
