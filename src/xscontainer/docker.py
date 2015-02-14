@@ -72,7 +72,7 @@ def patch_docker_ps_status(ps_dict):
     register the regular status updates for the increase in container
     run time. E.g. "Up 40 seconds" ... "Up 4 hours".
 
-    The tempoary solution is to just return "Up" or "Up (Paused)".
+    The tempoary solution is to just return "Up", "Up (Paused)" or Exited (rc).
     """
     log.debug("Container Rec: %s" % ps_dict)
     status = ps_dict["Status"]
@@ -81,6 +81,10 @@ def patch_docker_ps_status(ps_dict):
             ps_dict["Status"] = "Up (Paused)"
         else:
             ps_dict["Status"] = "Up"
+    elif status.startswith("Exited ("):
+        closing_bracket_index = status.rfind(')')
+        if closing_bracket_index:
+            ps_dict["Status"] = ps_dict["Status"][0:closing_bracket_index+1]
     return
 
 
