@@ -103,58 +103,60 @@ class MonitoredVM(api_helper.VM):
         session = self.get_session()
         vmuuid = self.get_uuid()
         ssh_client = api_helper.prepare_ssh_client(session, vmuuid)
-        cmd = "ncat -U /var/run/docker.sock"
-        stdin, stdout, _ = ssh_client.exec_command(cmd)
-        stdin.write("GET /events HTTP/1.0\r\n\r\n")
-        log.debug("monitor_vm at %r is running: %r"
-                  % (ssh_client.get_transport().getpeername(), cmd))
-        self._ssh_client = ssh_client
-        data = ""
-        # set unblocking io for select.select
-        stdout_fd = stdout.channel.fileno()
-        fcntl.fcntl(stdout_fd,
-                    fcntl.F_SETFL,
-                    os.O_NONBLOCK | fcntl.fcntl(stdout_fd, fcntl.F_GETFL))
-        # @todo: should make this more sane
-        skippedheader = False
-        openbrackets = 0
-        while not self._stop_monitoring_request:
-            rlist, _, _ = select.select([stdout_fd], [], [],
-                                        MONITOR_EVENTS_POLL_INTERVAL)
-            if not rlist:
-                continue
-            try:
-                # @todo: should read more than one char at once
-                lastread = stdout.read(1)
-            except IOError, e:
-                if e[0] not in (errno.EAGAIN, errno.EINTR):
-                    raise
-                sys.exc_clear()
-                continue
-            if lastread == '':
-                break
-            data = data + lastread
-            if (not skippedheader and lastread == "\n"
-                    and len(data) >= 4 and data[-4:] == "\r\n\r\n"):
-                data = ""
-                skippedheader = True
-            elif lastread == '{':
-                openbrackets = openbrackets + 1
-            elif lastread == '}':
-                openbrackets = openbrackets - 1
-                if openbrackets == 0:
-                    event = simplejson.loads(data)
-                    self.handle_docker_event(event)
+        try:
+            cmd = "ncat -U /var/run/docker.sock"
+            stdin, stdout, _ = ssh_client.exec_command(cmd)
+            stdin.write("GET /events HTTP/1.0\r\n\r\n")
+            log.debug("__monitor_vm_events at %r is running: %r"
+                      % (ssh_client.get_transport().getpeername(), cmd))
+            self._ssh_client = ssh_client
+            data = ""
+            # set unblocking io for select.select
+            stdout_fd = stdout.channel.fileno()
+            fcntl.fcntl(stdout_fd,
+                        fcntl.F_SETFL,
+                        os.O_NONBLOCK | fcntl.fcntl(stdout_fd, fcntl.F_GETFL))
+            # @todo: should make this more sane
+            skippedheader = False
+            openbrackets = 0
+            while not self._stop_monitoring_request:
+                rlist, _, _ = select.select([stdout_fd], [], [],
+                                            MONITOR_EVENTS_POLL_INTERVAL)
+                if not rlist:
+                    continue
+                try:
+                    # @todo: should read more than one char at once
+                    lastread = stdout.read(1)
+                except IOError, exception:
+                    if exception[0] not in (errno.EAGAIN, errno.EINTR):
+                        raise
+                    sys.exc_clear()
+                    continue
+                if lastread == '':
+                    break
+                data = data + lastread
+                if (not skippedheader and lastread == "\n"
+                        and len(data) >= 4 and data[-4:] == "\r\n\r\n"):
                     data = ""
-            if len(data) >= 2048:
-                raise util.XSContainerException('monitor_vm buffer is full')
-        if self._stop_monitoring_request:
+                    skippedheader = True
+                elif lastread == '{':
+                    openbrackets = openbrackets + 1
+                elif lastread == '}':
+                    openbrackets = openbrackets - 1
+                    if openbrackets == 0:
+                        event = simplejson.loads(data)
+                        self.handle_docker_event(event)
+                        data = ""
+                if len(data) >= 2048:
+                    raise util.XSContainerException('__monitor_vm_events' +
+                                                    'is full')
+        finally:
             try:
                 ssh_client.close()
             except Exception:
-                util.log.exception("Error when closeing ssh_client for %r"
+                util.log.exception("Error when closing ssh_client for %r"
                                    % ssh_client)
-        log.debug('monitor_vm (%s) exited' % cmd)
+        log.debug('__monitor_vm_events (%s) exited' % cmd)
 
     def handle_docker_event(self, event):
         if 'status' in event:
