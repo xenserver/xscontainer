@@ -25,15 +25,19 @@ XSCONTAINER_STAMP := $(MY_OBJ_DIR)/.rpmbuild.stamp
 DOM0_RPMS :=
 # source packages
 DOM0_SRPMS  :=
+# source packages compiled and installed on dom0
+DOM0_BUILD_SRPMS :=
 
 DOM0_RPMS += /distros/CentOS/5.10/os/$(DOMAIN0_ARCH)/CentOS/mkisofs-2.01-10.7.el5.$(DOMAIN0_ARCH).rpm
 DOM0_SRPMS += /distros/CentOS/5.10/os/SRPMS/cdrtools-2.01-10.7.el5.src.rpm
 DOM0_RPMS += /distros/CentOS/5.10/os/$(DOMAIN0_ARCH)/CentOS/gmp-4.1.4-10.el5.$(DOMAIN0_ARCH).rpm
 DOM0_SRPMS += /distros/CentOS/5.10/os/SRPMS/gmp-4.1.4-10.el5.src.rpm
-DOM0_RPMS += /distfiles/xscontainer/epel/2015-02-13/5/$(DOMAIN0_ARCH)/python-paramiko-1.7.6-1.el5.noarch.rpm
+DOM0_RPMS += /usr/src/redhat/RPMS/noarch/python-paramiko-1.7.6-1.noarch.rpm
 DOM0_SRPMS += /distfiles/xscontainer/epel/2015-02-13/5/SRPMS/python-paramiko-1.7.6-1.el5.src.rpm
-DOM0_RPMS += /distfiles/xscontainer/epel/2015-02-13/5/$(DOMAIN0_ARCH)/python-crypto-2.0.1-5.el5.$(DOMAIN0_ARCH).rpm
+DOM0_RPMS += /usr/src/redhat/RPMS/$(DOMAIN0_ARCH)/python-crypto-2.0.1-5.$(DOMAIN0_ARCH).rpm
 DOM0_SRPMS += /distfiles/xscontainer/epel/2015-02-13/5/SRPMS/python-crypto-2.0.1-5.el5.src.rpm
+DOM0_BUILD_SRPMS += /distfiles/xscontainer/epel/2015-02-13/5/SRPMS/python-crypto-2.0.1-5.el5.src.rpm
+DOM0_BUILD_SRPMS += /distfiles/xscontainer/epel/2015-02-13/5/SRPMS/python-paramiko-1.7.6-1.el5.src.rpm
 
 .PHONY: build
 build: $(XSCONTAINER_STAMP) $(SUPP_PACK)
@@ -65,6 +69,7 @@ $(SUPP_PACK): $(XSCONTAINER_STAMP)
 	cp -f $(MY_OUTPUT_DIR)/$(SRPM) $(MY_OBJ_DIR)/ISO-SOURCES/
 	cp -f $(DOM0_SRPMS) $(MY_OBJ_DIR)/ISO-SOURCES/
 	mkisofs -A "Citrix" -V "xscontainer" -J -joliet-long -r -o $(SUPP_PACK_SOURCES) $(MY_OBJ_DIR)/ISO-SOURCES
+	@for f in $(DOM0_BUILD_SRPMS); do rpmbuild --rebuild $$f; done
 	./make-supp-pack --out $(dir $@) \
 	                 --pdn $(PRODUCT_BRAND) \
 	                 --pdv $(VERSION) \
