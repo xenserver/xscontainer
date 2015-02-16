@@ -504,7 +504,8 @@ def prepare_ssh_client(session, vmuuid):
     pkey = paramiko.rsakey.RSAKey.from_private_key(
         StringIO.StringIO(get_idrsa_secret_private(session)))
     client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
-    client.connect(host, port=22, username=username, pkey=pkey)
+    client.connect(host, port=22, username=username, pkey=pkey,
+                   look_for_keys=False)
     return client
 
 
