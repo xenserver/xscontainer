@@ -101,10 +101,12 @@ def verify_monitoring(session, vmuuid, username):
         print("Success.")
         return 0
     except util.XSContainerException:
+        log.exception("Could not monitor vm %s via %s"
+                      % (vmuuid, username))
         cause = docker.determine_error_cause(session, vmuuid)
-        print("Suspected diagnosis: %s" % (cause))
-        log.exception("Could not monitor vm %s via %s due to: %s."
-                      % (vmuuid, username, cause))
+        message = "Suspected diagnosis: %s" % (cause)
+        log.info(message)
+        print(message)
         return 1
 
 
