@@ -42,7 +42,7 @@ def _interact_with_api(session, vmuuid, request_type, request,
             api_helper.send_message(session, vmuuid, failure_title,
                                     failure_body)
         raise util.XSContainerException("Request %s led to failure %s - "
-                                        % (request_cmds, status)
+                                        % (request, status)
                                         + " %s: %s"
                                           % (failure_title, failure_body))
     return body
