@@ -8,6 +8,7 @@ import XenAPI
 
 XSCONTAINER_PRIVATE_SECRET_UUID = 'xscontainer-private-secret-uuid'
 XSCONTAINER_PUBLIC_SECRET_UUID = 'xscontainer-public-secret-uuid'
+XSCONTAINER_SSH_HOSTKEY = 'xscontainer-sshhostkey'
 XSCONTAINER_USERNAME = 'xscontainer-username'
 
 IDRSAFILENAME = '/opt/xensource/packages/files/xscontainer/xscontainer-idrsa'
@@ -490,3 +491,13 @@ def send_message(session, vm_uuid, title, body):
 
 def destroy_message(session, message_ref):
     session.xenapi.message.destroy(message_ref)
+
+
+def get_ssh_hostkey(session, vm_uuid):
+    return get_value_from_vm_other_config(session, vm_uuid,
+                                          XSCONTAINER_SSH_HOSTKEY)
+
+
+def set_ssh_hostkey(session, vm_uuid, host_key):
+    vm_ref = get_vm_ref_by_uuid(session, vm_uuid)
+    update_vm_other_config(session, vm_ref, XSCONTAINER_SSH_HOSTKEY, host_key)
