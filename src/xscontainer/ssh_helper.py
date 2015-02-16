@@ -112,6 +112,9 @@ def execute_ssh(session, vmuuid, cmd):
             if stdout.read(1) != "":
                 raise SshException("too much data was returned when executing"
                                 "'%s'" % (cmd))
+            returncode = stdout.channel.recv_exit_status()
+            if returncode != 0:
+                raise SshException("Returncode for '%s' is not 0" % cmd)
             return output
         except SshException:
             # This exception is already improved - leave it as it is
