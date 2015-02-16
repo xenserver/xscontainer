@@ -17,7 +17,7 @@ RPMPREFIX := xscontainer-$(COMPLETE_VERSION)
 RPM := $(RPMPREFIX).noarch.rpm
 SRPM := $(RPMPREFIX).src.rpm
 SUPP_PACK := $(MY_OUTPUT_DIR)/xscontainer-$(COMPLETE_VERSION)
-SUPP_PACK_SOURCES := $(MY_OUTPUT_DIR)/xscontainer-$(COMPLETE_VERSION).iso
+SUPP_PACK_SOURCES := $(MY_OUTPUT_DIR)/xscontainer-sources-$(COMPLETE_VERSION).iso
 XSCONTAINER_STAMP := $(MY_OBJ_DIR)/.rpmbuild.stamp
 
 
