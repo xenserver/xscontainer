@@ -72,8 +72,8 @@ def create_idrsa():
     os.remove(idrsafile)
     cmd = ['ssh-keygen', '-f', idrsafile, '-N', '']
     runlocal(cmd)
-    idrsapriv = read_file("%s" % (idrsafile))
-    idrsapub = read_file("%s.pub" % (idrsafile))
+    idrsapriv = read_file("%s" % (idrsafile)).strip()
+    idrsapub = read_file("%s.pub" % (idrsafile)).strip()
     os.remove(idrsafile)
     return (idrsapriv, idrsapub)
 
