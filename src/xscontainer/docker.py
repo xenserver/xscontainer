@@ -75,7 +75,6 @@ def patch_docker_ps_status(ps_dict):
 
     The tempoary solution is to just return "Up", "Up (Paused)" or Exited (rc).
     """
-    log.debug("Container Rec: %s" % ps_dict)
     status = ps_dict["Status"]
     if status.startswith("Up"):
         if status.endswith("(Paused)"):
