@@ -39,23 +39,24 @@ def ask_yes_or_no():
 
 
 def ask_before_starting():
-    print("Would you like to push a pool-specific public SSH key in the "
-          + "~/.ssh/authorized_keys-file of the specified VM and user to "
-          + "allow Xenservers to interact with the containers inside the VM?")
+    print("Would you like to push a XenServer pool-specific public SSH key "
+          + "into the ~/.ssh/authorized_keys file of the specified VM and "
+          + "therefore authorize XenServer hosts to interact with the "
+          + "containers inside the VM?")
     return ask_yes_or_no()
 
 
 def parse_options():
     print(os.path.basename(__file__)
           +
-          " is a tool that prepares RHEL7/CentOS7/OEL7 and Ubuntu 14.04 VMs to"
-          " work with the XenServer Container enlightenment.\n")
+          " is a tool that prepares RHEL7/CentOS7/OEL7 and Ubuntu 14.04 VMs"
+          " for XenServer container management.\n")
     parser = optparse.OptionParser()
     parser.add_option("-v", "--vmuuid", dest="vmuuid", help="UUID of the VM "
-                      + "that shall be prepared for the XS container "
-                      + "enlightenment.")
+                      + "that should be prepared for XenServer container "
+                      + "management.")
     parser.add_option("-u", "--username", dest="username",
-                      help="Existing username which shall be used.")
+                      help="VM user account to be used for SSH connections.")
     options = parser.parse_args()[0]
     check_parameters(parser, options, ['vmuuid', 'username'])
     return options
@@ -104,7 +105,7 @@ def verify_monitoring(session, vmuuid, username):
         log.exception("Could not monitor vm %s via %s"
                       % (vmuuid, username))
         cause = docker.determine_error_cause(session, vmuuid)
-        message = "Suspected diagnosis: %s" % (cause)
+        message = "Failure diagnosis: %s" % (cause)
         log.info(message)
         print(message)
         return 1
