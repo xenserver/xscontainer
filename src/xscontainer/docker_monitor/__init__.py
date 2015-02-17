@@ -18,8 +18,8 @@ import sys
 import XenAPI
 import xmlrpclib
 
-MONITORRETRYSLEEPINS = 15
-MONITOR_EVENTS_POLL_INTERVAL = 0.5
+MONITORRETRYSLEEPINS = 20
+MONITOR_EVENTS_POLL_INTERVAL = 1
 MONITOR_TIMEOUT_WARNING_S = 75.0
 REGISTRATION_KEY = "xscontainer-monitor"
 REGISTRATION_KEY_ON = 'True'
@@ -58,10 +58,15 @@ class MonitoredVM(api_helper.VM):
         vmuuid = self.get_uuid()
         start_time = time.time()
         error_message = None
+        docker.wipe_docker_other_config(self)
+        # keep track of when to wipe other_config to safe CPU-time
         while not self._stop_monitoring_request:
-            docker.wipe_docker_other_config(self)
+            # keep track to safe
+            wipe_other_config_required = False
+            error_in_this_iteration = False
             try:
                 docker.update_docker_ps(self)
+                wipe_other_config_required = True
                 docker.update_docker_info(self)
                 docker.update_docker_version(self)
                 if error_message:
@@ -91,13 +96,15 @@ class MonitoredVM(api_helper.VM):
                         # this can happen when XAPI is not running
                         pass
                 log.info("Could not connect to VM %s, retry" % (vmuuid))
-            try:
-                self.__monitor_vm_events()
-            except (XenAPI.Failure, util.XSContainerException):
-                log.exception("monitor_vm_events threw an exception, retry")
+            if not error_in_this_iteration:
+                try:
+                    self.__monitor_vm_events()
+                except (XenAPI.Failure, util.XSContainerException):
+                    log.exception("monitor_vm_events threw an exception, retry")
+            if wipe_other_config_required:
+                docker.wipe_docker_other_config(self)
             if not self._stop_monitoring_request:
                 time.sleep(MONITORRETRYSLEEPINS)
-        docker.wipe_docker_other_config(self)
         log.info("monitor_vm returns from handling vm %s" % (vmuuid))
 
     def __monitor_vm_events(self):
