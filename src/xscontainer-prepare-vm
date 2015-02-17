@@ -5,6 +5,7 @@ import sys
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.api_helper as api_helper
 import xscontainer.docker as docker
+import xscontainer.ssh_helper as ssh_helper
 import xscontainer.util as util
 import xscontainer.util.log as log
 
@@ -67,7 +68,7 @@ def push_ssh_key(session, vmuuid, username):
         print(docker.ERROR_CAUSE_NETWORK)
         return 1
     api_helper.set_vm_xscontainer_username(session, vmuuid, username)
-    api_helper.ensure_idrsa(session)
+    ssh_helper.ensure_idrsa(session)
     print('Attempting to push the public xscontainer key to %s@%s.'
           % (username, host))
     key = api_helper.get_idrsa_secret_public(session)

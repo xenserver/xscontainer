@@ -1,5 +1,6 @@
 from xscontainer import api_helper
 from xscontainer import docker
+from xscontainer import ssh_helper
 from xscontainer import util
 from xscontainer.util import log
 
@@ -102,7 +103,7 @@ class MonitoredVM(api_helper.VM):
     def __monitor_vm_events(self):
         session = self.get_session()
         vmuuid = self.get_uuid()
-        ssh_client = api_helper.prepare_ssh_client(session, vmuuid)
+        ssh_client = ssh_helper.prepare_ssh_client(session, vmuuid)
         try:
             cmd = "ncat -U /var/run/docker.sock"
             stdin, stdout, _ = ssh_client.exec_command(cmd)

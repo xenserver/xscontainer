@@ -1,4 +1,5 @@
 from xscontainer import api_helper
+from xscontainer import ssh_helper
 from xscontainer import util
 from xscontainer.util import log
 
@@ -23,7 +24,7 @@ def prepare_request_cmds(request_type, request):
 def _interact_with_api(session, vmuuid, request_type, request,
                        message_error=False):
     request_cmds = prepare_request_cmds(request_type, request)
-    stdout = api_helper.execute_ssh(session, vmuuid, request_cmds)
+    stdout = ssh_helper.execute_ssh(session, vmuuid, request_cmds)
     headerend = stdout.index('\r\n\r\n')
     header = stdout[:headerend]
     body = stdout[headerend + 4:]
@@ -130,7 +131,7 @@ def get_version_xml(session, vmuuid):
 # ToDo: Must remove this cmd, really
 def passthrough(session, vmuuid, command):
     cmd = [command]
-    result = api_helper.execute_ssh(session, vmuuid, cmd)
+    result = ssh_helper.execute_ssh(session, vmuuid, cmd)
     return result
 
 
@@ -246,27 +247,37 @@ def determine_error_cause(session, vmuuid):
         cause = ERROR_CAUSE_NETWORK
         return cause
     try:
-        api_helper.execute_ssh(session, vmuuid, ['echo', 'hello world'])
+        ssh_helper.execute_ssh(session, vmuuid, ['echo', 'hello world'])
+    except ssh_helper.AuthenticationException:
+        cause = (cause + "Can't authenticate in the VM with the key of the "
+                 "container integration. Please prepare the VM.")
+        return cause
+    except ssh_helper.VmHostKeyException:
+        cause = (cause + "The SSH host key of the VM has unexpectedly changed,"
+                 " which could potentially be a security breach. "
+                 " If you think this is safe and expected, you "
+                 " can reset the record stored in XS using xe vm-param-set"
+                 " other-config:xscontainer-sshhostkey=\"\".")
     except util.XSContainerException:
         cause = (cause + "Can't connect at all with the ssh key. Please check" +
                  " the logs inside the VM.")
         return cause
     # @todo: we could probably prepare this as part of xscontainer-prepare-vm
     try:
-        api_helper.execute_ssh(session, vmuuid, ['command -v socat || ' +
+        ssh_helper.execute_ssh(session, vmuuid, ['command -v socat || ' +
                                                  'command -v ncat'])
     except util.XSContainerException:
         cause = (cause + "Can't find either socat or ncat in the VM. Please " +
                  "install socat or ncat.")
     try:
-        api_helper.execute_ssh(session, vmuuid, ['test', '-S',
+        ssh_helper.execute_ssh(session, vmuuid, ['test', '-S',
                                                  DOCKER_SOCKET_PATH])
     except util.XSContainerException:
         cause = (cause + "Can't find the docker's unix socket at %s."
                          % (DOCKER_SOCKET_PATH) +
                          " Please install and run Docker.")
     try:
-        api_helper.execute_ssh(session, vmuuid, ['test -r "%s" && test -w "%s" '
+        ssh_helper.execute_ssh(session, vmuuid, ['test -r "%s" && test -w "%s" '
                                                  % (DOCKER_SOCKET_PATH,
                                                     DOCKER_SOCKET_PATH)])
     except util.XSContainerException:
