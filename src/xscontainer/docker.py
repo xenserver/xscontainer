@@ -245,32 +245,36 @@ def determine_error_cause(session, vmuuid):
         api_helper.get_suitable_vm_ip(session, vmuuid)
     except util.XSContainerException:
         cause = ERROR_CAUSE_NETWORK
-        # There is no reason to continue, if there is no network
+        # No reason to continue, if there is no network connection
         return cause
     try:
         ssh_helper.execute_ssh(session, vmuuid, ['echo', 'hello world'])
     except ssh_helper.AuthenticationException:
         cause = (cause + "Unable to verify key-based authentication. "
                  + "Please prepare the VM to install a key.")
+        # No reason to continue, if there is no SSH connection
         return cause
     except ssh_helper.VmHostKeyException:
         cause = (cause + "The SSH host key of the VM has unexpectedly"
                  + " changed, which could potentially be a security breach."
                  + " If you think this is safe and expected, you"
-                 + " can reset the record stored in XS using xe vm-param-set"
-                 + " other-config:xscontainer-sshhostkey=\"\".")
+                 + " can reset the record stored in XS using xe"
+                 + " vm-param-remove uuid=<vm-uuid> param-name=other-config"
+                 + " param-key=xscontainer-sshhostkey")
+        # No reason to continue, if there is no SSH connection
         return cause
     except ssh_helper.SshException:
-        cause = (cause + "Unable to connect to the VM with SSH. Please "
-                 + "check the logs inside the VM.")
+        cause = (cause + "Unable to connect to the VM using SSH. Please "
+                 + "check the logs inside the VM and also try manually.")
+        # No reason to continue, if there is no SSH connection
         return cause
+    # @todo: we could alternatively support socat
     # @todo: we could probably prepare this as part of xscontainer-prepare-vm
     try:
-        ssh_helper.execute_ssh(session, vmuuid, ['command -v socat || ' +
-                                                 'command -v ncat'])
+        ssh_helper.execute_ssh(session, vmuuid, ['command -v ncat'])
     except util.XSContainerException:
-        cause = (cause + "Unable to find either socat or ncat inside the VM. "
-                       + "Please install socat or ncat.")
+        cause = (cause + "Unable to find ncat inside the VM. Please install "
+                 + "ncat. ")
     try:
         ssh_helper.execute_ssh(session, vmuuid, ['test', '-S',
                                                  DOCKER_SOCKET_PATH])
@@ -278,14 +282,16 @@ def determine_error_cause(session, vmuuid):
         cause = (cause + "Unable to find the Docker unix socket at %s."
                          % (DOCKER_SOCKET_PATH) +
                          " Please install and run Docker.")
+        # No reason to continue, if there is no docker socket
+        return cause
     try:
         ssh_helper.execute_ssh(session, vmuuid, ['test -r "%s" && test -w "%s" '
                                                  % (DOCKER_SOCKET_PATH,
                                                     DOCKER_SOCKET_PATH)])
     except util.XSContainerException:
         cause = (cause + "Unable to access the Docker unix socket. "
-                       + "Please make sure the specified user account "
-                       + "belongs to the docker account group.")
+                 + "Please make sure the specified user account "
+                 + "belongs to the docker account group.")
     if cause == "":
         cause = "Unable to determine cause of failure."
     return cause
