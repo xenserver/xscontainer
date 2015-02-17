@@ -22,3 +22,14 @@ def deregister_vm(vm_uuid, session):
                               docker_monitor.REGISTRATION_KEY_OFF)
     docker.wipe_docker_other_config(thevm)
     return
+
+
+def mark_monitorable_vm(vm_uuid, session):
+    """ Ensure the VM has a REGISTRATION_KEY in vm:other_config. This key is
+        used by XC to know whether monitoring is an option for this VM """
+
+    client = XenAPIClient(session)
+    thevm = VM(client, uuid=vm_uuid)
+    other_config = thevm.get_other_config()
+    if (docker_monitor.REGISTRATION_KEY not in other_config):
+        deregister_vm(vm_uuid, session)

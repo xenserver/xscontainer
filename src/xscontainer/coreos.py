@@ -204,9 +204,9 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     if vmrecord['power_state'] == 'Running':
         session.xenapi.VBD.plug(vbdref)
     if re.search("\n\s*- ssh-rsa %XSRSAPUB%", userdata):
-        # if %XSRSAPUB% isn't commented out, automatically register the VM for
-        # monitoring
-        docker_monitor_api.register_vm(vmuuid, session)
+        # if %XSRSAPUB% isn't commented out, automatically mark the VM
+        # as monitorable.
+        docker_monitor_api.mark_monitorable_vm(vmuuid, session)
     vdirecord = session.xenapi.VDI.get_record(vdiref)
     return vdirecord['uuid']
 
