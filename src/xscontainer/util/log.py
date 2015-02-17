@@ -1,23 +1,28 @@
 import logging
 import logging.handlers
+import os
 import signal
 import sys
 import traceback
 
+ENABLE_DEV_LOGGING_FILE = ("/opt/xensource/packages/files/xscontainer/"
+                           "devmode_enabled")
+
 
 def configurelogging():
     _LOGGER.setLevel(logging.DEBUG)
-    streamhandler = logging.StreamHandler(sys.stderr)
-    streamhandler.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
         'xscontainer[%(process)d] - %(levelname)s - %(message)s')
-    streamhandler.setFormatter(formatter)
-    _LOGGER.addHandler(streamhandler)
     handler = logging.handlers.SysLogHandler(
         address='/dev/log', facility=logging.handlers.SysLogHandler.LOG_DAEMON)
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(formatter)
     _LOGGER.addHandler(handler)
+    if os.path.exists(ENABLE_DEV_LOGGING_FILE):
+        streamhandler = logging.StreamHandler(sys.stderr)
+        streamhandler.setLevel(logging.DEBUG)
+        streamhandler.setFormatter(formatter)
+        _LOGGER.addHandler(streamhandler)
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 
