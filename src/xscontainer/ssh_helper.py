@@ -100,7 +100,10 @@ def prepare_ssh_client(session, vmuuid):
 
 def execute_ssh(session, vmuuid, cmd):
     log.info(" ".join(cmd))
-    max_read_size = 50 * 1024
+    # The heavy weight is docker ps with plenty of containers.
+    # Assume 283 bytes per container.
+    # 300KB should be enough for 1085 containers.
+    max_read_size = 300 * 1024
     client = None
     try:
         try:
