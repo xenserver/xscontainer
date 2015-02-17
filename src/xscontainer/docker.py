@@ -245,22 +245,24 @@ def determine_error_cause(session, vmuuid):
         api_helper.get_suitable_vm_ip(session, vmuuid)
     except util.XSContainerException:
         cause = ERROR_CAUSE_NETWORK
+        # There is no reason to continue, if there is no network
         return cause
     try:
         ssh_helper.execute_ssh(session, vmuuid, ['echo', 'hello world'])
     except ssh_helper.AuthenticationException:
-        cause = (cause + "Can't authenticate in the VM with the key of the "
-                 "container integration. Please prepare the VM.")
+        cause = (cause + "Can't authenticate in the VM with the key of the"
+                 " container integration. Please prepare the VM.")
         return cause
     except ssh_helper.VmHostKeyException:
-        cause = (cause + "The SSH host key of the VM has unexpectedly changed,"
-                 " which could potentially be a security breach. "
-                 " If you think this is safe and expected, you "
+        cause = (cause + "The SSH host key of the VM has unexpectedly"
+                 " changed, which could potentially be a security breach."
+                 " If you think this is safe and expected, you"
                  " can reset the record stored in XS using xe vm-param-set"
                  " other-config:xscontainer-sshhostkey=\"\".")
-    except util.XSContainerException:
-        cause = (cause + "Can't connect at all with the ssh key. Please check" +
-                 " the logs inside the VM.")
+        return cause
+    except ssh_helper.SshException:
+        cause = (cause + "Can't connect at all with the ssh key. Please " +
+                 "check the logs inside the VM.")
         return cause
     # @todo: we could probably prepare this as part of xscontainer-prepare-vm
     try:

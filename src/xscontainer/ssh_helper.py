@@ -3,12 +3,26 @@ from xscontainer import util
 from xscontainer.util import log
 
 import os
-import time
 import paramiko
 import paramiko.rsakey
+import socket
 import StringIO
+import sys
+import time
 
 IDRSAFILENAME = '/opt/xensource/packages/files/xscontainer/xscontainer-idrsa'
+
+
+class SshException(util.XSContainerException):
+    pass
+
+
+class VmHostKeyException(SshException):
+    pass
+
+
+class AuthenticationException(SshException):
+    pass
 
 
 def ensure_idrsa(session):
@@ -44,10 +58,10 @@ class MyHostKeyPolicy(paramiko.MissingHostKeyPolicy):
                 return
             else:
                 # bad - throw error because of mismatch
-                log.error("Key for %s does not match the public key on record"
-                          % (hostname))
-                raise util.XSContainerException("SSH key provided by VM does "
-                                                "not match key on record.")
+                message = ("Key for VM %s does not match the knwon public key."
+                           % (self._vm_uuid))
+                log.error(message)
+                raise VmHostKeyException(message)
         else:
             # we don't have key on record. Let's remember this one for next
             # time
@@ -67,26 +81,45 @@ def prepare_ssh_client(session, vmuuid):
         StringIO.StringIO(api_helper.get_idrsa_secret_private(session)))
     client.get_host_keys().clear()
     client.set_missing_host_key_policy(MyHostKeyPolicy(session, vmuuid))
-    client.connect(host, port=22, username=username, pkey=pkey,
-                   look_for_keys=False)
+    try:
+        client.connect(host, port=22, username=username, pkey=pkey,
+                       look_for_keys=False)
+    except SshException:
+        # This exception is already improved - leave it as it is
+        raise
+    except paramiko.AuthenticationException, exception:
+        log.exception(exception)
+        raise AuthenticationException("Failed to authenticate with private key"
+                                      " on VM %s." % (vmuuid))
+    except (paramiko.SSHException, socket.error), exception:
+        # reraise as SshException
+        raise SshException, "prepare_ssh_client: %s" % exception, (
+            sys.exc_info()[2])
     return client
 
 
 def execute_ssh(session, vmuuid, cmd):
+    log.info(" ".join(cmd))
     max_read_size = 4 * 1024
     client = None
     try:
-        client = prepare_ssh_client(session, vmuuid)
-        if isinstance(cmd, list):
-            cmd = ' '.join(cmd)
-        _, stdout, _ = client.exec_command(cmd)
-        output = stdout.read(max_read_size)
-        if stdout.read(1) != "":
-            raise Exception("too much data was returned when executing '%s'"
-                            % (cmd))
-        client.close()
-        return output
-    except Exception, exception:
+        try:
+            client = prepare_ssh_client(session, vmuuid)
+            if isinstance(cmd, list):
+                cmd = ' '.join(cmd)
+            _, stdout, _ = client.exec_command(cmd)
+            output = stdout.read(max_read_size)
+            if stdout.read(1) != "":
+                raise SshException("too much data was returned when executing"
+                                "'%s'" % (cmd))
+            return output
+        except SshException:
+            # This exception is already improved - leave it as it is
+            raise
+        except Exception, exception:
+            # reraise as SshException
+            raise SshException, "execute_ssh: %s" % exception, (
+                sys.exc_info()[2])
+    finally:
         if client:
             client.close()
-        raise util.XSContainerException("execute_ssh error: %r" % exception)
