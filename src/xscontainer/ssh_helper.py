@@ -100,7 +100,7 @@ def prepare_ssh_client(session, vmuuid):
 
 def execute_ssh(session, vmuuid, cmd):
     log.info(" ".join(cmd))
-    max_read_size = 4 * 1024
+    max_read_size = 50 * 1024
     client = None
     try:
         try:
