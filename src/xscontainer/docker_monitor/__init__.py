@@ -311,6 +311,9 @@ def monitor_host():
     session = None
     host = None
 
+    # container monitoring can get a smaller slice of the CPU time
+    os.nice(10)
+
     signal.signal(signal.SIGTERM, interrupt_handler)
     signal.signal(signal.SIGINT, interrupt_handler)
 
