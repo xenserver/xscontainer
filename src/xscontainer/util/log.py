@@ -15,14 +15,20 @@ def configurelogging():
         'xscontainer[%(process)d] - %(levelname)s - %(message)s')
     handler = logging.handlers.SysLogHandler(
         address='/dev/log', facility=logging.handlers.SysLogHandler.LOG_DAEMON)
-    handler.setLevel(logging.DEBUG)
     handler.setFormatter(formatter)
     _LOGGER.addHandler(handler)
     if os.path.exists(ENABLE_DEV_LOGGING_FILE):
+        # log to stdout
         streamhandler = logging.StreamHandler(sys.stderr)
         streamhandler.setLevel(logging.DEBUG)
         streamhandler.setFormatter(formatter)
         _LOGGER.addHandler(streamhandler)
+        # log everything
+        streamhandler.setLevel(logging.DEBUG)
+        handler.setLevel(logging.DEBUG)
+    else:
+        # log info and above
+        handler.setLevel(logging.INFO)
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 
