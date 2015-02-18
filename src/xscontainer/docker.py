@@ -64,7 +64,7 @@ def _post_api(session, vmuuid, request):
 
 
 def _verify_or_throw_container(container):
-    if not re.match('^[a-z0-9]+$', container):
+    if not re.match('^[a-z0-9_.-]+$', container):
         raise util.XSContainerException("Invalid container")
 
 
