@@ -72,7 +72,7 @@ $(SUPP_PACK): $(XSCONTAINER_STAMP)
 	@for f in $(DOM0_BUILD_SRPMS); do rpmbuild --rebuild $$f; done
 	./make-supp-pack --out $(dir $@) \
 	                 --pdn $(PRODUCT_BRAND) \
-	                 --pdv $(VERSION) \
+	                 --pdv $(COMPLETE_VERSION) \
 	                 --bld $(RELEASE) \
 	                 --spn $(notdir $@) \
 	                 --spd "XenServer Container Management" \
