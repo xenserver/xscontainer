@@ -263,6 +263,10 @@ class DockerMonitor(object):
         elif vmrecord['resident_on'] != self.host.ref:
             return False
 
+        # We can't get the IP if the guest tools don't run
+        elif vmrecord['guest_metrics'] == api_helper.NULLREF:
+            return False
+
         # Ignore Dom0.
         elif vmrecord['is_control_domain']:
             return False
