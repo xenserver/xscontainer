@@ -75,7 +75,7 @@ $(SUPP_PACK): $(XSCONTAINER_STAMP)
 	                 --pdv $(VERSION) \
 	                 --bld $(RELEASE) \
 	                 --spn $(notdir $@) \
-	                 --spd "XSContainer" \
+	                 --spd "XenServer Container Management" \
 	                 --rxv "6.5" \
 	                 $(MY_OUTPUT_DIR)/$(RPM) \
 	                 $(DOM0_RPMS)
