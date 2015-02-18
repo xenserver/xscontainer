@@ -96,6 +96,7 @@ class MonitoredVM(api_helper.VM):
                         # this can happen when XAPI is not running
                         pass
                 log.info("Could not connect to VM %s, retry" % (vmuuid))
+                error_in_this_iteration = True
             if not error_in_this_iteration:
                 try:
                     self.__monitor_vm_events()
