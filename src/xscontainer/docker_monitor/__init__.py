@@ -120,7 +120,7 @@ class MonitoredVM(api_helper.VM):
         try:
             cmd = docker.prepare_request_cmd()
             log.info("__monitor_vm_events is running '%s' on VM '%s'"
-                     % (cmd, vmuuid ))
+                     % (cmd, vmuuid))
             stdin, stdout, _ = ssh_client.exec_command(cmd)
             stdin.write(docker.prepare_request_stdin('GET', '/events'))
             stdin.channel.shutdown_write()
@@ -339,7 +339,7 @@ def monitor_host():
                 DOCKER_MONITOR = DockerMonitor(host)
             else:
                 DOCKER_MONITOR.set_host(host)
-            log.info("Monitoring host %s" %(host.get_id()))
+            log.info("Monitoring host %s" % (host.get_id()))
             try:
                 # Avoid race conditions - get a current event token
                 event_from = session.xenapi.event_from(["vm"], '',  0.0)

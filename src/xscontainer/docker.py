@@ -87,7 +87,7 @@ def patch_docker_ps_status(ps_dict):
     elif status.startswith("Exited ("):
         closing_bracket_index = status.rfind(')')
         if closing_bracket_index:
-            ps_dict["Status"] = ps_dict["Status"][0:closing_bracket_index+1]
+            ps_dict["Status"] = ps_dict["Status"][0:closing_bracket_index + 1]
     return
 
 

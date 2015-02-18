@@ -262,6 +262,7 @@ def get_this_host_uuid():
         filehandler.close()
     return uuid
 
+
 def get_this_host_ref(session):
     host_uuid = get_this_host_uuid()
     host_ref = session.xenapi.host.get_by_uuid(host_uuid)

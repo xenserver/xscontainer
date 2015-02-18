@@ -75,7 +75,7 @@ class MyHostKeyPolicy(paramiko.MissingHostKeyPolicy):
 def prepare_ssh_client(session, vmuuid):
     username = api_helper.get_vm_xscontainer_username(session, vmuuid)
     host = api_helper.get_suitable_vm_ip(session, vmuuid)
-    log.info("prepare_ssh_client for vm %s via %s" %(vmuuid, host))
+    log.info("prepare_ssh_client for vm %s via %s" % (vmuuid, host))
     ensure_idrsa(session)
     client = paramiko.SSHClient()
     pkey = paramiko.rsakey.RSAKey.from_private_key(
@@ -123,7 +123,7 @@ def execute_ssh(session, vmuuid, cmd, stdin_input=None):
             output = stdout.read(max_read_size)
             if stdout.read(1) != "":
                 raise SshException("too much data was returned when executing"
-                                "'%s'" % (cmd))
+                                   "'%s'" % (cmd))
             returncode = stdout.channel.recv_exit_status()
             if returncode != 0:
                 log.info("execute_ssh '%s' on vm %s exited with rc %d: Stdout:"
