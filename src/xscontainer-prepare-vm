@@ -15,6 +15,7 @@ from xscontainer.docker_monitor import api as docker_monitor_api
 import optparse
 import os
 import subprocess
+import time
 
 
 def check_parameters(parser, options, parameters):
@@ -112,8 +113,13 @@ def verify_monitoring(session, vmuuid, username):
 
 
 def register_vm_for_monitoring(session, vmuuid):
-    print("Registering the VM for monitoring.")
+    print("Enabling monitoring for the VM.")
     docker_monitor_api.deregister_vm(vmuuid, session)
+    # @todo: workaround - give the monitor a chance to shut down nicely, before
+    # starting the new one. The correct solution would be to synchronize
+    # threads that are shutting down and starting in docker_monitor. But this
+    # seems more risky than this workaround for now.
+    time.sleep(3)
     docker_monitor_api.register_vm(vmuuid, session)
     print("Success.")
 
