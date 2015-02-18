@@ -24,7 +24,7 @@ def runlocal(cmd, shell=False, canfail=False):
                                shell=shell)
     stdout, stderr = process.communicate('')
     returncode = process.returncode
-    log.debug('Command %s exited with rc %d: Stdout: %s Stderr: %s' %
+    log.info('Command %s exited with rc %d: Stdout: %s Stderr: %s' %
               (cmd, returncode, stdout, stderr))
     if returncode != 0 and not canfail:
         raise(XSContainerException('Command failed'))

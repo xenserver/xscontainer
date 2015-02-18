@@ -75,6 +75,7 @@ class MyHostKeyPolicy(paramiko.MissingHostKeyPolicy):
 def prepare_ssh_client(session, vmuuid):
     username = api_helper.get_vm_xscontainer_username(session, vmuuid)
     host = api_helper.get_suitable_vm_ip(session, vmuuid)
+    log.info("prepare_ssh_client for vm %s via %s" %(vmuuid, host))
     ensure_idrsa(session)
     client = paramiko.SSHClient()
     pkey = paramiko.rsakey.RSAKey.from_private_key(
@@ -88,9 +89,10 @@ def prepare_ssh_client(session, vmuuid):
         # This exception is already improved - leave it as it is
         raise
     except paramiko.AuthenticationException, exception:
-        log.exception(exception)
-        raise AuthenticationException("Failed to authenticate with private key"
-                                      " on VM %s." % (vmuuid))
+        message = ("prepare_ssh_client failed to authenticate with private key"
+                   " on VM %s" % (vmuuid))
+        log.info(message)
+        raise AuthenticationException(message)
     except (paramiko.SSHException, socket.error), exception:
         # reraise as SshException
         raise SshException, "prepare_ssh_client: %s" % exception, (
@@ -99,7 +101,6 @@ def prepare_ssh_client(session, vmuuid):
 
 
 def execute_ssh(session, vmuuid, cmd):
-    log.info(" ".join(cmd))
     # The heavy weight is docker ps with plenty of containers.
     # Assume 283 bytes per container.
     # 300KB should be enough for 1085 containers.
@@ -110,6 +111,8 @@ def execute_ssh(session, vmuuid, cmd):
             client = prepare_ssh_client(session, vmuuid)
             if isinstance(cmd, list):
                 cmd = ' '.join(cmd)
+            log.info("execute_ssh will run '%s' on vm %s"
+                     % (cmd, vmuuid))
             _, stdout, _ = client.exec_command(cmd)
             output = stdout.read(max_read_size)
             if stdout.read(1) != "":
@@ -117,6 +120,8 @@ def execute_ssh(session, vmuuid, cmd):
                                 "'%s'" % (cmd))
             returncode = stdout.channel.recv_exit_status()
             if returncode != 0:
+                log.info("execute_ssh '%s' on vm %s exited with rc %d: Stdout:"
+                         " %s" % (cmd, vmuuid, returncode, stdout))
                 raise SshException("Returncode for '%s' is not 0" % cmd)
             return output
         except SshException:

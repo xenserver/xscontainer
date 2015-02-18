@@ -5,9 +5,10 @@ from xscontainer import docker
 from xscontainer import docker_monitor
 from xscontainer.api_helper import VM
 from xscontainer.api_helper import XenAPIClient
-
+from xscontainer.util import log
 
 def register_vm(vm_uuid, session):
+    log.info("register_vm %s" %(vm_uuid))
     client = XenAPIClient(session)
     thevm = VM(client, uuid=vm_uuid)
     thevm.update_other_config(docker_monitor.REGISTRATION_KEY,
@@ -16,6 +17,7 @@ def register_vm(vm_uuid, session):
 
 
 def deregister_vm(vm_uuid, session):
+    log.info("deregister_vm %s" %(vm_uuid))
     client = XenAPIClient(session)
     thevm = VM(client, uuid=vm_uuid)
     thevm.update_other_config(docker_monitor.REGISTRATION_KEY,
@@ -27,7 +29,7 @@ def deregister_vm(vm_uuid, session):
 def mark_monitorable_vm(vm_uuid, session):
     """ Ensure the VM has a REGISTRATION_KEY in vm:other_config. This key is
         used by XC to know whether monitoring is an option for this VM """
-
+    log.info("mark_monitorable_vm %s" %(vm_uuid))
     client = XenAPIClient(session)
     thevm = VM(client, uuid=vm_uuid)
     other_config = thevm.get_other_config()

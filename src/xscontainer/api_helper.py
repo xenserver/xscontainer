@@ -28,7 +28,7 @@ def refresh_session_on_failure(func):
         try:
             return func(*args, **kwargs)
         except Exception, exception:
-            log.debug("Caught exception '%s'. Retrying with new session."
+            log.error("Caught exception '%s'. Retrying with new session."
                       % (str(exception)))
             reinit_global_xapi_session()
             # Return the func undecorated
@@ -332,7 +332,9 @@ def create_vbd(session, vmref, vdiref, vbdmode, bootable):
 
 
 # ToDo: Ugly - this function may modify the file specified as filename
-def import_disk(session, sruuid, filename, fileformat, namelabel, other_config_keys={}):
+def import_disk(session, sruuid, filename, fileformat, namelabel,
+                other_config_keys={}):
+    log.info("import_disk file %s on sr %s" % (filename, sruuid))
     targetsr = session.xenapi.SR.get_by_uuid(sruuid)
     sizeinb = None
     if fileformat == "vhd":
@@ -374,6 +376,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel, other_config_k
 
 
 def export_disk(session, vdiuuid):
+    log.info("export_disk vdi %s" % (vdiuuid))
     filename = tempfile.mkstemp(suffix='.raw')[1]
     cmd = ['curl', '-k', '-o', filename,
            'https://localhost/export_raw_vdi?session_id=%s&vdi=%s&format=raw'
@@ -431,6 +434,7 @@ def get_idrsa_secret_public_keyonly(session):
 
 
 def set_idrsa_secret(session):
+    log.info("set_idrsa_secret is generating a new secret")
     (privateidrsa, publicidrsa) = util.create_idrsa()
     private_secret_ref = session.xenapi.secret.create(
         {'value': '%s' % (privateidrsa)})
@@ -472,6 +476,7 @@ def get_vm_xscontainer_username(session, vmuuid):
     username = get_value_from_vm_other_config(session, vmuuid,
                                               XSCONTAINER_USERNAME)
     if username == None:
+        # assume CoreOs's "core" by default
         username = 'core'
     return username
 

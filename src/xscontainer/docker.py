@@ -33,18 +33,19 @@ def _interact_with_api(session, vmuuid, request_type, request,
     #protocol = headersplits[0]
     statuscode = headersplits[1]
     if statuscode[0] != '2':
+        # this did not work
         status = ' '.join(headersplits[2:])
-        failure_title = "Container enlightenment error"
+        failure_title = "Container Management Error"
         failure_body = body.strip() + " (" + statuscode + ")"
         if ":" in failure_body:
             (failure_title, failure_body) = failure_body.split(":", 1)
         if message_error:
             api_helper.send_message(session, vmuuid, failure_title,
                                     failure_body)
-        raise util.XSContainerException("Request %s led to failure %s - "
-                                        % (request, status)
-                                        + " %s: %s"
-                                          % (failure_title, failure_body))
+        message = ("Request '%s' led to status %s - %s: %s"
+                   % (request, status, failure_title, failure_body))
+        log.info(message)
+        raise util.XSContainerException(message)
     return body
 
 
@@ -143,7 +144,6 @@ def get_inspect_dict(session, vmuuid, container):
 
 def get_inspect_xml(session, vmuuid, container):
     result = {'docker_inspect': get_inspect_dict(session, vmuuid, container)}
-    log.debug(result)
     return util.converttoxml(result)
 
 

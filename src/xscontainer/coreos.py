@@ -28,6 +28,8 @@ def remove_disks_in_vm_provisioning(session, vm_ref):
 def install_vm(session, urlvhdbz2, sruuid,
                vmname='CoreOs-%d' % (random.randint(0, 1000)),
                templatename='CoreOS'):
+    # devmode only
+    log.info("install_vm from url %s to sr %s" %(urlvhdbz2, sruuid))
     atempfile = tempfile.mkstemp(suffix='.vhd.bz2')[1]
     atempfileunpacked = atempfile.replace('.bz2', '')
     # @todo: pipe instead, so the file never actually touches Dom0
@@ -41,6 +43,7 @@ def install_vm(session, urlvhdbz2, sruuid,
     templateref = session.xenapi.VM.get_by_name_label(templatename)[0]
     vmref = session.xenapi.VM.clone(templateref, vmname)
     vmuuid = session.xenapi.VM.get_record(vmref)['uuid']
+    log.info("install_vm created vm %s" %(vmuuid))
     remove_disks_in_vm_provisioning(session, vmref)
     session.xenapi.VM.provision(vmref)
     api_helper.create_vbd(session, vmref, vdiref, 'rw', True)
@@ -49,6 +52,7 @@ def install_vm(session, urlvhdbz2, sruuid,
 
 
 def setup_network_on_lowest_pif(session, vmref):
+    # devmode only
     pifs = session.xenapi.PIF.get_all_records()
     lowest = None
     for pifref in pifs.keys():
@@ -107,6 +111,8 @@ def load_cloud_config_template(template_path=None):
         this_dir, _ = os.path.split(__file__)
         template_path = os.path.join(this_dir, "data", "cloud-config.template")
 
+    log.info("load_cloud_config_template from %s" % (template_path))
+
     fh = open(template_path)
     template_data = fh.read()
     fh.close()
@@ -126,6 +132,7 @@ def get_config_drive_default(session):
 
 
 def create_config_drive_iso(session, userdata, vmuuid):
+    log.info("create_config_drive_iso for vm %s" %(vmuuid))
     tempisodir = tempfile.mkdtemp()
     tempisofile = tempfile.mkstemp()[1]
     openstackfolder = os.path.join(tempisodir, 'openstack')
@@ -182,6 +189,8 @@ def remove_config_drive(session, vmrecord, configdisk_namelabel):
         if vbdrecord['VDI'] != api_helper.NULLREF:
             vdirecord = session.xenapi.VDI.get_record(vbdrecord['VDI'])
             if OTHER_CONFIG_CONFIG_DRIVE_KEY in vdirecord['other_config']:
+                log.info("remove_config_drive will destroy vdi %s"
+                         %(vdirecord['uuid']))
                 if vbdrecord['currently_attached']:
                     session.xenapi.VBD.unplug(vbd)
                 session.xenapi.VBD.destroy(vbd)
@@ -189,6 +198,7 @@ def remove_config_drive(session, vmrecord, configdisk_namelabel):
 
 
 def create_config_drive(session, vmuuid, sruuid, userdata):
+    log.info("create_config_drive for vm %s on sr %s" %(vmuuid, sruuid))
     vmref = session.xenapi.VM.get_by_uuid(vmuuid)
     vmrecord = session.xenapi.VM.get_record(vmref)
     prepare_vm_for_config_drive(session, vmref, vmuuid)
@@ -212,6 +222,7 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
 
 
 def get_config_drive_configuration(session, vdiuuid):
+    log.info("get_config_drive_configuration from vdi %s" % (vdiuuid))
     filename = api_helper.export_disk(session, vdiuuid)
     tempdir = tempfile.mkdtemp()
     cmd = ['mount', '-o', 'loop', '-t', 'iso9660', filename, tempdir]

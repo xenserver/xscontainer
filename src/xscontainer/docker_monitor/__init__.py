@@ -54,8 +54,8 @@ class MonitoredVM(api_helper.VM):
             ssh_client.close()
 
     def _monitoring_loop(self):
-        # ToDo: not needed and not safe - doesn't survive XAPI restarts
         vmuuid = self.get_uuid()
+        log.info("monitor_loop handles VM %s" % (vmuuid))
         start_time = time.time()
         error_message = None
         docker.wipe_docker_other_config(self)
@@ -73,6 +73,8 @@ class MonitoredVM(api_helper.VM):
                     # if we got past the above, it's about time to delete the
                     # error message, as all appears to be working again
                     try:
+                        log.info("monitor_loop destroys message for VM %s: %s"
+                                 % (vmuuid, error_message))
                         api_helper.destroy_message(self.get_session(),
                                                    error_message)
                     except XenAPI.Failure:
@@ -87,37 +89,40 @@ class MonitoredVM(api_helper.VM):
                     try:
                         session = self.get_session()
                         cause = docker.determine_error_cause(session, vmuuid)
+                        log.info("monitor_loop creates message for VM %s: %s"
+                                 % (vmuuid, cause))
                         error_message = api_helper.send_message(
                             session,
                             self.get_uuid(),
-                            "Cannot monitor containers on VM",
+                            "Container Management cannot monitor VM",
                             cause)
                     except (XenAPI.Failure):
                         # this can happen when XAPI is not running
                         pass
-                log.info("Could not connect to VM %s, retry" % (vmuuid))
+                log.info("Could not connect to VM %s, will retry" % (vmuuid))
                 error_in_this_iteration = True
             if not error_in_this_iteration:
                 try:
                     self.__monitor_vm_events()
                 except (XenAPI.Failure, util.XSContainerException):
-                    log.exception("monitor_vm_events threw an exception, retry")
+                    log.exception("__monitor_vm_events threw an exception, "
+                                  "will retry")
             if wipe_other_config_required:
                 docker.wipe_docker_other_config(self)
             if not self._stop_monitoring_request:
                 time.sleep(MONITORRETRYSLEEPINS)
-        log.info("monitor_vm returns from handling vm %s" % (vmuuid))
+        log.info("monitor_loop returns from handling vm %s" % (vmuuid))
 
     def __monitor_vm_events(self):
         session = self.get_session()
         vmuuid = self.get_uuid()
         ssh_client = ssh_helper.prepare_ssh_client(session, vmuuid)
         try:
-            cmd = "ncat -U /var/run/docker.sock"
+            cmd = "ncat -U %s" % (docker.DOCKER_SOCKET_PATH)
+            log.info("__monitor_vm_events is running '%s' on VM '%s'"
+                     % (cmd, vmuuid ))
             stdin, stdout, _ = ssh_client.exec_command(cmd)
             stdin.write("GET /events HTTP/1.0\r\n\r\n")
-            log.debug("__monitor_vm_events at %r is running: %r"
-                      % (ssh_client.get_transport().getpeername(), cmd))
             self._ssh_client = ssh_client
             data = ""
             # set unblocking io for select.select
@@ -165,7 +170,7 @@ class MonitoredVM(api_helper.VM):
             except Exception:
                 util.log.exception("Error when closing ssh_client for %r"
                                    % ssh_client)
-        log.debug('__monitor_vm_events (%s) exited' % cmd)
+        log.info('__monitor_vm_events (%s) exited' % cmd)
 
     def handle_docker_event(self, event):
         if 'status' in event:
@@ -333,6 +338,7 @@ def monitor_host():
                 DOCKER_MONITOR = DockerMonitor(host)
             else:
                 DOCKER_MONITOR.set_host(host)
+            log.info("Monitoring host %s" %(host.get_id()))
             try:
                 # Avoid race conditions - get a current event token
                 event_from = session.xenapi.event_from(["vm"], '',  0.0)
@@ -359,8 +365,8 @@ def monitor_host():
                     log.exception("Failed when trying to logout")
         except (socket.error, XenAPI.Failure, xmlrpclib.ProtocolError):
             if session is not None:
-                log.info("Could not connect to XAPI - Is XAPI running? " +
-                         "Will retry in %d" % (XAPIRETRYSLEEPINS))
+                log.error("Could not connect to XAPI - Is XAPI running? " +
+                          "Will retry in %d" % (XAPIRETRYSLEEPINS))
             else:
                 log.exception("Recovering from XAPI failure - Is XAPI " +
                               "restarting? Will retry in %d."
