@@ -100,7 +100,7 @@ def prepare_ssh_client(session, vmuuid):
     return client
 
 
-def execute_ssh(session, vmuuid, cmd):
+def execute_ssh(session, vmuuid, cmd, stdin_input=None):
     # The heavy weight is docker ps with plenty of containers.
     # Assume 283 bytes per container.
     # 300KB should be enough for 1085 containers.
@@ -111,9 +111,15 @@ def execute_ssh(session, vmuuid, cmd):
             client = prepare_ssh_client(session, vmuuid)
             if isinstance(cmd, list):
                 cmd = ' '.join(cmd)
-            log.info("execute_ssh will run '%s' on vm %s"
-                     % (cmd, vmuuid))
-            _, stdout, _ = client.exec_command(cmd)
+            stripped_stdin_input = stdin_input
+            if stripped_stdin_input:
+                stripped_stdin_input = stripped_stdin_input.strip()
+            log.info("execute_ssh will run '%s' with stdin '%s' on vm %s"
+                     % (cmd, stripped_stdin_input, vmuuid))
+            stdin, stdout, _ = client.exec_command(cmd)
+            if stdin_input:
+                stdin.write(stdin_input)
+                stdin.channel.shutdown_write()
             output = stdout.read(max_read_size)
             if stdout.read(1) != "":
                 raise SshException("too much data was returned when executing"

@@ -118,11 +118,12 @@ class MonitoredVM(api_helper.VM):
         vmuuid = self.get_uuid()
         ssh_client = ssh_helper.prepare_ssh_client(session, vmuuid)
         try:
-            cmd = "ncat -U %s" % (docker.DOCKER_SOCKET_PATH)
+            cmd = docker.prepare_request_cmd()
             log.info("__monitor_vm_events is running '%s' on VM '%s'"
                      % (cmd, vmuuid ))
             stdin, stdout, _ = ssh_client.exec_command(cmd)
-            stdin.write("GET /events HTTP/1.0\r\n\r\n")
+            stdin.write(docker.prepare_request_stdin('GET', '/events'))
+            stdin.channel.shutdown_write()
             self._ssh_client = ssh_client
             data = ""
             # set unblocking io for select.select

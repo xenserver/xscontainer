@@ -14,17 +14,19 @@ ERROR_CAUSE_NETWORK = (
     "the VM that is reachable from Dom0.")
 
 
-def prepare_request_cmds(request_type, request):
-    # @todo: can we do something smarter then piping?
-    request_cmds = ['echo -e "%s %s HTTP/1.0\r\n"' % (request_type, request) +
-                    '| ncat -U %s' % (DOCKER_SOCKET_PATH)]
-    return request_cmds
+def prepare_request_cmd():
+    return ("ncat -U %s" % (DOCKER_SOCKET_PATH))
+
+
+def prepare_request_stdin(request_type, request):
+    return ("%s %s HTTP/1.0\r\n\r\n" % (request_type, request))
 
 
 def _interact_with_api(session, vmuuid, request_type, request,
                        message_error=False):
-    request_cmds = prepare_request_cmds(request_type, request)
-    stdout = ssh_helper.execute_ssh(session, vmuuid, request_cmds)
+    provided_stdin = prepare_request_stdin(request_type, request)
+    stdout = ssh_helper.execute_ssh(session, vmuuid, prepare_request_cmd(),
+                                    stdin_input=provided_stdin)
     headerend = stdout.index('\r\n\r\n')
     header = stdout[:headerend]
     body = stdout[headerend + 4:]
