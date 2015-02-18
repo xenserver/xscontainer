@@ -253,12 +253,14 @@ def get_this_host_uuid():
     # ToDo: There must be a better way that also works with plugins?!?
     uuid = None
     filehandler = open("/etc/xensource-inventory", 'r')
-    for line in filehandler.readlines():
-        if line.startswith("INSTALLATION_UUID"):
-            uuid = line.split("'")[1]
-            filehandler.close()
-            return uuid
-
+    try:
+        for line in filehandler.readlines():
+            if line.startswith("INSTALLATION_UUID"):
+                uuid = line.split("'")[1]
+                break
+    finally:
+        filehandler.close()
+    return uuid
 
 def get_this_host_ref(session):
     host_uuid = get_this_host_uuid()
