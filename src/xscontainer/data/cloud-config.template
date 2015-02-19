@@ -14,6 +14,7 @@ coreos:
     - name: fleet.service
       command: start
 %XSHINEXISTS%
+    # Avoid routing via host internal networks
     - name: 00-eth%XSHIN%.network
       runtime: true
       content: |
@@ -25,6 +26,7 @@ coreos:
 
         [DHCP]
         UseRoutes=false%ENDXSHINEXISTS%
+    # XenServer Linux Guest Agent
     - name: xe-linux-distribution.service
       command: start
       content: |
@@ -41,11 +43,7 @@ coreos:
     # generate a new token for each unique cluster at https://discovery.etcd.io/new
     # discovery: https://discovery.etcd.io/<token>
 write_files:
-  - path: /etc/sysctl.d/10-disable-ipv6.conf
-    permissions: 0644
-    owner: root
-    content: |
-      net.ipv6.conf.all.disable_ipv6 = 1
+  # Enable ARP notifications for smooth network recovery after migrations
   - path: /etc/sysctl.d/10-enable-arp-notify.conf
     permissions: 0644
     owner: root
