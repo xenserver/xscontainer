@@ -93,9 +93,10 @@ def filterxshinexists(text):
 def customize_userdata(session, userdata, vmuuid):
     vmname = api_helper.get_vm_record_by_uuid(session, vmuuid)['name_label']
     vmname = re.sub(r'[\W_]+', '', vmname).lower()
-    userdata = userdata.replace('%XSVMTOHOST%', vmname)
+    userdata = userdata.replace('%XSVMNAMETOHOSTNAME%', vmname)
     userdata = userdata.replace(
-        '%XSRSAPUB%', api_helper.get_idrsa_secret_public_keyonly(session))
+        '%XSCONTAINERRSAPUB%',
+        api_helper.get_idrsa_secret_public_keyonly(session))
     mgmtnet_device = api_helper.get_hi_mgmtnet_device(session, vmuuid)
     if mgmtnet_device:
         userdata = userdata.replace('%XSHIN%', mgmtnet_device)
