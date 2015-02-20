@@ -3,7 +3,6 @@ from xscontainer import util
 from xscontainer.util import log
 from xscontainer.docker_monitor import api as docker_monitor_api
 
-import distutils.version
 import glob
 import os
 import random
@@ -141,12 +140,23 @@ def get_config_drive_default(session):
 
 def find_latest_tools_iso_path():
     tools_iso_paths = glob.glob(XS_TOOLS_ISO_PATH)
-    if len(tools_iso_paths) < 1:
+    if len(tools_iso_paths) == 0:
         raise util.XSContainerException("Can't locate XS tools in %s."
                                         % (XS_TOOLS_ISO_PATH))
-    tools_iso_paths.sort(key=distutils.version.LooseVersion)
-    tools_iso_path = tools_iso_paths[-1]
-    return tools_iso_path
+    elif len(tools_iso_paths) == 1:
+        return tools_iso_paths[0]
+    else:
+        # Let's first loose the xs-tools.iso without a release
+        tools_iso_path_wo_releaseless = []
+        for path in tools_iso_paths:
+            basename = os.path.basename(path)
+            if basename.count("-") != 2:
+                tools_iso_path_wo_releaseless.append(path)
+        # Then sort the remaining
+        tools_iso_path_wo_releaseless.sort(
+            key=lambda s: map(str, re.split('[.-]', s)))
+        # And return the last number out of the sorted list
+        return tools_iso_path_wo_releaseless[-1]
 
 
 def create_config_drive_iso(session, userdata, vmuuid):
