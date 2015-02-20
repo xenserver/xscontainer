@@ -2,3 +2,4 @@ recursive-include *.py
 src/xscontainer-monitor
 src/scripts/*
 recursive-include src/xscontainer/data/ *
+recursive-include src/overlay/ *

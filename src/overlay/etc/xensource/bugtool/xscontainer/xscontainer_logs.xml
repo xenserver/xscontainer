@@ -1,0 +1,3 @@
+<collect>
+<directory pattern=".*xscontainer\.log\.*[0-9]*" negate="false">/var/log</directory>
+</collect>

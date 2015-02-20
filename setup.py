@@ -5,11 +5,31 @@ import os
 import sys
 
 
+OVERLAY_FILES = {
+    'etc/xapi.d/plugins': ['xscontainer'],
+    'etc/logrotate.d': ['xscontainer'],
+    'etc/rc.d/init.d': ['xscontainer-monitor'],
+    'etc/xensource/bugtool' : ['xscontainer.xml'],
+    'etc/xensource/bugtool/xscontainer': ['xscontainer_logs.xml'],
+}
+
 def datapath(path):
     if not os.path.exists(path):
         if 'REPO' in os.environ:
             path = os.path.join(os.environ['REPO'], path)
     return path
+
+def map_overlay_files(overlay_files):
+    """
+    A utility function for creating the map required for 'data_files'.
+    """
+    mapping = []
+
+    for dest, files in overlay_files.iteritems():
+        file_locs = [datapath("src/overlay/%s/%s" % (dest, f)) for f in files]
+        mapping.append(("/%s" % dest, file_locs))
+
+    return mapping
 
 if __name__ == "__main__":
     version = '0.1'
@@ -36,12 +56,7 @@ if __name__ == "__main__":
                    #'src/scripts/xscontainer-pluginexample',
                    #'src/scripts/xscontainer-devsystemtest',
                    ],
-          data_files=[('/etc/xapi.d/plugins',
-                       [datapath(
-                        'src/overlay/etc/xapi.d/plugins/xscontainer')]),
-                      ('/etc/rc.d/init.d',
-                       [datapath(
-                        'src/overlay/etc/rc.d/init.d/xscontainer-monitor')])],
+          data_files=map_overlay_files(OVERLAY_FILES),
           options={'bdist_rpm': {'post_install': 'mk/post-install-script',
                                  'pre_uninstall': 'mk/pre-uninstall-script',
                                  'requires': 'mkisofs gmp python-crypto python-paramiko'}},
