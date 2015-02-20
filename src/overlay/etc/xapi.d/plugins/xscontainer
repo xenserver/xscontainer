@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+import os
+import sys
+import traceback
 import XenAPI
 import XenAPIPlugin
-import sys
 import xmlrpclib
-import os
+
 # ToDo: hack for building on Fedora
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.api_helper as api_helper
@@ -15,6 +17,24 @@ import xscontainer.util.log as log
 from xscontainer.docker_monitor import api as docker_monitor_api
 
 ENABLE_DEV_CALLS_FILE = "/opt/xensource/packages/files/xscontainer/devmode_enabled"
+
+
+def log_and_raise_exception(func):
+    """
+    Decorator method for logging exceptions before passing them on
+    """
+    def decorated(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            exception_type, exception_value, exception_traceback = (
+                sys.exc_info())
+            log.log_unhandled_exception("plugin",
+                                        exception_type,
+                                        exception_value,
+                                        exception_traceback)
+            raise
+    return decorated
 
 
 def devmode_only(func):
@@ -39,6 +59,7 @@ def prepare_output(output):
     return "True%s" % (output)
 
 
+@log_and_raise_exception
 @devmode_only
 def install_vm(session, args):
     check_args(['url', 'sruuid'],  args)
@@ -47,6 +68,7 @@ def install_vm(session, args):
                                             args['sruuid']))
 
 
+@log_and_raise_exception
 def create_config_drive(session, args):
     check_args(['vmuuid', 'sruuid', 'configuration'], args)
     configuration = args['configuration'].replace("%BR%", "\r\n")
@@ -56,11 +78,13 @@ def create_config_drive(session, args):
                                                      configuration))
 
 
+@log_and_raise_exception
 def get_config_drive_default(session, args):
     check_args(['templateuuid'], args)
     return prepare_output(coreos.get_config_drive_default(session))
 
 
+@log_and_raise_exception
 def get_config_drive_configuration(session, args):
     check_args(['vdiuuid'], args)
     return prepare_output(coreos.get_config_drive_configuration(session,
@@ -68,60 +92,70 @@ def get_config_drive_configuration(session, args):
                                                                 ))
 
 
+@log_and_raise_exception
 def get_inspect(session, args):
     check_args(['vmuuid', 'object'], args)
     return prepare_output(docker.get_inspect_xml(session, args['vmuuid'],
                                                  args['object']))
 
 
+@log_and_raise_exception
 def get_top(session, args):
     check_args(['vmuuid', 'object'], args)
     return prepare_output(docker.get_top_xml(session, args['vmuuid'],
                                              args['object']))
 
 
+@log_and_raise_exception
 def register(session, args):
     check_args(['vmuuid'], args)
     return prepare_output(docker_monitor_api.register_vm(args['vmuuid'],
                                                          session))
 
 
+@log_and_raise_exception
 def deregister(session, args):
     check_args(['vmuuid'], args)
     return prepare_output(docker_monitor_api.deregister_vm(args['vmuuid'],
                                                            session))
 
 
+@log_and_raise_exception
 def start(session, args):
     check_args(['vmuuid', 'container'], args)
     return prepare_output(docker.start(session, args['vmuuid'],
                                        args['container']))
 
 
+@log_and_raise_exception
 def stop(session, args):
     check_args(['vmuuid', 'container'], args)
     return prepare_output(docker.stop(session, args['vmuuid'],
                                       args['container']))
 
 
+@log_and_raise_exception
 def restart(session, args):
     check_args(['vmuuid', 'container'], args)
     return prepare_output(docker.restart(session, args['vmuuid'],
                                          args['container']))
 
 
+@log_and_raise_exception
 def pause(session, args):
     check_args(['vmuuid', 'container'], args)
     return prepare_output(docker.pause(session, args['vmuuid'],
                                        args['container']))
 
 
+@log_and_raise_exception
 def unpause(session, args):
     check_args(['vmuuid', 'container'], args)
     return prepare_output(docker.unpause(session, args['vmuuid'],
                                          args['container']))
 
 
+@log_and_raise_exception
 @devmode_only
 def passthrough(session, args):
     check_args(['vmuuid', 'command'], args)
@@ -129,6 +163,7 @@ def passthrough(session, args):
                                              args['command']))
 
 
+@log_and_raise_exception
 def redirect_per_vm_operation_owned_by_other_slave(argv):
     params, methodname = xmlrpclib.loads(argv[1])
     session_id = params[0]
