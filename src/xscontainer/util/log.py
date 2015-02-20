@@ -14,7 +14,8 @@ LOG_FILE = "/var/log/xscontainer.log"
 def configurelogging():
     _LOGGER.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
-        'xscontainer[%(process)d] - %(levelname)s - %(message)s')
+        '%(asctime)s - [%(process)d] - %(levelname)s - %(message)s',
+        '%Y-%m-%d %H:%M:%S')
     fileh = logging.FileHandler(LOG_FILE)
     fileh.setFormatter(formatter)
     _LOGGER.addHandler(fileh)
