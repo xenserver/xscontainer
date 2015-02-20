@@ -8,15 +8,16 @@ import traceback
 ENABLE_DEV_LOGGING_FILE = ("/opt/xensource/packages/files/xscontainer/"
                            "devmode_enabled")
 
+LOG_FILE = "/var/log/xscontainer.log"
+
 
 def configurelogging():
     _LOGGER.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
         'xscontainer[%(process)d] - %(levelname)s - %(message)s')
-    handler = logging.handlers.SysLogHandler(
-        address='/dev/log', facility=logging.handlers.SysLogHandler.LOG_DAEMON)
-    handler.setFormatter(formatter)
-    _LOGGER.addHandler(handler)
+    fileh = logging.FileHandler(LOG_FILE)
+    fileh.setFormatter(formatter)
+    _LOGGER.addHandler(fileh)
     if os.path.exists(ENABLE_DEV_LOGGING_FILE):
         # log to stdout
         streamhandler = logging.StreamHandler(sys.stderr)
@@ -25,10 +26,10 @@ def configurelogging():
         _LOGGER.addHandler(streamhandler)
         # log everything
         streamhandler.setLevel(logging.DEBUG)
-        handler.setLevel(logging.DEBUG)
+        fileh.setLevel(logging.DEBUG)
     else:
         # log info and above
-        handler.setLevel(logging.INFO)
+        fileh.setLevel(logging.INFO)
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 
