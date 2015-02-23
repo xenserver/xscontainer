@@ -48,7 +48,7 @@ class MonitoredVM(api_helper.VM):
     def start_monitoring(self):
         thread.start_new_thread(self._monitoring_loop, tuple())
 
-    def stop_monitoring(self, force=False):
+    def stop_monitoring(self):
         self._stop_monitoring_request = True
         ssh_client = self._ssh_client
         if ssh_client:
@@ -305,11 +305,9 @@ class DockerMonitor(object):
     def tear_down_all(self):
         for entry in self.get_registered():
             entry.stop_monitoring()
+        # @todo: we could have wait for thread.join with timeout here
         # Wait for children
         time.sleep(2)
-        # If Any are left - force them
-        for entry in self.get_registered():
-            entry.stop_monitoring(force=True)
 
 
 def interrupt_handler(signum, frame):
