@@ -43,6 +43,7 @@ class MonitoredVM(api_helper.VM):
     """A VM class that can be monitored."""
     _stop_monitoring_request = False
     _ssh_client = None
+    _error_message = None
 
     def start_monitoring(self):
         thread.start_new_thread(self._monitoring_loop, tuple())
@@ -53,11 +54,40 @@ class MonitoredVM(api_helper.VM):
         if ssh_client:
             ssh_client.close()
 
+    def _send_monitor_error_message(self):
+        self._wipe_monitor_error_message_if_needed()
+        try:
+            session = self.get_session()
+            vmuuid = self.get_uuid()
+            cause = docker.determine_error_cause(session, vmuuid)
+            log.info("_send_monitor_error_message for VM %s: %s"
+                     % (vmuuid, cause))
+            self._error_message = api_helper.send_message(
+                session,
+                vmuuid,
+                "Container Management cannot monitor VM",
+                cause)
+        except (XenAPI.Failure):
+            # this can happen when XAPI is not running.
+            pass
+
+    def _wipe_monitor_error_message_if_needed(self):
+        if self._error_message:
+            try:
+                log.info("_wipe_monitor_error_message needed for VM %s: %s"
+                         % (self.get_uuid(), self._error_message))
+                api_helper.destroy_message(self.get_session(),
+                                           self._error_message)
+            except XenAPI.Failure:
+                # this can happen if the user deleted the message in the
+                # meantime manually, or if XAPI is down
+                pass
+            self._error_message = None
+
     def _monitoring_loop(self):
         vmuuid = self.get_uuid()
         log.info("monitor_loop handles VM %s" % (vmuuid))
         start_time = time.time()
-        error_message = None
         docker.wipe_docker_other_config(self)
         # keep track of when to wipe other_config to safe CPU-time
         while not self._stop_monitoring_request:
@@ -69,36 +99,14 @@ class MonitoredVM(api_helper.VM):
                 wipe_other_config_required = True
                 docker.update_docker_info(self)
                 docker.update_docker_version(self)
-                if error_message:
-                    # if we got past the above, it's about time to delete the
-                    # error message, as all appears to be working again
-                    try:
-                        log.info("monitor_loop destroys message for VM %s: %s"
-                                 % (vmuuid, error_message))
-                        api_helper.destroy_message(self.get_session(),
-                                                   error_message)
-                    except XenAPI.Failure:
-                        # this can happen if the user deleted the message in the
-                        # meantime manually, or if XAPI is down
-                        pass
-                    error_message = None
+                # if we got past the above, it's about time to delete the
+                # error message, as all appears to be working again
+                self._wipe_monitor_error_message_if_needed()
             except (XenAPI.Failure, util.XSContainerException):
                 passed_time = time.time() - start_time
-                if (not error_message
+                if (not self._error_message
                         and passed_time >= MONITOR_TIMEOUT_WARNING_S):
-                    try:
-                        session = self.get_session()
-                        cause = docker.determine_error_cause(session, vmuuid)
-                        log.info("monitor_loop creates message for VM %s: %s"
-                                 % (vmuuid, cause))
-                        error_message = api_helper.send_message(
-                            session,
-                            self.get_uuid(),
-                            "Container Management cannot monitor VM",
-                            cause)
-                    except (XenAPI.Failure):
-                        # this can happen when XAPI is not running
-                        pass
+                    self._send_monitor_error_message()
                 log.info("Could not connect to VM %s, will retry" % (vmuuid))
                 error_in_this_iteration = True
             if not error_in_this_iteration:
