@@ -91,32 +91,27 @@ class MonitoredVM(api_helper.VM):
         docker.wipe_docker_other_config(self)
         # keep track of when to wipe other_config to safe CPU-time
         while not self._stop_monitoring_request:
-            # keep track to safe
-            wipe_other_config_required = False
-            error_in_this_iteration = False
             try:
-                docker.update_docker_ps(self)
-                wipe_other_config_required = True
                 docker.update_docker_info(self)
                 docker.update_docker_version(self)
                 # if we got past the above, it's about time to delete the
                 # error message, as all appears to be working again
                 self._wipe_monitor_error_message_if_needed()
+                try:
+                    try:
+                        self.__monitor_vm_events()
+                    finally:
+                        docker.wipe_docker_other_config(self)
+                except (XenAPI.Failure, util.XSContainerException):
+                    log.exception("__monitor_vm_events threw an exception, "
+                                  "will retry")
+                    raise
             except (XenAPI.Failure, util.XSContainerException):
                 passed_time = time.time() - start_time
                 if (not self._error_message
                         and passed_time >= MONITOR_TIMEOUT_WARNING_S):
                     self._send_monitor_error_message()
                 log.info("Could not connect to VM %s, will retry" % (vmuuid))
-                error_in_this_iteration = True
-            if not error_in_this_iteration:
-                try:
-                    self.__monitor_vm_events()
-                except (XenAPI.Failure, util.XSContainerException):
-                    log.exception("__monitor_vm_events threw an exception, "
-                                  "will retry")
-            if wipe_other_config_required:
-                docker.wipe_docker_other_config(self)
             if not self._stop_monitoring_request:
                 time.sleep(MONITORRETRYSLEEPINS)
         log.info("monitor_loop returns from handling vm %s" % (vmuuid))
@@ -133,7 +128,8 @@ class MonitoredVM(api_helper.VM):
             stdin.write(docker.prepare_request_stdin('GET', '/events'))
             stdin.channel.shutdown_write()
             self._ssh_client = ssh_client
-            data = ""
+            # Not that we are listening for events, get the latest state
+            docker.update_docker_ps(self)
             # set unblocking io for select.select
             stdout_fd = stdout.channel.fileno()
             fcntl.fcntl(stdout_fd,
@@ -142,6 +138,7 @@ class MonitoredVM(api_helper.VM):
             # @todo: should make this more sane
             skippedheader = False
             openbrackets = 0
+            data = ""
             while not self._stop_monitoring_request:
                 rlist, _, _ = select.select([stdout_fd], [], [],
                                             MONITOR_EVENTS_POLL_INTERVAL)
