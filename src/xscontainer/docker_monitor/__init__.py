@@ -20,7 +20,7 @@ import xmlrpclib
 
 MONITORRETRYSLEEPINS = 20
 MONITOR_EVENTS_POLL_INTERVAL = 1
-MONITOR_TIMEOUT_WARNING_S = 75.0
+MONITOR_TIMEOUT_WARNING_S = 120.0
 REGISTRATION_KEY = "xscontainer-monitor"
 REGISTRATION_KEY_ON = 'True'
 REGISTRATION_KEY_OFF = 'False'
@@ -114,6 +114,9 @@ class MonitoredVM(api_helper.VM):
                 log.info("Could not connect to VM %s, will retry" % (vmuuid))
             if not self._stop_monitoring_request:
                 time.sleep(MONITORRETRYSLEEPINS)
+        # Make sure that we don't leave back error messsages for VMs that are
+        # not monitored anymore
+        self._wipe_monitor_error_message_if_needed()
         log.info("monitor_loop returns from handling vm %s" % (vmuuid))
 
     def __monitor_vm_events(self):
