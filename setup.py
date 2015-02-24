@@ -28,6 +28,11 @@ def map_overlay_files(overlay_files):
         file_locs = [datapath("src/overlay/%s/%s" % (dest, f)) for f in files]
         mapping.append(("/%s" % dest, file_locs))
 
+    # xscontainer-demo: Package a special xscontainer-xs-tools.iso for CoreOS
+    # support
+    file_locs = [datapath("/output/tools-iso/xscontainer-xs-tools-6.5.0.iso")]
+    mapping.append(("/opt/xensource/packages/iso/", file_locs))
+
     return mapping
 
 if __name__ == "__main__":

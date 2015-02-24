@@ -13,7 +13,8 @@ import tempfile
 
 CLOUD_CONFIG_OVERRIDE_PATH = (
     "/opt/xensource/packages/files/xscontainer/cloud-config.template")
-XS_TOOLS_ISO_PATH = '/opt/xensource/packages/iso/xs-tools-*.iso'
+#xscontainer-demo: Refer to special xscontainer-xs-tools-*.iso
+XS_TOOLS_ISO_PATH = '/opt/xensource/packages/iso/xscontainer-xs-tools-*.iso'
 OTHER_CONFIG_CONFIG_DRIVE_KEY = "config-drive"
 
 

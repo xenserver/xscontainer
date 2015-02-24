@@ -39,6 +39,10 @@ PYCRYPTO_VERSION = 2.6.1-1
 PYCRYPTO_FULLNAME = $(PYCRYPTO_NAME)-$(PYCRYPTO_VERSION)
 PYCRYPTO_SOURCE = /distros/CentOS/7.0.1406/EPEL-20140902/SRPMS/p/$(PYCRYPTO_FULLNAME).el7.src.rpm
 
+#xscontainer-demo: Also package guest-templates
+DOM0_RPMS += /output/guest-templates/RPMS/x86_64/guest-templates-1.9.0-*.x86_64.rpm
+DOM0_SRPMS += /output/guest-templates/SRPMS/guest-templates-1.9.0-*.src.rpm
+
 DOM0_RPMS += /distros/CentOS/5.10/os/$(DOMAIN0_ARCH)/CentOS/mkisofs-2.01-10.7.el5.$(DOMAIN0_ARCH).rpm
 DOM0_SRPMS += /distros/CentOS/5.10/os/SRPMS/cdrtools-2.01-10.7.el5.src.rpm
 DOM0_RPMS += /usr/src/redhat/RPMS/noarch/$(PARAMIKO_FULLNAME).noarch.rpm
