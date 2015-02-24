@@ -159,7 +159,7 @@ def find_latest_tools_iso_path():
         return tools_iso_path_wo_releaseless[-1]
 
 
-def create_config_drive_iso(session, userdata, vmuuid):
+def create_config_drive_iso(session, userdata_template, vmuuid):
     log.info("create_config_drive_iso for vm %s" % (vmuuid))
     umountrequired = False
     temptoolsisodir = None
@@ -177,8 +177,10 @@ def create_config_drive_iso(session, userdata, vmuuid):
         latestfolder = os.path.join(openstackfolder, 'latest')
         os.makedirs(latestfolder)
         userdatafile = os.path.join(latestfolder, 'user_data')
-        userdata = customize_userdata(session, userdata, vmuuid)
+        userdatatemplatefile = "%s.template" % userdatafile
+        userdata = customize_userdata(session, userdata_template, vmuuid)
         util.write_file(userdatafile, userdata)
+        util.write_file(userdatatemplatefile, userdata_template)
         log.debug("Userdata: %s" % (userdata))
         # Also add the Linux guest agent
         temptoolsisodir = tempfile.mkdtemp()
@@ -206,8 +208,9 @@ def create_config_drive_iso(session, userdata, vmuuid):
         if umountrequired:
             cmd = ['umount', temptoolsisodir]
             util.runlocal(cmd)
-        for path in [temptoolsisodir, userdatafile, latestfolder,
-                     openstackfolder] + agentfilepaths + [agentpath, tempisodir]:
+        for path in [temptoolsisodir, userdatafile, userdatatemplatefile,
+                     latestfolder, openstackfolder] + agentfilepaths + \
+                     [agentpath, tempisodir]:
             if path != None:
                 if os.path.isdir(path):
                     os.rmdir(path)
@@ -270,9 +273,9 @@ def get_config_drive_configuration(session, vdiuuid):
         cmd = ['mount', '-o', 'loop', '-t', 'iso9660', filename, tempdir]
         util.runlocal(cmd)
         umountrequired = True
-        userdatapath = os.path.join(
-            tempdir, 'openstack', 'latest', 'user_data')
-        content = util.read_file(userdatapath)
+        userdatapath_template = os.path.join(
+            tempdir, 'openstack', 'latest', 'user_data.template')
+        content = util.read_file(userdatapath_template)
     finally:
         os.remove(filename)
         if umountrequired:
