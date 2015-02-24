@@ -10,13 +10,14 @@ ENABLE_DEV_LOGGING_FILE = ("/opt/xensource/packages/files/xscontainer/"
 
 LOG_FILE = "/var/log/xscontainer.log"
 
+M = 1024 * 1024
 
 def configurelogging():
     _LOGGER.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
         '%(asctime)s - [%(process)d] - %(levelname)s - %(message)s',
         '%Y-%m-%d %H:%M:%S')
-    fileh = logging.FileHandler(LOG_FILE)
+    fileh = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=5*M, backupCount=5)
     fileh.setFormatter(formatter)
     _LOGGER.addHandler(fileh)
     if os.path.exists(ENABLE_DEV_LOGGING_FILE):

@@ -7,7 +7,6 @@ import sys
 
 OVERLAY_FILES = {
     'etc/xapi.d/plugins': ['xscontainer'],
-    'etc/logrotate.d': ['xscontainer'],
     'etc/rc.d/init.d': ['xscontainer-monitor'],
     'etc/xensource/bugtool' : ['xscontainer.xml'],
     'etc/xensource/bugtool/xscontainer': ['xscontainer_logs.xml'],

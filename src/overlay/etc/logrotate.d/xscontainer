@@ -1,5 +1,0 @@
-/var/log/xscontainer.log {
-	rotate 5
-	size 5M
-	missingok
-}
