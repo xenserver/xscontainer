@@ -7,6 +7,7 @@ import tempfile
 import xml.dom.minidom
 import xml.sax.saxutils
 
+IDRSA_KEYLENGTH = 4096
 
 
 class XSContainerException(Exception):
@@ -70,11 +71,15 @@ def converttoxml(node, parentelement=None, dom=None):
 def create_idrsa():
     idrsafile = tempfile.mkstemp()[1]
     os.remove(idrsafile)
-    cmd = ['ssh-keygen', '-f', idrsafile, '-N', '']
+    idrsafilepub = "%s.pub" % (idrsafile)
+    cmd = ['ssh-keygen', '-f', idrsafile, '-b', IDRSA_KEYLENGTH, '-N', '']
     runlocal(cmd)
-    idrsapriv = read_file("%s" % (idrsafile)).strip()
-    idrsapub = read_file("%s.pub" % (idrsafile)).strip()
-    os.remove(idrsafile)
+    try:
+        idrsapriv = read_file(idrsafile).strip()
+        idrsapub = read_file(idrsafilepub).strip()
+    finally:
+        os.remove(idrsafile)
+        os.remove(idrsafilepub)
     return (idrsapriv, idrsapub)
 
 
