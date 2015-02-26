@@ -7,7 +7,7 @@ import tempfile
 import xml.dom.minidom
 import xml.sax.saxutils
 
-IDRSA_KEYLENGTH = 4096
+IDRSA_KEYLENGTH = "4096"
 
 
 class XSContainerException(Exception):
