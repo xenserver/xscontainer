@@ -1,0 +1,27 @@
+diff --git a/usr/src/redhat/SPECS/python-crypto.spec.unchanged b/usr/src/redhat/SPECS/python-crypto.spec
+index 3137ef5..9feea17 100644
+--- a/usr/src/redhat/SPECS/python-crypto.spec
++++ b/usr/src/redhat/SPECS/python-crypto.spec
+@@ -62,7 +62,7 @@ cp -a . %{py3dir}
+ %endif
+ 
+ %build
+-CFLAGS="%{optflags} -fno-strict-aliasing" %{__python} setup.py build
++ac_cv_func_malloc_0_nonnull=yes LDFLAGS="-L/usr/src/redhat/BUILD/gmp-root/usr/lib64/" CFLAGS="%{optflags} -fno-strict-aliasing -I/usr/src/redhat/BUILD/gmp-root/usr/include/" %{__python} setup.py build
+ 
+ %if %{with_python3}
+ cd %{py3dir}
+@@ -91,11 +91,11 @@ if [ -f %{buildroot}%{python_sitearch}/pycrypto-%{version}-py%{pythonver}.egg-in
+ fi > egg-info
+ 
+ %check
+-%{__python} setup.py test
++#%{__python} setup.py test
+ 
+ # Benchmark uses os.urandom(), which is available from python 2.4
+ %if %(%{__python} -c "import sys; print sys.hexversion >= 0x02040000 and 1 or 0" 2>/dev/null || echo 0)
+-PYTHONPATH=%{buildroot}%{python_sitearch} %{__python} pct-speedtest.py
++#PYTHONPATH=%{buildroot}%{python_sitearch} %{__python} pct-speedtest.py
+ %endif
+ 
+ # Test the python3 build too
