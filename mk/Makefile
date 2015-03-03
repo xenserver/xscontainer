@@ -103,8 +103,10 @@ $(SUPP_PACK): $(XSCONTAINER_STAMP) $(MY_SOURCES)/dependencies
 	                 --pdn $(PRODUCT_BRAND) \
 	                 --pdv $(COMPLETE_VERSION) \
 	                 --bld $(RELEASE) \
-	                 --spn $(notdir $@) \
+	                 --spn xscontainer \
 	                 --spd "XenServer Container Management" \
 	                 --rxv "6.5" \
 	                 $(MY_OUTPUT_DIR)/$(RPM) \
 	                 $(DOM0_RPMS)
+	mv $(dir $@)/xscontainer.iso $@.iso
+	mv $(dir $@)/xscontainer.iso.md5 $@.iso.md5
