@@ -40,7 +40,10 @@ def converttoxml(node, parentelement=None, dom=None):
 
     if type(node) == list:
         for item in node:
-            converttoxml(item, parentelement=parentelement, dom=dom)
+            # Indicate items in a list with <item></item> tags
+            item_node = dom.createElement("item")
+            parentelement.appendChild(item_node)
+            converttoxml(item, parentelement=item_node, dom=dom)
     elif type(node) == dict:
         for key, value in node.iteritems():
             # Workaround: XML element names may not
