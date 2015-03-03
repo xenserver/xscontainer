@@ -38,7 +38,15 @@ def _interact_with_api(session, vmuuid, request_type, request,
         # this did not work
         status = ' '.join(headersplits[2:])
         failure_title = "Container Management Error"
-        failure_body = body.strip() + " (" + statuscode + ")"
+        failure_body = body.strip()
+        if failure_body == "":
+            if statuscode == "304":
+                # 304 does not have a body and is quite common.
+                failure_body = ("The requested operation is currently not "
+                                "possible. Please try again later.")
+            else:
+                failure_body = ("The requested operation failed.")
+        failure_body = failure_body + " (" + statuscode + ")"
         if ":" in failure_body:
             (failure_title, failure_body) = failure_body.split(":", 1)
         if message_error:
