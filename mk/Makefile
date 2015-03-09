@@ -26,18 +26,18 @@ DOM0_RPMS :=
 # source packages
 DOM0_SRPMS  :=
 
-PARAMIKO_NAME = python-paramiko
-PARAMIKO_VERSION = 1.7.6-1
-PARAMIKO_FULLNAME = $(PARAMIKO_NAME)-$(PARAMIKO_VERSION)
-PARAMIKO_SOURCE = /distfiles/xscontainer/epel/2015-02-13/5/SRPMS/$(PARAMIKO_FULLNAME).el5.src.rpm
-GMP_NAME = gmp
-GMP_VERSION = 5.1.1-5
-GMP_FULLNAME = $(GMP_NAME)-$(GMP_VERSION)
-GMP_SOURCE = /distros/CentOS/7.0.1406/os/Source/SPackages/$(GMP_FULLNAME).el7.src.rpm
-PYCRYPTO_NAME = python-crypto
-PYCRYPTO_VERSION = 2.6.1-1
-PYCRYPTO_FULLNAME = $(PYCRYPTO_NAME)-$(PYCRYPTO_VERSION)
-PYCRYPTO_SOURCE = /distros/CentOS/7.0.1406/EPEL-20140902/SRPMS/p/$(PYCRYPTO_FULLNAME).el7.src.rpm
+#PARAMIKO_NAME = python-paramiko
+#PARAMIKO_VERSION = 1.7.6-1
+#PARAMIKO_FULLNAME = $(PARAMIKO_NAME)-$(PARAMIKO_VERSION)
+#PARAMIKO_SOURCE = /distfiles/xscontainer/epel/2015-02-13/5/SRPMS/$(PARAMIKO_FULLNAME).el5.src.rpm
+#GMP_NAME = gmp
+#GMP_VERSION = 5.1.1-5
+#GMP_FULLNAME = $(GMP_NAME)-$(GMP_VERSION)
+#GMP_SOURCE = /distros/CentOS/7.0.1406/os/Source/SPackages/$(GMP_FULLNAME).el7.src.rpm
+#PYCRYPTO_NAME = python-crypto
+#PYCRYPTO_VERSION = 2.6.1-1
+#PYCRYPTO_FULLNAME = $(PYCRYPTO_NAME)-$(PYCRYPTO_VERSION)
+#PYCRYPTO_SOURCE = /distros/CentOS/7.0.1406/EPEL-20140902/SRPMS/p/$(PYCRYPTO_FULLNAME).el7.src.rpm
 
 #xscontainer-demo: Also package guest-templates
 DOM0_RPMS += /output/guest-templates/RPMS/x86_64/guest-templates-1.9.0-*.x86_64.rpm
@@ -45,12 +45,12 @@ DOM0_SRPMS += /output/guest-templates/SRPMS/guest-templates-1.9.0-*.src.rpm
 
 DOM0_RPMS += /distros/CentOS/5.10/os/$(DOMAIN0_ARCH)/CentOS/mkisofs-2.01-10.7.el5.$(DOMAIN0_ARCH).rpm
 DOM0_SRPMS += /distros/CentOS/5.10/os/SRPMS/cdrtools-2.01-10.7.el5.src.rpm
-DOM0_RPMS += /usr/src/redhat/RPMS/noarch/$(PARAMIKO_FULLNAME).noarch.rpm
-DOM0_SRPMS += $(PARAMIKO_SOURCE)
-DOM0_RPMS += /usr/src/redhat/RPMS/$(DOMAIN0_ARCH)/$(GMP_FULLNAME).$(DOMAIN0_ARCH).rpm
-DOM0_SRPMS += $(GMP_SOURCE)
-DOM0_RPMS += /usr/src/redhat/RPMS/$(DOMAIN0_ARCH)/$(PYCRYPTO_FULLNAME).$(DOMAIN0_ARCH).rpm
-DOM0_SRPMS += $(PYCRYPTO_SOURCE)
+#DOM0_RPMS += /usr/src/redhat/RPMS/noarch/$(PARAMIKO_FULLNAME).noarch.rpm
+#DOM0_SRPMS += $(PARAMIKO_SOURCE)
+#DOM0_RPMS += /usr/src/redhat/RPMS/$(DOMAIN0_ARCH)/$(GMP_FULLNAME).$(DOMAIN0_ARCH).rpm
+#DOM0_SRPMS += $(GMP_SOURCE)
+#DOM0_RPMS += /usr/src/redhat/RPMS/$(DOMAIN0_ARCH)/$(PYCRYPTO_FULLNAME).$(DOMAIN0_ARCH).rpm
+#DOM0_SRPMS += $(PYCRYPTO_SOURCE)
 
 
 .PHONY: build
@@ -77,28 +77,28 @@ clean:
 	rm -f $(OUTPUT)
 	$(MAKE) -C $(REPO) clean
 
-.PHONY: $(MY_SOURCES)/dependencies
-$(MY_SOURCES)/dependencies:
-	# Paramiko can be build straight away
-	rpmbuild --rebuild $(PARAMIKO_SOURCE)
-	# GMP needs the nomd5-workaround as it is from el7
-	rpm -i $(GMP_SOURCE) --nomd5
-	rpmbuild -bs /usr/src/redhat/SPECS/$(GMP_NAME).spec
-	rpmbuild --rebuild  /usr/src/redhat/SRPMS/$(GMP_FULLNAME).src.rpm
-	# Extract GMP for compiling pycrypto - avoid installing inside the build system
-	mkdir -p /usr/src/redhat/BUILD/gmp-root
-	(cd /usr/src/redhat/BUILD/gmp-root && rpm2cpio /usr/src/redhat/RPMS/x86_64/gmp-devel-5.1.1-5.x86_64.rpm | cpio -idmv)
-	(cd /usr/src/redhat/BUILD/gmp-root && rpm2cpio /usr/src/redhat/RPMS/x86_64/gmp-5.1.1-5.x86_64.rpm | cpio -idmv)
-	# pycrypto needs the nomd5-workaround as it is from el7
-	rpm -i $(PYCRYPTO_SOURCE) --nomd5
-	# patch pycrypto to use the gmp extracted in the above
-	patch -d / -p1 < python-crypto-gmp-version-workaround.patch
-	rpmbuild -bs /usr/src/redhat/SPECS/$(PYCRYPTO_NAME).spec --nodeps
-	rpmbuild --rebuild /usr/src/redhat/SRPMS/$(PYCRYPTO_FULLNAME).src.rpm --nodeps
-	touch $@
+#.PHONY: $(MY_SOURCES)/dependencies
+#$(MY_SOURCES)/dependencies:
+#	# Paramiko can be build straight away
+#	rpmbuild --rebuild $(PARAMIKO_SOURCE)
+#	# GMP needs the nomd5-workaround as it is from el7
+#	rpm -i $(GMP_SOURCE) --nomd5
+#	rpmbuild -bs /usr/src/redhat/SPECS/$(GMP_NAME).spec
+#	rpmbuild --rebuild  /usr/src/redhat/SRPMS/$(GMP_FULLNAME).src.rpm
+#	# Extract GMP for compiling pycrypto - avoid installing inside the build system
+#	mkdir -p /usr/src/redhat/BUILD/gmp-root
+#	(cd /usr/src/redhat/BUILD/gmp-root && rpm2cpio /usr/src/redhat/RPMS/x86_64/gmp-devel-5.1.1-5.x86_64.rpm | cpio -idmv)
+#	(cd /usr/src/redhat/BUILD/gmp-root && rpm2cpio /usr/src/redhat/RPMS/x86_64/gmp-5.1.1-5.x86_64.rpm | cpio -idmv)
+#	# pycrypto needs the nomd5-workaround as it is from el7
+#	rpm -i $(PYCRYPTO_SOURCE) --nomd5
+#	# patch pycrypto to use the gmp extracted in the above
+#	patch -d / -p1 < python-crypto-gmp-version-workaround.patch
+#	rpmbuild -bs /usr/src/redhat/SPECS/$(PYCRYPTO_NAME).spec --nodeps
+#	rpmbuild --rebuild /usr/src/redhat/SRPMS/$(PYCRYPTO_FULLNAME).src.rpm --nodeps
+#	touch $@
 
 .PHONY: $(SUPP_PACK)
-$(SUPP_PACK): $(XSCONTAINER_STAMP) $(MY_SOURCES)/dependencies
+$(SUPP_PACK): $(XSCONTAINER_STAMP) #$(MY_SOURCES)/dependencies
 	mkdir -p $(MY_OBJ_DIR)/ISO-SOURCES
 	cp -f $(MY_OUTPUT_DIR)/$(SRPM) $(MY_OBJ_DIR)/ISO-SOURCES/
 	cp -f $(DOM0_SRPMS) $(MY_OBJ_DIR)/ISO-SOURCES/

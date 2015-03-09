@@ -3,10 +3,12 @@ from xscontainer import util
 from xscontainer.util import log
 
 import os
-import paramiko
-import paramiko.rsakey
-import socket
-import StringIO
+#import paramiko
+#import paramiko.rsakey
+import signal
+#import socket
+#import StringIO
+import subprocess
 import sys
 import time
 
@@ -16,13 +18,14 @@ IDRSAFILENAME = '/opt/xensource/packages/files/xscontainer/xscontainer-idrsa'
 class SshException(util.XSContainerException):
     pass
 
-
+"""
 class VmHostKeyException(SshException):
     pass
 
 
 class AuthenticationException(SshException):
     pass
+"""
 
 
 def ensure_idrsa(session):
@@ -37,7 +40,7 @@ def ensure_idrsa(session):
         util.write_file(IDRSAFILENAME,
                         api_helper.get_idrsa_secret_private(session))
 
-
+"""
 class MyHostKeyPolicy(paramiko.MissingHostKeyPolicy):
 
     _session = None
@@ -98,6 +101,16 @@ def prepare_ssh_client(session, vmuuid):
         raise SshException, "prepare_ssh_client: %s" % exception, (
             sys.exc_info()[2])
     return client
+"""
+
+
+def prepare_ssh_client(session, vmuuid):
+    username = api_helper.get_vm_xscontainer_username(session, vmuuid)
+    host = api_helper.get_suitable_vm_ip(session, vmuuid)
+    log.info("prepare_ssh_client for vm %s via %s" % (vmuuid, host))
+    ensure_idrsa(session)
+    client = MyClient(username, host)
+    return client
 
 
 def execute_ssh(session, vmuuid, cmd, stdin_input=None):
@@ -119,12 +132,14 @@ def execute_ssh(session, vmuuid, cmd, stdin_input=None):
             stdin, stdout, _ = client.exec_command(cmd)
             if stdin_input:
                 stdin.write(stdin_input)
-                stdin.channel.shutdown_write()
+                stdin.flush()
+                stdin.close()
+                # stdin.channel.shutdown_write()
             output = stdout.read(max_read_size)
             if stdout.read(1) != "":
                 raise SshException("too much data was returned when executing"
                                    "'%s'" % (cmd))
-            returncode = stdout.channel.recv_exit_status()
+            returncode = client.channel.recv_exit_status()
             if returncode != 0:
                 log.info("execute_ssh '%s' on vm %s exited with rc %d: Stdout:"
                          " %s" % (cmd, vmuuid, returncode, stdout))
@@ -140,3 +155,60 @@ def execute_ssh(session, vmuuid, cmd, stdin_input=None):
     finally:
         if client:
             client.close()
+
+
+class MyClient:
+    process = None
+    channel = None
+    username = None
+    host = None
+
+    class MyChannel:
+        client = None
+
+        def __init__(self, client):
+            self.client = client
+
+        def recv_exit_status(self):
+            self.client.process.wait()
+            return self.client.process.returncode
+
+    def __init__(self, username, host):
+        self.channel = self.MyChannel(self)
+        self.username = username
+        self.host = host
+
+    def exec_command(self, cmd):
+        complete_cmd = ['ssh', '-o', 'UserKnownHostsFile=/dev/null',
+                        '-o', 'StrictHostKeyChecking=no',
+                        '-o', 'PasswordAuthentication=no',
+                        '-o', 'LogLevel=quiet',
+                        '-o', 'ConnectTimeout=10',
+                        '-i', IDRSAFILENAME,
+                        '%s@%s' % (self.username, self.host), cmd]
+        log.debug('Running: %s' % (complete_cmd))
+        self.process = subprocess.Popen(complete_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        stdin=subprocess.PIPE,
+                                        shell=False)
+        return (self.process.stdin, self.process.stdout, self.process.stderr)
+
+    def close(self):
+        if self.process and self.process.poll()==None:
+            # Try to exit nicely
+            try:
+                os.kill(self.process.pid, signal.SIGTERM)
+            except:
+                pass
+            # After 2s force exit
+            starttime = time.time()
+            while self.process.poll()==None:
+                time.sleep(0.1)
+                if (time.time()-starttime)>=2.0:
+                    try:
+                        os.kill(self.process.pid, signal.SIGKILL)
+                    except:
+                        pass
+                    break
+            self.process = None

@@ -129,12 +129,14 @@ class MonitoredVM(api_helper.VM):
                      % (cmd, vmuuid))
             stdin, stdout, _ = ssh_client.exec_command(cmd)
             stdin.write(docker.prepare_request_stdin('GET', '/events'))
-            stdin.channel.shutdown_write()
+            stdin.flush()
+            stdin.close()
+            #stdin.channel.shutdown_write()
             self._ssh_client = ssh_client
             # Not that we are listening for events, get the latest state
             docker.update_docker_ps(self)
             # set unblocking io for select.select
-            stdout_fd = stdout.channel.fileno()
+            stdout_fd = stdout.fileno()
             fcntl.fcntl(stdout_fd,
                         fcntl.F_SETFL,
                         os.O_NONBLOCK | fcntl.fcntl(stdout_fd, fcntl.F_GETFL))

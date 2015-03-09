@@ -63,5 +63,6 @@ if __name__ == "__main__":
           data_files=map_overlay_files(OVERLAY_FILES),
           options={'bdist_rpm': {'post_install': 'mk/post-install-script',
                                  'pre_uninstall': 'mk/pre-uninstall-script',
-                                 'requires': 'mkisofs gmp python-crypto python-paramiko'}},
+                                 'requires': 'mkisofs'}},
+                                 #gmp python-crypto python-paramiko'}},
           )
