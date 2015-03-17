@@ -39,6 +39,11 @@ stop() {
     RETVAL=$?
     echo
     [ $RETVAL -eq 0 ] && rm -f "$LOCKFILE"
+
+    # Delete idrsa to avoid that the host holds on to the key, although it has
+    # left the pool
+    rm -f /opt/xensource/packages/files/xscontainer/xscontainer-idrsa
+
     return $RETVAL
 }
 
