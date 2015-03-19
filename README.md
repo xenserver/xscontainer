@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/xenserver/xscontainer.svg)](https://travis-ci.org/xenserver/xscontainer)
+[![Coverage Status](https://coveralls.io/repos/xenserver/xscontainer/badge.svg)](https://coveralls.io/r/xenserver/xscontainer)
+
 xscontainer
 ===========
 xscontainer is the back-end of XenServer's Container Management.
