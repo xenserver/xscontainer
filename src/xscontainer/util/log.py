@@ -17,21 +17,24 @@ def configurelogging():
     formatter = logging.Formatter(
         '%(asctime)s - [%(process)d] - %(levelname)s - %(message)s',
         '%Y-%m-%d %H:%M:%S')
-    fileh = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=5*M, backupCount=5)
-    fileh.setFormatter(formatter)
-    _LOGGER.addHandler(fileh)
-    if os.path.exists(ENABLE_DEV_LOGGING_FILE):
-        # log to stdout
-        streamhandler = logging.StreamHandler(sys.stderr)
-        streamhandler.setLevel(logging.DEBUG)
-        streamhandler.setFormatter(formatter)
-        _LOGGER.addHandler(streamhandler)
-        # log everything
-        streamhandler.setLevel(logging.DEBUG)
-        fileh.setLevel(logging.DEBUG)
-    else:
-        # log info and above
-        fileh.setLevel(logging.INFO)
+
+    handlers = []
+    log_level = logging.INFO
+
+    if os.access(os.path.dirname(LOG_FILE), os.W_OK):
+        fileh = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=5*M, backupCount=5)
+        handlers.append(fileh)
+
+    if os.path.exists(ENABLE_DEV_LOGGING_FILE) or not handlers:
+        handlers.append(logging.StreamHandler(sys.stdout))
+        log_level = logging.DEBUG
+
+    # Configure and add all handlers
+    for handler in handlers:
+        handler.setLevel(log_level)
+        handler.setFormatter(formatter)
+        _LOGGER.addHandler(handler)
+
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 
