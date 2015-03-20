@@ -4,6 +4,7 @@ from distutils.core import setup
 import os
 import sys
 
+ROOTDIR_ENV_KEY = "ROOTDIR"
 
 OVERLAY_FILES = {
     'etc/xapi.d/plugins': ['xscontainer'],
@@ -24,9 +25,15 @@ def map_overlay_files(overlay_files):
     """
     mapping = []
 
+
+    root_dir = ""
+    # Root directory override (used by tox)
+    if ROOTDIR_ENV_KEY in os.environ:
+        root_dir = os.environ[ROOTDIR_ENV_KEY]
+
     for dest, files in overlay_files.iteritems():
         file_locs = [datapath("src/overlay/%s/%s" % (dest, f)) for f in files]
-        mapping.append(("/%s" % dest, file_locs))
+        mapping.append(("%s/%s" % (root_dir, dest), file_locs))
 
     return mapping
 
