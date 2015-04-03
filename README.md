@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/xenserver/xscontainer.svg)](https://travis-ci.org/xenserver/xscontainer)
-[![Coverage Status](https://coveralls.io/repos/xenserver/xscontainer/badge.svg)](https://coveralls.io/r/xenserver/xscontainer)
+[![Build Status](https://travis-ci.org/xenserver/xscontainer.svg?branch=master)](https://travis-ci.org/xenserver/xscontainer)
+[![Coverage Status](https://coveralls.io/repos/xenserver/xscontainer/badge.svg?branch=master)](https://coveralls.io/r/xenserver/xscontainer?branch=master)
 
 xscontainer
 ===========
