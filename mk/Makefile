@@ -30,9 +30,9 @@ PARAMIKO_NAME = python-paramiko
 
 ifeq ($(shell rpm -q centos-release --qf '%{version}\n'),5)
 
-PARAMIKO_VERSION = 1.7.6-1
+PARAMIKO_VERSION = 1.7.6-1xs1
 PARAMIKO_FULLNAME = $(PARAMIKO_NAME)-$(PARAMIKO_VERSION)
-PARAMIKO_SOURCE = /distfiles/xscontainer/epel/2015-02-13/5/SRPMS/$(PARAMIKO_FULLNAME).el5.src.rpm
+PARAMIKO_SOURCE = /distfiles/xscontainer/epel/2015-04-21/5/SRPMS/$(PARAMIKO_FULLNAME).el5.src.rpm
 GMP_NAME = gmp
 GMP_VERSION = 5.1.1-5
 GMP_FULLNAME = $(GMP_NAME)-$(GMP_VERSION)
