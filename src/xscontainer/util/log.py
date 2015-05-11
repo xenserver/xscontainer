@@ -6,7 +6,7 @@ import sys
 import traceback
 
 ENABLE_DEV_LOGGING_FILE = ("/opt/xensource/packages/files/xscontainer/"
-                           "devmode_enabled")
+                           "devlogging_enabled")
 
 LOG_FILE = "/var/log/xscontainer.log"
 
