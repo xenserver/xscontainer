@@ -36,7 +36,6 @@ coreos:
 
         [Service]
         ExecStartPre=/media/configdrive/agent/xe-linux-distribution /var/cache/xe-linux-distribution
-        Environment="XE_UPDATE_GUEST_ATTRS=/media/configdrive/agent/xe-update-guest-attrs"
         ExecStart=/media/configdrive/agent/xe-daemon
   etcd:
     name: %XSVMNAMETOHOSTNAME%
