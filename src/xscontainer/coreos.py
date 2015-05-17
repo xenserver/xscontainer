@@ -210,7 +210,7 @@ def create_config_drive_iso(session, userdata_template, vmuuid):
             util.runlocal(cmd)
         for path in [temptoolsisodir, userdatafile, userdatatemplatefile,
                      latestfolder, openstackfolder] + agentfilepaths + \
-                     [agentpath, tempisodir]:
+                [agentpath, tempisodir]:
             if path != None:
                 if os.path.isdir(path):
                     os.rmdir(path)

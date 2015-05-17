@@ -26,7 +26,7 @@ def runlocal(cmd, shell=False, canfail=False):
     stdout, stderr = process.communicate('')
     returncode = process.returncode
     log.info('Command %s exited with rc %d: Stdout: %s Stderr: %s' %
-              (cmd, returncode, stdout, stderr))
+             (cmd, returncode, stdout, stderr))
     if returncode != 0 and not canfail:
         raise(XSContainerException('Command failed'))
     return (returncode, stdout, stderr)
@@ -54,9 +54,9 @@ def converttoxml(node, parentelement=None, dom=None):
             # and take the name as a key instead
             # @todo: add a faster regular expression for this
             if (key[0].isdigit()
-                or '/' in key
-                or key[0] in ['.', ':', '!', '?']
-                or key.lower().startswith('xml')):
+                    or '/' in key
+                    or key[0] in ['.', ':', '!', '?']
+                    or key.lower().startswith('xml')):
                 element = dom.createElement('SPECIAL_XS_ENCODED_ELEMENT')
                 element.setAttribute('name', key)
             else:
@@ -113,5 +113,3 @@ def test_connection(address, port):
         return True
     except (socket.error, socket.timeout):
         return False
-
-

@@ -23,15 +23,15 @@ def main():
     #vmuuid = coreos.install_vm(session, url, sruuid)
     vmuuid = 'c833b083-1370-7db5-c14f-65b3bc892bcb'
     client = api_helper.LocalXenAPIClient()
-    vm = api_helper.VM(client, uuid = vmuuid)
+    vm = api_helper.VM(client, uuid=vmuuid)
     docker_monitor_api.deregister_vm(vmuuid, session)
     docker_monitor_api.register_vm(vmuuid, session)
     vmref = api_helper.get_vm_ref_by_uuid(session, vmuuid)
-    #try:
+    # try:
     #    session.xenapi.VM.clean_shutdown(vmref)
-    #except:
+    # except:
     #    pass
-    #coreos.create_config_drive(session, vmuuid, sruuid,
+    # coreos.create_config_drive(session, vmuuid, sruuid,
     #                           coreos.get_config_drive_default(session))
     #session.xenapi.VM.start(vmref, False, True)
     connected = False
@@ -39,10 +39,10 @@ def main():
         try:
             print "Trying..."
             #start = time.time()
-            #for x in range(0, 10):
+            # for x in range(0, 10):
             container = docker.get_ps_dict(session, vmuuid)
             #end = time.time()
-            #print end - start
+            # print end - start
             pprint.pprint(container)
             connected = True
         except Exception:
@@ -51,7 +51,7 @@ def main():
             time.sleep(3)
     docker.update_docker_ps(vm)
 
-    #docker_monitor.monitor_host()
+    # docker_monitor.monitor_host()
     """
     docker.passthrough(session, vmuuid,
                        'docker run -d busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"')
@@ -60,7 +60,7 @@ def main():
     print docker.get_info_xml(session, vmuuid)
     print docker.get_version_xml(session, vmuuid)
     # print coreos.get_config_drive_configuration(session, '')
-    #print docker.monitor_host(returninstantly=True)
+    # print docker.monitor_host(returninstantly=True)
     print docker.get_inspect_xml(session, vmuuid, container)
     #docker.start(session, vmuuid, container)
     #docker.restart(session, vmuuid, container)

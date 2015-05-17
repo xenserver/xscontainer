@@ -12,6 +12,7 @@ LOG_FILE = "/var/log/xscontainer.log"
 
 M = 1024 * 1024
 
+
 def configurelogging():
     _LOGGER.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
@@ -22,7 +23,8 @@ def configurelogging():
     log_level = logging.INFO
 
     if os.access(os.path.dirname(LOG_FILE), os.W_OK):
-        fileh = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=5*M, backupCount=5)
+        fileh = logging.handlers.RotatingFileHandler(
+            LOG_FILE, maxBytes=5 * M, backupCount=5)
         handlers.append(fileh)
 
     if os.path.exists(ENABLE_DEV_LOGGING_FILE) or not handlers:
@@ -63,7 +65,7 @@ def exception(message):
 
 
 def log_unhandled_exception(origin, exception_type, exception_value,
-                           exception_traceback):
+                            exception_traceback):
     _LOGGER.error("Nobody caught %s exception: %s" % (origin, exception_type))
     problem = traceback.format_exception(exception_type,
                                          exception_value,
