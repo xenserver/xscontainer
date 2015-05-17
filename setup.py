@@ -9,9 +9,10 @@ ROOTDIR_ENV_KEY = "ROOTDIR"
 OVERLAY_FILES = {
     'etc/xapi.d/plugins': ['xscontainer'],
     'etc/rc.d/init.d': ['xscontainer-monitor'],
-    'etc/xensource/bugtool' : ['xscontainer.xml'],
+    'etc/xensource/bugtool': ['xscontainer.xml'],
     'etc/xensource/bugtool/xscontainer': ['xscontainer_logs.xml'],
 }
+
 
 def datapath(path):
     if not os.path.exists(path):
@@ -19,12 +20,12 @@ def datapath(path):
             path = os.path.join(os.environ['REPO'], path)
     return path
 
+
 def map_overlay_files(overlay_files):
     """
     A utility function for creating the map required for 'data_files'.
     """
     mapping = []
-
 
     root_dir = ""
     # Root directory override (used by tox)

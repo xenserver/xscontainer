@@ -14,7 +14,7 @@ parser.add_option('--rxv', dest="req_xs_version")
 (options, args) = parser.parse_args()
 
 xs = Requires(originator='xs', name='main', test='ge',
-               product=options.product_name, version=options.req_xs_version)
+              product=options.product_name, version=options.req_xs_version)
 
 setup(originator='xs', name=options.sp_name, product=options.product_name,
       version=options.product_version, build=options.build, vendor='Citrix Systems, Inc.',

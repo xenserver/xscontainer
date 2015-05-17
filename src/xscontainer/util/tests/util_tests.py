@@ -24,8 +24,8 @@ class TestUtil(unittest.TestCase):
 
     def test_nested_list_convert(self):
         rec = {'ports': [
-                {'IP': '0.0.0.0'},
-                {'IP': '0.0.0.1'},
+            {'IP': '0.0.0.0'},
+            {'IP': '0.0.0.1'},
         ]}
         expected_xml = '<?xml version="1.0" ?><ports><item><IP>0.0.0.0</IP></item><item><IP>0.0.0.1</IP></item></ports>'
 
