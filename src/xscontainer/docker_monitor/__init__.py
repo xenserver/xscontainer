@@ -8,7 +8,6 @@ import errno
 import fcntl
 import os
 import select
-import subprocess
 import simplejson
 import thread
 import time
@@ -353,8 +352,8 @@ def monitor_host():
                 # Now load the VMs that are enabled for monitoring
                 DOCKER_MONITOR.refresh()
                 while True:
-                    event_from = session.xenapi.event_from(["vm"], token_from,
-                                                           EVENT_FROM_TIMEOUT_S)
+                    event_from = session.xenapi.event_from(
+                        ["vm"], token_from, EVENT_FROM_TIMEOUT_S)
                     token_from = event_from['token']
                     events = event_from['events']
                     for event in events:

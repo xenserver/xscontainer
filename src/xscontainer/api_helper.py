@@ -138,7 +138,7 @@ class VM(XenAPIObject):
     OBJECT = "VM"
 
     def get_uuid(self):
-        if self.uuid == None:
+        if self.uuid is None:
             self.uuid = self.get_session().xenapi.VM.get_uuid(self.ref)
         return self.uuid
 
@@ -154,8 +154,8 @@ class VM(XenAPIObject):
         return self.client.get_session().xenapi.VM.get_other_config(self.ref)
 
     def update_other_config(self, key, value):
-        #session.xenapi.VM.remove_from_other_config(vmref, name)
-        #session.xenapi.VM.add_to_other_config(vmref, name, value)
+        # session.xenapi.VM.remove_from_other_config(vmref, name)
+        # session.xenapi.VM.add_to_other_config(vmref, name, value)
         other_config = self.get_other_config()
         other_config[key] = value
         self.client.get_session().xenapi.VM.set_other_config(self.ref,
@@ -166,7 +166,7 @@ def get_local_api_session():
     global GLOBAL_XAPI_SESSION
     # Prefer to use a global session object to keep all communication
     # with the host on the same ref.
-    if GLOBAL_XAPI_SESSION == None:
+    if GLOBAL_XAPI_SESSION is None:
         GLOBAL_XAPI_SESSION = init_local_api_session()
 
     return GLOBAL_XAPI_SESSION
@@ -404,8 +404,8 @@ def get_value_from_vm_other_config(session, vmuuid, name):
 
 
 def update_vm_other_config(session, vmref, name, value):
-    #session.xenapi.VM.remove_from_other_config(vmref, name)
-    #session.xenapi.VM.add_to_other_config(vmref, name, value)
+    # session.xenapi.VM.remove_from_other_config(vmref, name)
+    # session.xenapi.VM.add_to_other_config(vmref, name, value)
     other_config = session.xenapi.VM.get_other_config(vmref)
     other_config[name] = value
     session.xenapi.VM.set_other_config(vmref, other_config)
@@ -478,7 +478,7 @@ def get_suitable_vm_ip(session, vmuuid):
 def get_vm_xscontainer_username(session, vmuuid):
     username = get_value_from_vm_other_config(session, vmuuid,
                                               XSCONTAINER_USERNAME)
-    if username == None:
+    if username is None:
         # assume CoreOs's "core" by default
         username = 'core'
     return username

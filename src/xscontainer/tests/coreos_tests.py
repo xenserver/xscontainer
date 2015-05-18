@@ -1,5 +1,4 @@
-from mock import MagicMock, patch, call
-import pprint
+from mock import patch
 import unittest
 
 from xscontainer import coreos

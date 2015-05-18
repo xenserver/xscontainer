@@ -95,8 +95,8 @@ def prepare_ssh_client(session, vmuuid):
         raise AuthenticationException(message)
     except (paramiko.SSHException, socket.error), exception:
         # reraise as SshException
-        raise SshException, "prepare_ssh_client: %s" % exception, (
-            sys.exc_info()[2])
+        raise SshException("prepare_ssh_client: %s" % exception,
+                           (sys.exc_info()[2]))
     return client
 
 
@@ -135,8 +135,8 @@ def execute_ssh(session, vmuuid, cmd, stdin_input=None):
             raise
         except Exception, exception:
             # reraise as SshException
-            raise SshException, "execute_ssh: %s" % exception, (
-                sys.exc_info()[2])
+            raise SshException("execute_ssh: %s" % exception,
+                               (sys.exc_info()[2]))
     finally:
         if client:
             client.close()

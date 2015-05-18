@@ -32,7 +32,7 @@ def _interact_with_api(session, vmuuid, request_type, request,
     body = stdout[headerend + 4:]
     # ToDo: Should use re
     headersplits = header.split('\r\n', 2)[0].split(' ')
-    #protocol = headersplits[0]
+    # protocol = headersplits[0]
     statuscode = headersplits[1]
     if statuscode[0] != '2':
         # this did not work
@@ -294,9 +294,9 @@ def determine_error_cause(session, vmuuid):
         # No reason to continue, if there is no docker socket
         return cause
     try:
-        ssh_helper.execute_ssh(session, vmuuid, ['test -r "%s" && test -w "%s" '
-                                                 % (DOCKER_SOCKET_PATH,
-                                                    DOCKER_SOCKET_PATH)])
+        ssh_helper.execute_ssh(session, vmuuid,
+                               ['test -r "%s" && test -w "%s" '
+                                % (DOCKER_SOCKET_PATH, DOCKER_SOCKET_PATH)])
     except util.XSContainerException:
         cause = (cause + "Unable to access the Docker unix socket. "
                  + "Please make sure the specified user account "

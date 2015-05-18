@@ -1,11 +1,9 @@
 import unittest
-from mock import MagicMock, patch
 import simplejson
 import os
 
 
 import xscontainer.util as util
-import xscontainer.util.log as log
 import xml
 
 
@@ -27,7 +25,8 @@ class TestUtil(unittest.TestCase):
             {'IP': '0.0.0.0'},
             {'IP': '0.0.0.1'},
         ]}
-        expected_xml = '<?xml version="1.0" ?><ports><item><IP>0.0.0.0</IP></item><item><IP>0.0.0.1</IP></item></ports>'
+        expected_xml = ('<?xml version="1.0" ?><ports><item><IP>0.0.0.0</IP>' +
+                        '</item><item><IP>0.0.0.1</IP></item></ports>')
 
         xmloutput = util.converttoxml(rec)
 
