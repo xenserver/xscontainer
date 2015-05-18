@@ -75,7 +75,8 @@ def prepare_vm_for_config_drive(session, vmref, vmuuid):
         mgmtnet_device = api_helper.get_hi_mgmtnet_device(session, vmuuid)
         if not mgmtnet_device:
             api_helper.create_vif(session,
-                                  api_helper.get_hi_mgmtnet_ref(session), vmref)
+                                  api_helper.get_hi_mgmtnet_ref(session),
+                                  vmref)
 
 
 def filterxshinexists(text):
@@ -211,7 +212,7 @@ def create_config_drive_iso(session, userdata_template, vmuuid):
         for path in [temptoolsisodir, userdatafile, userdatatemplatefile,
                      latestfolder, openstackfolder] + agentfilepaths + \
                 [agentpath, tempisodir]:
-            if path != None:
+            if path is not None:
                 if os.path.isdir(path):
                     os.rmdir(path)
                 elif os.path.isfile(path):

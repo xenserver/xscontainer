@@ -63,7 +63,7 @@ def converttoxml(node, parentelement=None, dom=None):
                 element = dom.createElement(xml.sax.saxutils.escape(key))
             parentelement.appendChild(element)
             converttoxml(value, parentelement=element, dom=dom)
-    elif type(node) in [str, bool, float, int] or node == None:
+    elif type(node) in [str, bool, float, int] or node is None:
         textnode = dom.createTextNode(xml.sax.saxutils.escape(str(node)))
         parentelement.appendChild(textnode)
     else:

@@ -1,8 +1,7 @@
 import unittest
-import signal
 from mock import MagicMock, patch
 
-from xscontainer.docker_monitor import *
+from xscontainer.docker_monitor import DockerMonitor, MonitoredVM
 
 
 class TestDockerMonitorRegistration(unittest.TestCase):
@@ -33,7 +32,6 @@ class TestDockerMonitorRegistration(unittest.TestCase):
         self.assertEqual(registered, [])
 
     def test_get_registered(self):
-        mock_vm = MagicMock()
         dm = DockerMonitor()
         n = 5
         for i in range(n):
@@ -110,11 +108,10 @@ class TestDockerMonitorThreads(unittest.TestCase):
     @patch("xscontainer.util.log.info")
     @patch("xscontainer.api_helper.XenAPIClient")
     @patch("thread.start_new_thread")
-    def test_start_monitoring(self, mstart_new_thread, mxenapiclient, log_info):
-        client = MagicMock()
+    def test_start_monitoring(self, mstart_new_thread, mxenapiclient,
+                              log_info):
         mvm_ref = MagicMock()
         dm = DockerMonitor(host=MagicMock())
-        mvmwithpid = MagicMock()
 
         dm.start_monitoring(mvm_ref)
         registered = dm.get_registered()[0]

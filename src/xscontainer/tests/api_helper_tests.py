@@ -37,7 +37,6 @@ class TestRefreshSessionOnFailureDecorator(unittest.TestCase):
 
     @patch("xscontainer.api_helper.reinit_global_xapi_session")
     def test_exception_is_passed_back_if_raised_twice(self, mreinit_func):
-        rv = "bar"
         test_func = MagicMock()
         test_func.side_effect = Exception("bar")
         with self.assertRaises(Exception):
@@ -48,7 +47,6 @@ class TestLocalXenAPIClient(unittest.TestCase):
 
     @patch("xscontainer.api_helper.get_local_api_session")
     def test_init_session(self, mget_local_api_session):
-        client = api_helper.LocalXenAPIClient()
         mget_local_api_session.assert_called_once()
 
     @patch("xscontainer.api_helper.get_local_api_session")
