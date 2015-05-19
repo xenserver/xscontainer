@@ -60,8 +60,8 @@ DOM0_RPMS += /distros/CentOS/7.0.1406/os/x86_64/Packages/python-six-1.3.0-4.el7.
 DOM0_SRPMS += /distros/CentOS/7.0.1406/os/Source/SPackages/python-six-1.3.0-4.el7.src.rpm
 DOM0_RPMS += /distros/CentOS/7.0.1406/EPEL-20140902/x86_64/p/python-ecdsa-0.11-3.el7.noarch.rpm
 DOM0_SRPMS += /distros/CentOS/7.0.1406/EPEL-20140902/SRPMS/p/python-ecdsa-0.11-3.el7.src.rpm
-DOM0_RPMS += /distros/CentOS/7.0.1406/EPEL-20140902/x86_64/p/python-paramiko-1.12.4-1.el7.noarch.rpm
-DOM0_SRPMS += /distros/CentOS/7.0.1406/EPEL-20140902/SRPMS/p/python-paramiko-1.12.4-1.el7.src.rpm
+DOM0_RPMS += /distfiles/xscontainer/epel/2015-05-19/7/RPMS/x86_64/python-paramiko-1.15.1-1.el7.noarch.rpm
+DOM0_SRPMS += /distfiles/xscontainer/epel/2015-05-19/7/SRPMS/python-paramiko-1.15.1-1.el7.src.rpm
 DOM0_RPMS += /distros/CentOS/7.0.1406/EPEL-20140902/x86_64/p/python-crypto-2.6.1-1.el7.x86_64.rpm
 DOM0_SRPMS += /distros/CentOS/7.0.1406/EPEL-20140902/SRPMS/p/python-crypto-2.6.1-1.el7.src.rpm
 
