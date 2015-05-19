@@ -193,9 +193,9 @@ def create_config_drive_iso(session, userdata_template, vmuuid):
         agentpath = os.path.join(tempisodir, 'agent')
         os.makedirs(agentpath)
         agentfiles = ['xe-daemon', 'xe-linux-distribution',
-                      'xe-linux-distribution.service', 'xe-update-guest-attrs',
+                      'xe-linux-distribution.service',
                       'xen-vcpu-hotplug.rules', 'install.sh',
-                      'versions.deb', 'versions.rpm']
+                      'versions.deb', 'versions.rpm', "versions.tgz"]
         for filename in agentfiles:
             path = os.path.join(temptoolsisodir, 'Linux', filename)
             shutil.copy(path, agentpath)
