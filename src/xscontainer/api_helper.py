@@ -509,3 +509,33 @@ def get_ssh_hostkey(session, vm_uuid):
 def set_ssh_hostkey(session, vm_uuid, host_key):
     vm_ref = get_vm_ref_by_uuid(session, vm_uuid)
     update_vm_other_config(session, vm_ref, XSCONTAINER_SSH_HOSTKEY, host_key)
+
+
+def get_host_ref_for_sr_uuid(session, sr_uuid):
+    sr_ref = session.xenapi.SR.get_by_uuid(sr_uuid)
+    return get_host_ref_for_sr_ref(session, sr_ref)
+
+
+def get_host_ref_for_sr_ref(session, sr_ref):
+    pbd_refs = session.xenapi.SR.get_PBDs(sr_ref)
+    host_ref = None
+    for pbd_ref in pbd_refs:
+        pbd_record = session.xenapi.PBD.get_record(pbd_ref)
+        if pbd_record['currently_attached']:
+            host_ref = pbd_record['host']
+            break
+    return host_ref
+
+
+def get_host_ref_for_vdi_uuid(session, vdi_uuid):
+    vdi_ref = session.xenapi.VDI.get_by_uuid(vdi_uuid)
+    vdi_record = session.xenapi.VDI.get_record(vdi_ref)
+    return get_host_ref_for_sr_ref(session, vdi_record['SR'])
+
+
+def get_host_ref_for_vm_uuid(session, vm_uuid):
+    vm_record = get_vm_record_by_uuid(session, vm_uuid)
+    host_ref = None
+    if 'resident_on' in vm_record and vm_record != NULLREF:
+        host_ref = vm_record['resident_on']
+    return host_ref
