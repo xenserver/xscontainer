@@ -381,7 +381,7 @@ def import_disk(session, sruuid, filename, fileformat, namelabel,
 def export_disk(session, vdiuuid):
     log.info("export_disk vdi %s" % (vdiuuid))
     filename = tempfile.mkstemp(suffix='.raw')[1]
-    cmd = ['curl', '-k', '-o', filename,
+    cmd = ['curl', '-L', '-k', '-o', filename,
            'https://localhost/export_raw_vdi?session_id=%s&vdi=%s&format=raw'
            % (session.handle, vdiuuid)]
     util.runlocal(cmd)
