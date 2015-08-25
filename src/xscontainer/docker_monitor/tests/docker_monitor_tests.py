@@ -75,7 +75,7 @@ class TestDockerMonitorRefresh(unittest.TestCase):
         dm = DockerMonitor(host)
         dm.refresh()
 
-        host.client.get_vms.assert_called_once()
+        host.client.get_all_vm_records.assert_called_once_with()
         mprocess_vmrecord.assert_called_with('test_rec', mvm_rec)
 
     @patch("xscontainer.docker_monitor.DockerMonitor.process_vmrecord")
@@ -93,7 +93,7 @@ class TestDockerMonitorRefresh(unittest.TestCase):
         dm = DockerMonitor(host)
         dm.refresh()
 
-        host.client.get_vms.assert_called_once()
+        host.client.get_all_vm_records.assert_called_once_with()
 
         # Assert we process every record.
         self.assertEqual(mprocess_vmrecord.call_count, n)
