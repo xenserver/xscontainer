@@ -229,7 +229,8 @@ def remove_config_drive(session, vmrecord, configdisk_namelabel):
         vdirecord = None
         if vbdrecord['VDI'] != api_helper.NULLREF:
             vdirecord = session.xenapi.VDI.get_record(vbdrecord['VDI'])
-            if OTHER_CONFIG_CONFIG_DRIVE_KEY in vdirecord['other_config']:
+            if ((OTHER_CONFIG_CONFIG_DRIVE_KEY in vdirecord['other_config'] or
+                 OTHER_CONFIG_CONFIG_DRIVE_KEY in vbdrecord['other_config'])):
                 log.info("remove_config_drive will destroy vdi %s"
                          % (vdirecord['uuid']))
                 if vbdrecord['currently_attached']:
@@ -244,16 +245,17 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
     vmrecord = session.xenapi.VM.get_record(vmref)
     prepare_vm_for_config_drive(session, vmref, vmuuid)
     isofile = create_config_drive_iso(session, userdata, vmuuid)
+    other_config_keys = {OTHER_CONFIG_CONFIG_DRIVE_KEY: 'True'}
     try:
         configdisk_namelabel = 'Automatic Config Drive'
-        other_config_keys = {OTHER_CONFIG_CONFIG_DRIVE_KEY: 'True'}
         vdiref = api_helper.import_disk(session, sruuid, isofile, 'raw',
                                         configdisk_namelabel,
                                         other_config_keys=other_config_keys)
     finally:
         os.remove(isofile)
     remove_config_drive(session, vmrecord, configdisk_namelabel)
-    vbdref = api_helper.create_vbd(session, vmref, vdiref, 'ro', False)
+    vbdref = api_helper.create_vbd(session, vmref, vdiref, 'ro', False,
+                                   other_config_keys=other_config_keys)
     if vmrecord['power_state'] == 'Running':
         session.xenapi.VBD.plug(vbdref)
     if re.search("\n\s*- ssh-rsa %XSCONTAINERRSAPUB%", userdata):
