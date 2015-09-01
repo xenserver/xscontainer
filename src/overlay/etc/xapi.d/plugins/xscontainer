@@ -164,36 +164,53 @@ def passthrough(session, args):
 
 
 @log_and_raise_exception
-def redirect_per_vm_operation_owned_by_other_slave(argv):
+def redirect_operation_owned_by_other_slave(argv):
     params, methodname = xmlrpclib.loads(argv[1])
     session_id = params[0]
     session = XenAPI.xapi_local()
     session._session = session_id
     args = params[1]
-    if 'vmuuid' in args:
-        vmuuid = args['vmuuid']
-        vmrecord = api_helper.get_vm_record_by_uuid(session, vmuuid)
-        this_hostref = api_helper.get_this_host_ref(session)
-        hostref = vmrecord['resident_on']
-        if (hostref != api_helper.NULLREF
-                and hostref != this_hostref):
-            # Redirect the call
-            try:
-                log.info("Forwarding request %s from %s to %s"
-                         % (args, this_hostref, hostref))
-                result = session.xenapi.host.call_plugin(
-                    hostref, 'xscontainer', methodname, args)
-                print XenAPIPlugin.success_message(result)
-                sys.exit(0)
-            except SystemExit:
-                raise
-            except Exception, e:
-                print XenAPIPlugin.failure_message(['XENAPI_PLUGIN_FAILURE',
-                                                    methodname, e.__class__.__name__, str(e)])
-                sys.exit(1)
+    redirect_criteria = None
+    redirect_to_host_ref = None
+    """ If the request concerns a VM, the host which runs the VM should handle
+        the request"""
+    if not redirect_to_host_ref and 'vmuuid' in args:
+        redirect_criteria = ("vmuuid %s" % args['vmuuid'])
+        redirect_to_host_ref = api_helper.get_host_ref_for_vm_uuid(
+           session, args['vmuuid'])
+    """ If the request concerns a VDI, a host that has access to the VDI
+        should handle the request"""
+    if not redirect_to_host_ref and 'vdiuuid' in args:
+        redirect_criteria = ("vdiuuid %s" % args['vdiuuid'])
+        redirect_to_host_ref = api_helper.get_host_ref_for_vdi_uuid(
+            session, args['vdiuuid'])
+    """ If the request concerns a SR, a host that has access to the SR
+        should handle the request"""
+    if not redirect_to_host_ref and 'sruuid' in args:
+        redirect_criteria = ("sruuid %s" % args['sruuid'])
+        redirect_to_host_ref = api_helper.get_host_ref_for_sr_uuid(
+            session, args['sruuid'])
+    this_host_ref = api_helper.get_this_host_ref(session)
+    if (redirect_to_host_ref != None
+        and redirect_to_host_ref != this_host_ref):
+        # Redirect the call
+        try:
+            log.info("Forwarding request %s from %s to %s based on %s"
+                     % (args, this_host_ref, redirect_to_host_ref, redirect_criteria))
+            result = session.xenapi.host.call_plugin(
+                redirect_to_host_ref, 'xscontainer', methodname, args)
+            print XenAPIPlugin.success_message(result)
+            sys.exit(0)
+        except SystemExit:
+            raise
+        except Exception, e:
+            print XenAPIPlugin.failure_message(['XENAPI_PLUGIN_FAILURE',
+                                                methodname,
+                                                e.__class__.__name__, str(e)])
+            sys.exit(1)
 
 if __name__ == "__main__":
-    redirect_per_vm_operation_owned_by_other_slave(sys.argv)
+    redirect_operation_owned_by_other_slave(sys.argv)
 
     # Now we can be certain that this message ought to be handled by this slave
     XenAPIPlugin.dispatch({
