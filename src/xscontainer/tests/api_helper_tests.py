@@ -15,7 +15,7 @@ class TestRefreshSessionOnFailureDecorator(unittest.TestCase):
         test_func = MagicMock()
         test_func.side_effect = [Exception("foo"), "foo"]
         api_helper.refresh_session_on_failure(test_func)()
-        mreinit_func.assert_called_once()
+        mreinit_func.assert_called_once_with()
         test_func.assert_has_calls([call(), call()])
 
     @patch("xscontainer.api_helper.reinit_global_xapi_session")
@@ -44,10 +44,6 @@ class TestRefreshSessionOnFailureDecorator(unittest.TestCase):
 
 
 class TestLocalXenAPIClient(unittest.TestCase):
-
-    @patch("xscontainer.api_helper.get_local_api_session")
-    def test_init_session(self, mget_local_api_session):
-        mget_local_api_session.assert_called_once()
 
     @patch("xscontainer.api_helper.get_local_api_session")
     def test_get_session(self, mget_local_api_session):
