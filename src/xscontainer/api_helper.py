@@ -319,7 +319,8 @@ def create_vif(session, network, vmref):
     return _retry_device_exists(session.xenapi.VIF.create, vifconfig, 'device')
 
 
-def create_vbd(session, vmref, vdiref, vbdmode, bootable):
+def create_vbd(session, vmref, vdiref, vbdmode, bootable,
+               other_config_keys={}):
     vbdconf = {'VDI': vdiref,
                'VM': vmref,
                'userdevice': '1',
@@ -327,7 +328,7 @@ def create_vbd(session, vmref, vdiref, vbdmode, bootable):
                'mode': vbdmode,
                'bootable': bootable,
                'empty': False,
-               'other_config': {},
+               'other_config': other_config_keys,
                'qos_algorithm_type': '',
                'qos_algorithm_params': {}, }
     return _retry_device_exists(session.xenapi.VBD.create, vbdconf,
