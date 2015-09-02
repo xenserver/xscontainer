@@ -537,6 +537,6 @@ def get_host_ref_for_vdi_uuid(session, vdi_uuid):
 def get_host_ref_for_vm_uuid(session, vm_uuid):
     vm_record = get_vm_record_by_uuid(session, vm_uuid)
     host_ref = None
-    if 'resident_on' in vm_record and vm_record != NULLREF:
+    if 'resident_on' in vm_record and vm_record['resident_on'] != NULLREF:
         host_ref = vm_record['resident_on']
     return host_ref
