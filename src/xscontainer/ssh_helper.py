@@ -58,7 +58,7 @@ class MyHostKeyPolicy(paramiko.MissingHostKeyPolicy):
                 return
             else:
                 # bad - throw error because of mismatch
-                message = ("Key for VM %s does not match the knwon public key."
+                message = ("Key for VM %s does not match the known public key."
                            % (self._vm_uuid))
                 log.error(message)
                 raise VmHostKeyException(message)
