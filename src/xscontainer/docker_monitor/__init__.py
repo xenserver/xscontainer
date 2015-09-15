@@ -128,7 +128,6 @@ class MonitoredVM(api_helper.VM):
                      % (cmd, vmuuid))
             stdin, stdout, _ = ssh_client.exec_command(cmd)
             stdin.write(docker.prepare_request_stdin('GET', '/events'))
-            stdin.channel.shutdown_write()
             self._ssh_client = ssh_client
             # Not that we are listening for events, get the latest state
             docker.update_docker_ps(self)
