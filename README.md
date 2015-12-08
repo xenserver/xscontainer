@@ -66,4 +66,16 @@ The `function` parameter could be:
 
 ### VM creation
 
-TODO
+#### CoreOS template
+
+You need to get the config drive default configuration for a specific template, by calling:
+
+`host.call_plugin(sessionRef,hostRef,'xscontainer','get_config_drive_default',(templateuuid: '<template.UUID>'))`
+
+You can modify this configuration (e.g by adding your SSH public key). You should store this configuration somewhere.
+
+Then, after the VM is created in XenServer, you can call the config drive creation:
+
+`host.call_plugin(sessionRef,hostRef,'xscontainer','create_config_drive',(vmuuid: '<VM.UUID>', sruuid: <SR.UUID>, configuration: 'Your whole CloudConfig configuration'))`
+
+> Which SR should I use? XenCenter and Xen Orchestra both use the SR of the first VDI created on the VM.
