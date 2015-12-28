@@ -41,9 +41,9 @@ def ask_yes_or_no():
 
 def ask_before_starting():
     print("Would you like to push a XenServer pool-specific public SSH key "
-          + "into the ~/.ssh/authorized_keys file of the specified VM and "
-          + "therefore authorize XenServer hosts to interact with the "
-          + "containers inside the VM?")
+          "into the ~/.ssh/authorized_keys file of the specified VM and "
+          "therefore authorize XenServer hosts to interact with the "
+          "containers inside the VM?")
     return ask_yes_or_no()
 
 

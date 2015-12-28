@@ -53,10 +53,10 @@ def converttoxml(node, parentelement=None, dom=None):
             # Package these in a special element 'SPECIAL_XS_ENCODED_ELEMENT'
             # and take the name as a key instead
             # @todo: add a faster regular expression for this
-            if (key[0].isdigit()
-                    or '/' in key
-                    or key[0] in ['.', ':', '!', '?']
-                    or key.lower().startswith('xml')):
+            if (key[0].isdigit() or
+                    '/' in key or
+                    key[0] in ['.', ':', '!', '?'] or
+                    key.lower().startswith('xml')):
                 element = dom.createElement('SPECIAL_XS_ENCODED_ELEMENT')
                 element.setAttribute('name', key)
             else:

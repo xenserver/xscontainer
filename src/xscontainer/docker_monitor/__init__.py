@@ -107,8 +107,8 @@ class MonitoredVM(api_helper.VM):
                     raise
             except (XenAPI.Failure, util.XSContainerException):
                 passed_time = time.time() - start_time
-                if (not self._error_message
-                        and passed_time >= MONITOR_TIMEOUT_WARNING_S):
+                if (not self._error_message and
+                        passed_time >= MONITOR_TIMEOUT_WARNING_S):
                     self._send_monitor_error_message()
                 log.info("Could not connect to VM %s, will retry" % (vmuuid))
             if not self._stop_monitoring_request:
@@ -356,8 +356,8 @@ def monitor_host():
                     token_from = event_from['token']
                     events = event_from['events']
                     for event in events:
-                        if (event['operation'] == 'mod'
-                                and 'snapshot' in event):
+                        if (event['operation'] == 'mod' and
+                                'snapshot' in event):
                             # At this point the monitor may need to
                             # refresh it's monitoring state of a particular
                             # vm.

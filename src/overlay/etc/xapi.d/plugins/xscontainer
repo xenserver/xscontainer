@@ -177,7 +177,7 @@ def redirect_operation_owned_by_other_slave(argv):
     if not redirect_to_host_ref and 'vmuuid' in args:
         redirect_criteria = ("vmuuid %s" % args['vmuuid'])
         redirect_to_host_ref = api_helper.get_host_ref_for_vm_uuid(
-           session, args['vmuuid'])
+            session, args['vmuuid'])
     """ If the request concerns a VDI, a host that has access to the VDI
         should handle the request"""
     if not redirect_to_host_ref and 'vdiuuid' in args:
@@ -192,7 +192,7 @@ def redirect_operation_owned_by_other_slave(argv):
             session, args['sruuid'])
     this_host_ref = api_helper.get_this_host_ref(session)
     if (redirect_to_host_ref != None
-        and redirect_to_host_ref != this_host_ref):
+            and redirect_to_host_ref != this_host_ref):
         # Redirect the call
         try:
             log.info("Forwarding request %s from %s to %s based on %s"

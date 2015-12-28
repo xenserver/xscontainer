@@ -60,8 +60,8 @@ def setup_network_on_lowest_pif(session, vmref):
     pifs = session.xenapi.PIF.get_all_records()
     lowest = None
     for pifref in pifs.keys():
-        if ((lowest is None)
-                or (pifs[pifref]['device'] < pifs[lowest]['device'])):
+        if ((lowest is None) or
+                (pifs[pifref]['device'] < pifs[lowest]['device'])):
             lowest = pifref
     if lowest:
         networkref = session.xenapi.PIF.get_network(lowest)

@@ -241,9 +241,9 @@ def get_vm_ips(session, vmuuid):
 def get_hi_preferene_on(session):
     pool = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(pool)
-    if ('xscontainer-use-hostinternalnetwork' in other_config
-        and (other_config['xscontainer-use-hostinternalnetwork'].lower()
-             in ['1', 'yes', 'true', 'on'])):
+    if ('xscontainer-use-hostinternalnetwork' in other_config and
+        (other_config['xscontainer-use-hostinternalnetwork'].lower()
+         in ['1', 'yes', 'true', 'on'])):
         return True
     # Return the default
     return False
@@ -298,8 +298,8 @@ def _retry_device_exists(function, config, devicenumberfield):
             ref = function(config)
             return ref
         except XenAPI.Failure, failure:
-            if (failure.details[0] != 'DEVICE_ALREADY_EXISTS'
-                    or devicenumber > 20):
+            if (failure.details[0] != 'DEVICE_ALREADY_EXISTS' or
+                    devicenumber > 20):
                 raise failure
             devicenumber = devicenumber + 1
             config[devicenumberfield] = str(devicenumber)
@@ -415,8 +415,8 @@ def update_vm_other_config(session, vmref, name, value):
 def get_idrsa_secret(session, secret_type):
     poolref = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(poolref)
-    if (XSCONTAINER_PRIVATE_SECRET_UUID not in other_config
-            or XSCONTAINER_PUBLIC_SECRET_UUID not in other_config):
+    if (XSCONTAINER_PRIVATE_SECRET_UUID not in other_config or
+            XSCONTAINER_PUBLIC_SECRET_UUID not in other_config):
         set_idrsa_secret(session)
         other_config = session.xenapi.pool.get_other_config(poolref)
     secret_uuid = other_config[secret_type]
