@@ -1,21 +1,10 @@
 from xscontainer import api_helper
-from xscontainer import ssh_helper
+from xscontainer import remote_helper
 from xscontainer import util
 from xscontainer.util import log
 
 import re
 import simplejson
-
-DOCKER_SOCKET_PATH = '/var/run/docker.sock'
-ERROR_CAUSE_NETWORK = (
-    "Error: Cannot find a valid IP that allows SSH connections to "
-    "the VM. Please make sure that Tools are installed, a "
-    "network route is set up, there is a SSH server running inside "
-    "the VM that is reachable from Dom0.")
-
-
-def prepare_request_cmd():
-    return ("ncat -U %s" % (DOCKER_SOCKET_PATH))
 
 
 def prepare_request_stdin(request_type, request):
@@ -24,9 +13,8 @@ def prepare_request_stdin(request_type, request):
 
 def _interact_with_api(session, vmuuid, request_type, request,
                        message_error=False):
-    provided_stdin = prepare_request_stdin(request_type, request)
-    stdout = ssh_helper.execute_ssh(session, vmuuid, prepare_request_cmd(),
-                                    stdin_input=provided_stdin)
+    request = prepare_request_stdin(request_type, request)
+    stdout = remote_helper.execute_docker(session, vmuuid, request)
     headerend = stdout.index('\r\n\r\n')
     header = stdout[:headerend]
     body = stdout[headerend + 4:]
@@ -141,7 +129,7 @@ def get_version_xml(session, vmuuid):
 # ToDo: Must remove this cmd, really
 def passthrough(session, vmuuid, command):
     cmd = [command]
-    result = ssh_helper.execute_ssh(session, vmuuid, cmd)
+    result = remote_helper.ssh.execute_ssh(session, vmuuid, cmd)
     return result
 
 
@@ -246,61 +234,3 @@ def wipe_docker_other_config(thevm):
     thevm.remove_from_other_config('docker_ps')
     thevm.remove_from_other_config('docker_info')
     thevm.remove_from_other_config('docker_version')
-
-
-def determine_error_cause(session, vmuuid):
-    cause = ""
-    try:
-        api_helper.get_suitable_vm_ip(session, vmuuid)
-    except util.XSContainerException:
-        cause = ERROR_CAUSE_NETWORK
-        # No reason to continue, if there is no network connection
-        return cause
-    try:
-        ssh_helper.execute_ssh(session, vmuuid, ['echo', 'hello world'])
-    except ssh_helper.AuthenticationException:
-        cause = (cause + "Unable to verify key-based authentication. "
-                 + "Please prepare the VM to install a key.")
-        # No reason to continue, if there is no SSH connection
-        return cause
-    except ssh_helper.VmHostKeyException:
-        cause = (cause + "The SSH host key of the VM has unexpectedly"
-                 + " changed, which could potentially be a security breach."
-                 + " If you think this is safe and expected, you"
-                 + " can reset the record stored in XS using xe"
-                 + " vm-param-remove uuid=<vm-uuid> param-name=other-config"
-                 + " param-key=xscontainer-sshhostkey")
-        # No reason to continue, if there is no SSH connection
-        return cause
-    except ssh_helper.SshException:
-        cause = (cause + "Unable to connect to the VM using SSH. Please "
-                 + "check the logs inside the VM and also try manually.")
-        # No reason to continue, if there is no SSH connection
-        return cause
-    # @todo: we could alternatively support socat
-    # @todo: we could probably prepare this as part of xscontainer-prepare-vm
-    try:
-        ssh_helper.execute_ssh(session, vmuuid, ['command -v ncat'])
-    except util.XSContainerException:
-        cause = (cause + "Unable to find ncat inside the VM. Please install "
-                 + "ncat. ")
-    try:
-        ssh_helper.execute_ssh(session, vmuuid, ['test', '-S',
-                                                 DOCKER_SOCKET_PATH])
-    except util.XSContainerException:
-        cause = (cause + "Unable to find the Docker unix socket at %s."
-                         % (DOCKER_SOCKET_PATH) +
-                         " Please install and run Docker.")
-        # No reason to continue, if there is no docker socket
-        return cause
-    try:
-        ssh_helper.execute_ssh(session, vmuuid,
-                               ['test -r "%s" && test -w "%s" '
-                                % (DOCKER_SOCKET_PATH, DOCKER_SOCKET_PATH)])
-    except util.XSContainerException:
-        cause = (cause + "Unable to access the Docker unix socket. "
-                 + "Please make sure the specified user account "
-                 + "belongs to the docker account group.")
-    if cause == "":
-        cause = "Unable to determine cause of failure."
-    return cause

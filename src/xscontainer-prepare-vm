@@ -5,7 +5,7 @@ import sys
 sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.api_helper as api_helper
 import xscontainer.docker as docker
-import xscontainer.ssh_helper as ssh_helper
+import xscontainer.remote_helper as remote_helper
 import xscontainer.util as util
 import xscontainer.util.log as log
 
@@ -57,7 +57,7 @@ def push_ssh_key(session, vmuuid, username):
         print(docker.ERROR_CAUSE_NETWORK)
         return 1
     api_helper.set_vm_xscontainer_username(session, vmuuid, username)
-    ssh_helper.ensure_idrsa(session)
+    remote_helper.ssh.ensure_idrsa(session)
     print('Attempting to push the public xscontainer key to %s@%s.'
           % (username, host))
     key = api_helper.get_idrsa_secret_public(session)
@@ -92,7 +92,7 @@ def verify_monitoring(session, vmuuid, username):
     except util.XSContainerException:
         log.exception("Could not monitor vm %s via %s"
                       % (vmuuid, username))
-        cause = docker.determine_error_cause(session, vmuuid)
+        cause = remote_helper.determine_error_cause(session, vmuuid)
         message = "Failure diagnosis: %s" % (cause)
         log.info(message)
         print(message)
