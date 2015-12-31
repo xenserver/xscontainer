@@ -12,21 +12,10 @@ import xscontainer.util.log as log
 from xscontainer.docker_monitor import api as docker_monitor_api
 
 
-import optparse
+import argparse
 import os
 import subprocess
 import time
-
-
-def check_parameters(parser, options, parameters):
-    error = False
-    for parameter in parameters:
-        if not getattr(options, parameter):
-            print('Error: Missing parameter --%s' % (parameter))
-            error = True
-    if error:
-        parser.print_help()
-        sys.exit(1)
 
 
 def ask_yes_or_no():
@@ -48,18 +37,16 @@ def ask_before_starting():
 
 
 def parse_options():
-    print(os.path.basename(__file__)
-          +
-          " is a tool that prepares RHEL7/CentOS7/OEL7 and Ubuntu 14.04 VMs"
-          " for XenServer container management.\n")
-    parser = optparse.OptionParser()
-    parser.add_option("-v", "--vmuuid", dest="vmuuid", help="UUID of the VM "
-                      + "that should be prepared for XenServer container "
-                      + "management.")
-    parser.add_option("-u", "--username", dest="username",
-                      help="VM user account to be used for SSH connections.")
-    options = parser.parse_args()[0]
-    check_parameters(parser, options, ['vmuuid', 'username'])
+    description = ("Prepares Debian, RHEL/CentOS/OEL and Ubuntu 14.04 VMs"
+                   " for XenServer container management.\n")
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("-v", "--vmuuid", required=True,
+                        help="UUID of the VM "
+                        + "that should be prepared for XenServer container "
+                        + "management.")
+    parser.add_argument("-u", "--username", required=True,
+                        help="VM user account to be used for SSH connections.")
+    options = parser.parse_args()
     return options
 
 
