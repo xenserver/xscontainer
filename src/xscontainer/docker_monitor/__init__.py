@@ -3,6 +3,7 @@ from xscontainer import docker
 from xscontainer import remote_helper
 from xscontainer import util
 from xscontainer.util import log
+from xscontainer.util import tls_secret
 
 import os
 import thread
@@ -140,6 +141,8 @@ class DockerMonitor(object):
     """
 
     host = None
+    # tls_secret_cache[VMREF][TLS_SECRET_UUID]
+    tls_secret_cache = {}
 
     def __init__(self, host=None):
         self.vms = {}
@@ -235,6 +238,13 @@ class DockerMonitor(object):
             self.start_monitoring(vmref)
         elif is_monitored and not should_monitor:
             self.stop_monitoring(vmref)
+        # Remember TLS secrets of VMs to tidy in process_vm_del
+        for key in tls_secret.XSCONTAINER_TLS_KEYS:
+            if key in vmrecord['other_config']:
+                if vmref not in self.tls_secret_cache:
+                    self.tls_secret_cache[vmref] = {}
+                secret_uuid = vmrecord['other_config'][key]
+                self.tls_secret_cache[vmref][key] = secret_uuid
 
     def tear_down_all(self):
         for entry in self.get_registered():
@@ -242,6 +252,16 @@ class DockerMonitor(object):
         # @todo: we could have wait for thread.join with timeout here
         # Wait for children
         time.sleep(2)
+
+    def process_vm_del(self, vm_ref):
+        """ Tidy TLS secrets after vm-destroy """
+        if vm_ref in self.tls_secret_cache:
+            for key in tls_secret.XSCONTAINER_TLS_KEYS:
+                if key in self.tls_secret_cache[vm_ref]:
+                    secret_uuid = self.tls_secret_cache[vm_ref][key]
+                    tls_secret.consider_remove(self.host.get_session(),
+                                               secret_uuid, 0)
+            del(self.tls_secret_cache[vm_ref])
 
 
 def interrupt_handler(signum, frame):
@@ -299,13 +319,16 @@ def monitor_host():
                             # vm.
                             DOCKER_MONITOR.process_vmrecord(event['ref'],
                                                             event['snapshot'])
+                        elif event['operation'] == 'del':
+                            DOCKER_MONITOR.process_vm_del(event['ref'])
             finally:
                 try:
                     session.xenapi.session.logout()
                 except XenAPI.Failure:
                     log.exception("Failed when trying to logout")
-        except (socket.error, XenAPI.Failure, xmlrpclib.ProtocolError):
+        except (socket.error, XenAPI.Failure, xmlrpclib.ProtocolError) as e:
             if session is not None:
+                log.exception(e)
                 log.error("Could not connect to XAPI - Is XAPI running? " +
                           "Will retry in %d" % (XAPIRETRYSLEEPINS))
             else:

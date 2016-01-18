@@ -201,9 +201,7 @@ def create_config_drive_iso(session, userdata_template, vmuuid):
             shutil.copy(path, agentpath)
             agentfilepaths.append(os.path.join(agentpath, filename))
         # Finally wrap up the iso
-        cmd = ['mkisofs', '-R', '-V', 'config-2',
-               '-o', tempisofile, tempisodir]
-        util.runlocal(cmd)
+        util.make_iso('config-2', tempisodir, tempisofile)
     finally:
         # And tidy
         if umountrequired:

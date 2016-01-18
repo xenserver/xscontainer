@@ -4,6 +4,7 @@ import os
 import socket
 import subprocess
 import tempfile
+import time
 import xml.dom.minidom
 import xml.sax.saxutils
 
@@ -103,6 +104,17 @@ def write_file(filepath, content):
     os.chmod(filepath, 0600)
 
 
+def file_old_or_none_existent(path_of_file):
+    neednewfile = False
+    if os.path.exists(path_of_file):
+        mtime = os.path.getmtime(path_of_file)
+        if time.time() - mtime > 60:
+            neednewfile = True
+    else:
+        neednewfile = True
+    return neednewfile
+
+
 def test_connection(address, port):
     try:
         asocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -113,3 +125,10 @@ def test_connection(address, port):
         return True
     except (socket.error, socket.timeout):
         return False
+
+
+def make_iso(label, sourcedirectory, targetiso):
+    cmd = ['mkisofs', '-R', '-J', '-V', label,
+           '-o', targetiso, sourcedirectory]
+
+    runlocal(cmd)

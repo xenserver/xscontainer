@@ -10,8 +10,7 @@ XSCONTAINER_PRIVATE_SECRET_UUID = 'xscontainer-private-secret-uuid'
 XSCONTAINER_PUBLIC_SECRET_UUID = 'xscontainer-public-secret-uuid'
 XSCONTAINER_SSH_HOSTKEY = 'xscontainer-sshhostkey'
 XSCONTAINER_USERNAME = 'xscontainer-username'
-
-IDRSAFILENAME = '/opt/xensource/packages/files/xscontainer/xscontainer-idrsa'
+XSCONTAINER_MODE = 'xscontainer-mode'
 
 NULLREF = 'OpaqueRef:NULL'
 
@@ -290,6 +289,12 @@ def get_vm_records(session):
     return vmrecords
 
 
+def get_vm_other_config(session, vmuuid):
+    vm_ref = get_vm_ref_by_uuid(session, vmuuid)
+    other_config = session.xenapi.VM.get_other_config(vm_ref)
+    return other_config
+
+
 def _retry_device_exists(function, config, devicenumberfield):
     devicenumber = 0
     config[devicenumberfield] = str(devicenumber)
@@ -396,29 +401,29 @@ def get_default_sr(session):
 
 
 def get_value_from_vm_other_config(session, vmuuid, name):
-    vmref = get_vm_ref_by_uuid(session, vmuuid)
-    other_config = session.xenapi.VM.get_other_config(vmref)
+    other_config = get_vm_other_config(session, vmuuid)
     if name in other_config:
         return other_config[name]
     else:
         return None
 
 
-def update_vm_other_config(session, vmref, name, value):
+def update_vm_other_config(session, vm_uuid, kvpairs):
+    vm_ref = get_vm_ref_by_uuid(session, vm_uuid)
     # session.xenapi.VM.remove_from_other_config(vmref, name)
     # session.xenapi.VM.add_to_other_config(vmref, name, value)
-    other_config = session.xenapi.VM.get_other_config(vmref)
-    other_config[name] = value
-    session.xenapi.VM.set_other_config(vmref, other_config)
+    other_config = session.xenapi.VM.get_other_config(vm_ref)
+    for key, value in kvpairs.items():
+        other_config[key] = value
+    session.xenapi.VM.set_other_config(vm_ref, other_config)
 
 
 def get_idrsa_secret(session, secret_type):
-    poolref = session.xenapi.pool.get_all()[0]
-    other_config = session.xenapi.pool.get_other_config(poolref)
+    other_config = get_pool_other_config(session)
     if (XSCONTAINER_PRIVATE_SECRET_UUID not in other_config or
             XSCONTAINER_PUBLIC_SECRET_UUID not in other_config):
         set_idrsa_secret(session)
-        other_config = session.xenapi.pool.get_other_config(poolref)
+        other_config = get_pool_other_config(session)
     secret_uuid = other_config[secret_type]
     secret_ref = session.xenapi.secret.get_by_uuid(secret_uuid)
     secret_record = session.xenapi.secret.get_record(secret_ref)
@@ -440,22 +445,35 @@ def get_idrsa_secret_public_keyonly(session):
 def set_idrsa_secret(session):
     log.info("set_idrsa_secret is generating a new secret")
     (privateidrsa, publicidrsa) = util.create_idrsa()
-    private_secret_ref = session.xenapi.secret.create(
-        {'value': '%s' % (privateidrsa)})
-    public_secret_ref = session.xenapi.secret.create(
-        {'value': '%s' % (publicidrsa)})
-    private_secret_record = session.xenapi.secret.get_record(
-        private_secret_ref)
-    public_secret_record = session.xenapi.secret.get_record(public_secret_ref)
+    set_pool_other_config_values(session, {
+        XSCONTAINER_PRIVATE_SECRET_UUID:
+            create_secret_return_uuid(session, privateidrsa),
+        XSCONTAINER_PUBLIC_SECRET_UUID:
+            create_secret_return_uuid(session, publicidrsa)
+    })
+
+
+def create_secret_return_uuid(session, value):
+    secret_ref = session.xenapi.secret.create({'value': value})
+    secret_record = session.xenapi.secret.get_record(secret_ref)
+    return secret_record['uuid']
+
+
+def get_pool_other_config(session):
     pool_ref = session.xenapi.pool.get_all()[0]
     other_config = session.xenapi.pool.get_other_config(pool_ref)
-    other_config[XSCONTAINER_PRIVATE_SECRET_UUID] = private_secret_record[
-        'uuid']
-    other_config[XSCONTAINER_PUBLIC_SECRET_UUID] = public_secret_record['uuid']
+    return other_config
+
+
+def set_pool_other_config_values(session, values_to_set):
+    other_config = get_pool_other_config(session)
+    for key, value in values_to_set.iteritems():
+        other_config[key] = value
+    pool_ref = session.xenapi.pool.get_all()[0]
     session.xenapi.pool.set_other_config(pool_ref, other_config)
 
 
-def get_suitable_vm_ip(session, vmuuid):
+def get_suitable_vm_ips(session, vmuuid, port):
     ips = get_vm_ips(session, vmuuid)
     stage1filteredips = []
     for address in ips.itervalues():
@@ -469,11 +487,18 @@ def get_suitable_vm_ip(session, vmuuid):
         else:
             # Ignore ipv6 as Dom0 won't be able to use it
             pass
+    ipfound = False
     for address in stage1filteredips:
-        if util.test_connection(address, 22):
-            return address
-    raise util.XSContainerException(
-        "No valid IP found for vmuuid %s" % (vmuuid))
+        if util.test_connection(address, port):
+            ipfound = True
+            yield address
+    if not ipfound:
+        raise util.XSContainerException(
+            "No valid IP found for vmuuid %s" % (vmuuid))
+
+
+def get_suitable_vm_ip(session, vmuuid, port):
+    return get_suitable_vm_ips(session, vmuuid, port).next()
 
 
 def get_vm_xscontainer_username(session, vmuuid):
@@ -486,8 +511,23 @@ def get_vm_xscontainer_username(session, vmuuid):
 
 
 def set_vm_xscontainer_username(session, vmuuid, newusername):
-    vmref = get_vm_ref_by_uuid(session, vmuuid)
-    update_vm_other_config(session, vmref, XSCONTAINER_USERNAME, newusername)
+    update_vm_other_config(
+        session, vmuuid, {XSCONTAINER_USERNAME: newusername})
+
+
+def get_vm_xscontainer_mode(session, vmuuid):
+    mode = get_value_from_vm_other_config(session, vmuuid,
+                                          XSCONTAINER_MODE)
+    if mode is None:
+        # default so ssh as that is what came first
+        mode = 'ssh'
+    assert mode in ('ssh', 'tls')
+    return mode
+
+
+def set_vm_xscontainer_mode(session, vmuuid, mode):
+    assert mode in ('ssh', 'tls')
+    update_vm_other_config(session, vmuuid, {XSCONTAINER_MODE: mode})
 
 
 def send_message(session, vm_uuid, title, body):
@@ -508,8 +548,8 @@ def get_ssh_hostkey(session, vm_uuid):
 
 
 def set_ssh_hostkey(session, vm_uuid, host_key):
-    vm_ref = get_vm_ref_by_uuid(session, vm_uuid)
-    update_vm_other_config(session, vm_ref, XSCONTAINER_SSH_HOSTKEY, host_key)
+    update_vm_other_config(session, vm_uuid,
+                           {XSCONTAINER_SSH_HOSTKEY: host_key})
 
 
 def get_host_ref_for_sr_uuid(session, sr_uuid):
@@ -540,3 +580,26 @@ def get_host_ref_for_vm_uuid(session, vm_uuid):
     if 'resident_on' in vm_record and vm_record['resident_on'] != NULLREF:
         host_ref = vm_record['resident_on']
     return host_ref
+
+
+def get_cd_vbd_ref(session, vm_uuid):
+    vm_record = get_vm_record_by_uuid(session, vm_uuid)
+    for vbd_ref in vm_record['VBDs']:
+        vbd_record = session.xenapi.VBD.get_record(vbd_ref)
+        if vbd_record['type'] == 'CD':
+            return vbd_ref
+    return None
+
+
+def get_first_sr_uuid(session, vm_uuid):
+    vm_record = get_vm_record_by_uuid(session, vm_uuid)
+    for vbd_ref in vm_record['VBDs']:
+        vbd_record = session.xenapi.VBD.get_record(vbd_ref)
+        if vbd_record['type'] == 'Disk' and vbd_record['VDI'] != NULLREF:
+            vdi_ref = vbd_record['VDI']
+            vdi_record = session.xenapi.VDI.get_record(vdi_ref)
+            if vdi_record['SR'] != NULLREF:
+                sr_ref = vdi_record['SR']
+                sr_record = session.xenapi.SR.get_record(sr_ref)
+                return sr_record['uuid']
+    return None

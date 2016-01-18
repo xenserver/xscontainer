@@ -1,21 +1,32 @@
 import simplejson
 
+from xscontainer import api_helper
 from xscontainer import util
 import ssh
+import tls
+
+
+def _get_connector(session, vmuuid):
+    connectionmode = api_helper.get_vm_xscontainer_mode(session, vmuuid)
+    if connectionmode == 'ssh':
+        return ssh
+    elif connectionmode == 'tls':
+        return tls
+    else:
+        assert 0
 
 
 def execute_docker(session, vmuuid, request):
-    connector = ssh
+    connector = _get_connector(session, vmuuid)
     return connector.execute_docker(session, vmuuid, request)
 
 
 def execute_docker_event_listen(session, vmuuid, stoprequest):
-    connector = ssh
-
     skippedheader = False
     data = ""
     openbrackets = 0
     request = "GET /events HTTP/1.0\r\n\r\n"
+    connector = _get_connector(session, vmuuid)
     for character in connector.execute_docker_listen_charbychar(session,
                                                                 vmuuid,
                                                                 request,
@@ -39,5 +50,5 @@ def execute_docker_event_listen(session, vmuuid, stoprequest):
 
 
 def determine_error_cause(session, vmuuid):
-    connector = ssh
+    connector = _get_connector(session, vmuuid)
     return connector.determine_error_cause(session, vmuuid)

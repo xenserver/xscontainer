@@ -15,6 +15,7 @@ import sys
 
 IDRSAFILENAME = '/opt/xensource/packages/files/xscontainer/xscontainer-idrsa'
 DOCKER_SOCKET_PATH = '/var/run/docker.sock'
+SSH_PORT = 22
 
 ERROR_CAUSE_NETWORK = (
     "Error: Cannot find a valid IP that allows SSH connections to "
@@ -40,14 +41,7 @@ def prepare_request_cmd():
 
 
 def ensure_idrsa(session):
-    neednewfile = False
-    if os.path.exists(IDRSAFILENAME):
-        mtime = os.path.getmtime(IDRSAFILENAME)
-        if time.time() - mtime > 60:
-            neednewfile = True
-    else:
-        neednewfile = True
-    if neednewfile:
+    if util.file_old_or_none_existent(IDRSAFILENAME):
         util.write_file(IDRSAFILENAME,
                         api_helper.get_idrsa_secret_private(session))
 
@@ -88,7 +82,7 @@ class MyHostKeyPolicy(paramiko.MissingHostKeyPolicy):
 
 def prepare_ssh_client(session, vmuuid):
     username = api_helper.get_vm_xscontainer_username(session, vmuuid)
-    host = api_helper.get_suitable_vm_ip(session, vmuuid)
+    host = api_helper.get_suitable_vm_ip(session, vmuuid, SSH_PORT)
     log.info("prepare_ssh_client for vm %s, via %s@%s"
              % (vmuuid, username, host))
     ensure_idrsa(session)
@@ -98,7 +92,7 @@ def prepare_ssh_client(session, vmuuid):
     client.get_host_keys().clear()
     client.set_missing_host_key_policy(MyHostKeyPolicy(session, vmuuid))
     try:
-        client.connect(host, port=22, username=username,
+        client.connect(host, port=SSH_PORT, username=username,
                        pkey=pkey, look_for_keys=False)
     except SshException:
         # This exception is already improved - leave it as it is
@@ -200,7 +194,7 @@ def execute_docker_listen_charbychar(session, vmuuid, request,
 def determine_error_cause(session, vmuuid):
     cause = ""
     try:
-        api_helper.get_suitable_vm_ip(session, vmuuid)
+        api_helper.get_suitable_vm_ip(session, vmuuid, SSH_PORT)
     except util.XSContainerException:
         cause = ERROR_CAUSE_NETWORK
         # No reason to continue, if there is no network connection
