@@ -336,3 +336,4 @@ def monitor_host():
                               "restarting? Will retry in %d."
                               % (XAPIRETRYSLEEPINS))
             time.sleep(XAPIRETRYSLEEPINS)
+            api_helper.reinit_global_xapi_session()
