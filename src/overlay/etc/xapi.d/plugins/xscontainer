@@ -7,8 +7,6 @@ import XenAPI
 import XenAPIPlugin
 import xmlrpclib
 
-# ToDo: hack for building on Fedora
-sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.api_helper as api_helper
 import xscontainer.coreos as coreos
 import xscontainer.docker as docker
