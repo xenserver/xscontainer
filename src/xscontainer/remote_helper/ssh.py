@@ -13,7 +13,6 @@ import socket
 import StringIO
 import sys
 
-IDRSAFILENAME = '/opt/xensource/packages/files/xscontainer/xscontainer-idrsa'
 DOCKER_SOCKET_PATH = '/var/run/docker.sock'
 SSH_PORT = 22
 
@@ -38,12 +37,6 @@ class AuthenticationException(SshException):
 
 def prepare_request_cmd():
     return ("ncat -U %s" % (DOCKER_SOCKET_PATH))
-
-
-def ensure_idrsa(session):
-    if util.file_old_or_none_existent(IDRSAFILENAME):
-        util.write_file(IDRSAFILENAME,
-                        api_helper.get_idrsa_secret_private(session))
 
 
 class MyHostKeyPolicy(paramiko.MissingHostKeyPolicy):
@@ -85,7 +78,6 @@ def prepare_ssh_client(session, vmuuid):
     host = api_helper.get_suitable_vm_ip(session, vmuuid, SSH_PORT)
     log.info("prepare_ssh_client for vm %s, via %s@%s"
              % (vmuuid, username, host))
-    ensure_idrsa(session)
     client = paramiko.SSHClient()
     pkey = paramiko.rsakey.RSAKey.from_private_key(
         StringIO.StringIO(api_helper.get_idrsa_secret_private(session)))

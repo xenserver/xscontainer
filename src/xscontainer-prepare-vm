@@ -84,7 +84,6 @@ def push_ssh_key(session, vmuuid, username):
         print(docker.ERROR_CAUSE_NETWORK)
         return 1
     api_helper.set_vm_xscontainer_username(session, vmuuid, username)
-    remote_helper.ssh.ensure_idrsa(session)
     print('Attempting to push the public xscontainer key to %s@%s.'
           % (username, host))
     key = api_helper.get_idrsa_secret_public(session)
