@@ -235,6 +235,10 @@ def main():
     session = None
     try:
         session = api_helper.get_local_api_session()
+        if not api_helper.get_vm_is_running(session, options.vmuuid):
+            print ("Error: The VM must be running for the preparation.\n"
+                   "Please start the VM.")
+            return 1
         if options.mode == 'ssh':
             resultcode = _handle_ssh(session, options)
         elif options.mode == 'tls':
