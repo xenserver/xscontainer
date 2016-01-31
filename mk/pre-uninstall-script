@@ -1,4 +1,4 @@
 if [ $1 -eq 0 ]; then
-    service xscontainer-monitor stop >/dev/null 2>&1 | true
-    chkconfig --del xscontainer-monitor
+    systemctl stop xscontainer-monitor
+    systemctl disable xscontainer-monitor.service
 fi

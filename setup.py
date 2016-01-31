@@ -8,9 +8,9 @@ ROOTDIR_ENV_KEY = "ROOTDIR"
 
 OVERLAY_FILES = {
     'etc/xapi.d/plugins': ['xscontainer'],
-    'etc/rc.d/init.d': ['xscontainer-monitor'],
     'etc/xensource/bugtool': ['xscontainer.xml'],
     'etc/xensource/bugtool/xscontainer': ['xscontainer_logs.xml'],
+    'usr/lib/systemd/system/': ['xscontainer-monitor.service']
 }
 
 

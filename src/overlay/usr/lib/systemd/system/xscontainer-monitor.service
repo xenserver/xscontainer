@@ -1,0 +1,12 @@
+[Unit]
+Description=xscontainer-monitor
+After=xapi.service
+Wants=xapi.service
+
+[Service]
+Type=idle
+Restart=on-failure
+ExecStart=/usr/bin/xscontainer-monitor
+
+[Install]
+WantedBy=multi-user.target
