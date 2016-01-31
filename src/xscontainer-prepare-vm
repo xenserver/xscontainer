@@ -42,8 +42,8 @@ def parse_options():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("-v", "--vmuuid", required=True,
                         help="UUID of the VM "
-                        + "that should be prepared for XenServer container "
-                        + "management.")
+                        "that should be prepared for XenServer container "
+                        "management.")
     parser.add_argument("--mode", choices=["ssh", "tls"], default="ssh")
     # for SSH
     parser.add_argument("-u", "--username",
@@ -87,12 +87,12 @@ def push_ssh_key(session, vmuuid, username):
     # The following command is derived from OpenSSH-Client's ssh-copy-id
     cmd = ['/usr/bin/ssh', '%s@%s' % (username, host),
            "umask 077; test -d ~/.ssh || mkdir ~/.ssh ; grep '%s'"
-           % key
-           + " ~/.ssh/authorized_keys >/dev/null 2>&1 || echo '%s'"
-           % key
-           + " >> ~/.ssh/authorized_keys && ((test -x /sbin/restorecon && "
-           + "/sbin/restorecon ~/.ssh ~/.ssh/authorized_keys "
-           + ">/dev/null 2>&1) || true)"]
+           % key +
+           " ~/.ssh/authorized_keys >/dev/null 2>&1 || echo '%s'"
+           % key +
+           " >> ~/.ssh/authorized_keys && ((test -x /sbin/restorecon && "
+           "/sbin/restorecon ~/.ssh ~/.ssh/authorized_keys "
+           ">/dev/null 2>&1) || true)"]
     process = subprocess.Popen(cmd)
     process.communicate()
     if process.returncode == 0:
