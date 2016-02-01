@@ -46,10 +46,6 @@ class XenAPIClient(object):
     def get_session_handle(self):
         return self.get_session().handle
 
-    def get_all_vms(self):
-        vm_refs = self.get_session().xenapi.VM.get_all()
-        return [VM(self, vm_ref) for vm_ref in vm_refs]
-
     def get_all_vm_records(self):
         return self.get_session().xenapi.VM.get_all_records()
 
@@ -119,17 +115,10 @@ class XenAPIObject(object):
     def remove_from_other_config(self, key):
         return self.api_call("remove_from_other_config", key)
 
-    def add_to_other_config(self, key, value):
-        return self.api_call("add_to_other_config", key, value)
-
 
 class Host(XenAPIObject):
 
     OBJECT = "Host"
-
-    # Return VMs running on the host _not_ the pool
-    def get_vms(self):
-        return [vm for vm in self.client.get_all_vms() if vm.is_on_host(self)]
 
 
 class VM(XenAPIObject):
@@ -140,14 +129,6 @@ class VM(XenAPIObject):
         if self.uuid is None:
             self.uuid = self.get_session().xenapi.VM.get_uuid(self.ref)
         return self.uuid
-
-    def is_on_host(self, host):
-        return host.ref == self.get_host().ref
-
-    def get_host(self):
-        host_ref = self.client.get_session(
-        ).xenapi.VM.get_resident_on(self.ref)
-        return Host(self.client, host_ref)
 
     def get_other_config(self):
         return self.client.get_session().xenapi.VM.get_other_config(self.ref)
@@ -212,18 +193,6 @@ def get_hi_mgmtnet_device(session, vmuuid):
         vifrecord = session.xenapi.VIF.get_record(vmvifref)
         if vifrecord['network'] == mgmtnet_ref:
             return vifrecord['device']
-
-
-def get_hi_mgmtnet_ip(session, vmuuid):
-    ipaddress = None
-    vmrecord = get_vm_record_by_uuid(session, vmuuid)
-    mgmtnet_ref = get_hi_mgmtnet_ref(session)
-    networkrecord = session.xenapi.network.get_record(mgmtnet_ref)
-    for vifref in networkrecord['assigned_ips']:
-        for vmvifref in vmrecord['VIFs']:
-            if vifref == vmvifref:
-                ipaddress = networkrecord['assigned_ips'][vifref]
-                return ipaddress
 
 
 def get_vm_ips(session, vmuuid):
