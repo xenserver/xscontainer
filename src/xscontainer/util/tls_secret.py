@@ -79,7 +79,7 @@ def export_for_vm(session, vm_uuid):
     if util.file_old_or_none_existent(temptlspaths['client_cert']):
         if not os.path.exists(temptlspaths['parent']):
             os.makedirs(temptlspaths['parent'])
-        os.chmod(temptlspaths['parent'], 400)
+        os.chmod(temptlspaths['parent'], 0600)
         util.write_file(
             temptlspaths['client_cert'],
             secretdict[XSCONTAINER_TLS_CLIENT_CERT])
