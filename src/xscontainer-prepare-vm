@@ -1,32 +1,22 @@
 #!/usr/bin/env python
 
-import sys
-# @todo: Workaround for building outside the build system
-sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 import xscontainer.api_helper as api_helper
 import xscontainer.docker as docker
-import xscontainer.ssh_helper as ssh_helper
+import xscontainer.remote_helper as remote_helper
 import xscontainer.util as util
+import xscontainer.util.tls_cert as tls_cert
 import xscontainer.util.log as log
+import xscontainer.util.tls_secret as tls_secret
 
 from xscontainer.docker_monitor import api as docker_monitor_api
 
 
-import optparse
+import argparse
 import os
 import subprocess
+import sys
 import time
-
-
-def check_parameters(parser, options, parameters):
-    error = False
-    for parameter in parameters:
-        if not getattr(options, parameter):
-            print('Error: Missing parameter --%s' % (parameter))
-            error = True
-    if error:
-        parser.print_help()
-        sys.exit(1)
+import XenAPI
 
 
 def ask_yes_or_no():
@@ -39,50 +29,70 @@ def ask_yes_or_no():
             return False
 
 
-def ask_before_starting():
+def ask_before_starting_ssh():
     print("Would you like to push a XenServer pool-specific public SSH key "
-          + "into the ~/.ssh/authorized_keys file of the specified VM and "
-          + "therefore authorize XenServer hosts to interact with the "
-          + "containers inside the VM?")
+          "into the ~/.ssh/authorized_keys file of the specified VM and "
+          "therefore authorize XenServer hosts to interact with the "
+          "containers inside the VM?")
     return ask_yes_or_no()
 
 
 def parse_options():
-    print(os.path.basename(__file__)
-          +
-          " is a tool that prepares RHEL7/CentOS7/OEL7 and Ubuntu 14.04 VMs"
-          " for XenServer container management.\n")
-    parser = optparse.OptionParser()
-    parser.add_option("-v", "--vmuuid", dest="vmuuid", help="UUID of the VM "
-                      + "that should be prepared for XenServer container "
-                      + "management.")
-    parser.add_option("-u", "--username", dest="username",
-                      help="VM user account to be used for SSH connections.")
-    options = parser.parse_args()[0]
-    check_parameters(parser, options, ['vmuuid', 'username'])
+    description = ("Prepares VMs for XenServer container management.")
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("-v", "--vmuuid", required=True,
+                        help="UUID of the VM "
+                        "that should be prepared for XenServer container "
+                        "management.")
+    parser.add_argument("--mode", choices=["ssh", "tls"], default="ssh")
+    # for SSH
+    parser.add_argument("-u", "--username",
+                        help="VM user account to be used for SSH connections.")
+    # for TLS
+    parser.add_argument('--client-cert',
+                        help='Path of the TLS client certificate',
+                        type=argparse.FileType('r'))
+    parser.add_argument('--client-key', help='Path of the TLS client key',
+                        type=argparse.FileType('r'))
+    parser.add_argument('--ca-cert', help='Path of the CA certificate',
+                        type=argparse.FileType('r'))
+    parser.add_argument('--generate-certs', action='store_true',
+                        help='Generate certificates using a temporary CA.')
+    options = parser.parse_args()
+    if options.mode == 'ssh' and not options.username:
+        parser.error(
+            'For --mode SSH the parameter --username needs to be set.')
+    if options.mode == 'tls':
+        if not ((options.client_cert and options.client_key and
+                 options.ca_cert) or options.generate_certs):
+            parser.error("For --mode tls one of the following parameter sets "
+                         "need to be specified:\n"
+                         "Either --client-cert CERTIFICATE --client-key KEY"
+                         "--ca-cert CERTIFICATE\n"
+                         "Or --generate-certs\n ")
     return options
 
 
 def push_ssh_key(session, vmuuid, username):
     try:
-        host = api_helper.get_suitable_vm_ip(session, vmuuid)
+        host = api_helper.get_suitable_vm_ip(session, vmuuid,
+                                             remote_helper.ssh.SSH_PORT)
     except util.XSContainerException:
         print(docker.ERROR_CAUSE_NETWORK)
         return 1
     api_helper.set_vm_xscontainer_username(session, vmuuid, username)
-    ssh_helper.ensure_idrsa(session)
     print('Attempting to push the public xscontainer key to %s@%s.'
           % (username, host))
     key = api_helper.get_idrsa_secret_public(session)
     # The following command is derived from OpenSSH-Client's ssh-copy-id
     cmd = ['/usr/bin/ssh', '%s@%s' % (username, host),
            "umask 077; test -d ~/.ssh || mkdir ~/.ssh ; grep '%s'"
-           % key
-           + " ~/.ssh/authorized_keys >/dev/null 2>&1 || echo '%s'"
-           % key
-           + " >> ~/.ssh/authorized_keys && ((test -x /sbin/restorecon && "
-           + "/sbin/restorecon ~/.ssh ~/.ssh/authorized_keys "
-           + ">/dev/null 2>&1) || true)"]
+           % key +
+           " ~/.ssh/authorized_keys >/dev/null 2>&1 || echo '%s'"
+           % key +
+           " >> ~/.ssh/authorized_keys && ((test -x /sbin/restorecon && "
+           "/sbin/restorecon ~/.ssh ~/.ssh/authorized_keys "
+           ">/dev/null 2>&1) || true)"]
     process = subprocess.Popen(cmd)
     process.communicate()
     if process.returncode == 0:
@@ -105,7 +115,7 @@ def verify_monitoring(session, vmuuid, username):
     except util.XSContainerException:
         log.exception("Could not monitor vm %s via %s"
                       % (vmuuid, username))
-        cause = docker.determine_error_cause(session, vmuuid)
+        cause = remote_helper.determine_error_cause(session, vmuuid)
         message = "Failure diagnosis: %s" % (cause)
         log.info(message)
         print(message)
@@ -124,21 +134,124 @@ def register_vm_for_monitoring(session, vmuuid):
     print("Success.")
 
 
-def main(argv=None):
-    options = parse_options()
-    if not ask_before_starting():
+def _handle_ssh(session, options):
+    if not ask_before_starting_ssh():
         return 1
+    resultcode = push_ssh_key(session, options.vmuuid, options.username)
+    return resultcode
+
+
+def _get_tls_ips(session, options):
+    ips = api_helper.get_vm_ips(session, options.vmuuid).values()
+    if len(ips) == 0:
+        print("Error: The VM doesn't have appear to have any IPs assigned"
+              " right now.")
+        return 1
+    ips.append("127.0.0.1")
+    print("The server certificate will be valid for the following IPs:")
+    for ip in ips:
+        print("    - %s" % (ip))
+    print("Would you like to proceed?")
+    if not ask_yes_or_no():
+        return 1
+    return ips
+
+
+def _generate_and_insert_certs(session, options):
+    ips = _get_tls_ips(session, options)
+    if ips == 1:
+        return 1
+    try:
+        vbd_ref = api_helper.get_cd_vbd_ref(session, options.vmuuid)
+    except XenAPI.Failure:
+        print ("Error: The VM doesn't have a CD drive. "
+               "Please add a CD drive first.")
+        return 1
+    targetiso = tls_cert.generate_certs_and_return_iso(session,
+                                                       options.vmuuid,
+                                                       ips)
+    vdi_ref = None
+    try:
+        print "Deploying the TLS certificates to the VM"
+        sr_uuid = api_helper.get_first_sr_uuid(session, options.vmuuid)
+        image_name = 'Temp Container Management Image'
+        try:
+            vdi_ref = api_helper.import_disk(session, sr_uuid, targetiso,
+                                             'raw', image_name)
+        except:
+            # fall back to using the default SR, if there is no space or
+            # similar
+            sr_uuid = api_helper.get_default_sr(session)
+            vdi_ref = api_helper.import_disk(session, sr_uuid, targetiso,
+                                             'raw', image_name)
+        try:
+            session.xenapi.VBD.insert(vbd_ref, vdi_ref)
+        except XenAPI.Failure as failure:
+            if failure.details[0] == "VBD_NOT_EMPTY":
+                print ("The CD drive already contains an ISO. "
+                       "Do you wish to eject it?")
+                if not ask_yes_or_no():
+                    return 1
+                session.xenapi.VBD.eject(vbd_ref)
+                session.xenapi.VBD.insert(vbd_ref, vdi_ref)
+        print ("Server side preparation complete.\n"
+               "---------------------\n"
+               "Please run <cd-drive>:\\configure_tls.cmd\n"
+               "as administrator on the VM to:\n"
+               "    - Configure Docker for TLS\n"
+               "    - Restart the Docker service\n"
+               "    - Configure the windows user account for client access\n"
+               "Type y once done.")
+        while not ask_yes_or_no():
+            pass
+    finally:
+        os.remove(targetiso)
+        try:
+            session.xenapi.VBD.eject(vbd_ref)
+        except XenAPI.Failure:
+            # this probably means it was already ejected
+            pass
+        if vdi_ref:
+            session.xenapi.VDI.destroy(vdi_ref)
+    return 0
+
+
+def _handle_tls(session, options):
+    resultcode = 0
+    if options.generate_certs:
+        resultcode = _generate_and_insert_certs(session, options)
+    else:
+        tls_secret.set_for_vm(
+            session,
+            options.vmuuid,
+            client_cert_content=options.client_cert.read(),
+            client_key_content=options.client_key.read(),
+            ca_cert_content=options.ca_cert.read())
+    return resultcode
+
+
+def main():
+    options = parse_options()
     session = None
     try:
         session = api_helper.get_local_api_session()
-        resultcode = push_ssh_key(session, options.vmuuid, options.username)
+        if not api_helper.get_vm_is_running(session, options.vmuuid):
+            print ("Error: The VM must be running for the preparation.\n"
+                   "Please start the VM.")
+            return 1
+        if options.mode == 'ssh':
+            resultcode = _handle_ssh(session, options)
+        elif options.mode == 'tls':
+            resultcode = _handle_tls(session, options)
         if resultcode == 0:
-            resultcode = verify_monitoring(session, options.vmuuid,
-                                           options.username)
+            api_helper.set_vm_xscontainer_mode(
+                session, options.vmuuid, options.mode)
+            resultcode = verify_monitoring(
+                session, options.vmuuid, options.username)
         if resultcode == 0:
             register_vm_for_monitoring(session, options.vmuuid)
     finally:
-        if session != None:
+        if session is not None:
             session.xenapi.session.logout()
     return resultcode
 

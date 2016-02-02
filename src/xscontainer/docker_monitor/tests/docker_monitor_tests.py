@@ -120,8 +120,7 @@ class TestDockerMonitorThreads(unittest.TestCase):
                                              tuple())
 
     @patch("xscontainer.util.log.info")
-    @patch("os.kill")
-    def test_stop_monitoring(self, mos_kill, log_info):
+    def test_stop_monitoring(self, log_info):
         mvm_ref = MagicMock()
         dm = DockerMonitor()
         thevm = MonitoredVM(MagicMock(), ref=mvm_ref)
@@ -129,4 +128,4 @@ class TestDockerMonitorThreads(unittest.TestCase):
         dm.register(thevm)
         dm.stop_monitoring(mvm_ref)
 
-        self.assertEqual(thevm._stop_monitoring_request, True)
+        self.assertEqual(thevm._stop_monitoring_request, ["stop"])

@@ -60,8 +60,8 @@ def setup_network_on_lowest_pif(session, vmref):
     pifs = session.xenapi.PIF.get_all_records()
     lowest = None
     for pifref in pifs.keys():
-        if ((lowest is None)
-                or (pifs[pifref]['device'] < pifs[lowest]['device'])):
+        if ((lowest is None) or
+                (pifs[pifref]['device'] < pifs[lowest]['device'])):
             lowest = pifref
     if lowest:
         networkref = session.xenapi.PIF.get_network(lowest)
@@ -114,8 +114,7 @@ def load_cloud_config_template(template_path=None):
         template_path = CLOUD_CONFIG_OVERRIDE_PATH
     else:
         # Use the inbuilt default template
-        this_dir, _ = os.path.split(__file__)
-        template_path = os.path.join(this_dir, "data", "cloud-config.template")
+        template_path = util.get_data_file_path("cloud-config.template")
 
     log.info("load_cloud_config_template from %s" % (template_path))
 
@@ -201,9 +200,7 @@ def create_config_drive_iso(session, userdata_template, vmuuid):
             shutil.copy(path, agentpath)
             agentfilepaths.append(os.path.join(agentpath, filename))
         # Finally wrap up the iso
-        cmd = ['mkisofs', '-R', '-V', 'config-2',
-               '-o', tempisofile, tempisodir]
-        util.runlocal(cmd)
+        util.make_iso('config-2', tempisodir, tempisofile)
     finally:
         # And tidy
         if umountrequired:

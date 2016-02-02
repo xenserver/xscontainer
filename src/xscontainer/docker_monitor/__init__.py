@@ -1,14 +1,11 @@
 from xscontainer import api_helper
 from xscontainer import docker
-from xscontainer import ssh_helper
+from xscontainer import remote_helper
 from xscontainer import util
 from xscontainer.util import log
+from xscontainer.util import tls_secret
 
-import errno
-import fcntl
 import os
-import select
-import simplejson
 import thread
 import time
 import signal
@@ -18,7 +15,6 @@ import XenAPI
 import xmlrpclib
 
 MONITORRETRYSLEEPINS = 20
-MONITOR_EVENTS_POLL_INTERVAL = 1
 MONITOR_TIMEOUT_WARNING_S = 120.0
 REGISTRATION_KEY = "xscontainer-monitor"
 REGISTRATION_KEY_ON = 'True'
@@ -40,25 +36,23 @@ class DeregistrationError(Exception):
 class MonitoredVM(api_helper.VM):
 
     """A VM class that can be monitored."""
-    _stop_monitoring_request = False
-    _ssh_client = None
+    """_stop_monitoring_request must be a mutable type such as list()"""
+    _stop_monitoring_request = list()
     _error_message = None
 
     def start_monitoring(self):
+        self._stop_monitoring_request = list()
         thread.start_new_thread(self._monitoring_loop, tuple())
 
     def stop_monitoring(self):
-        self._stop_monitoring_request = True
-        ssh_client = self._ssh_client
-        if ssh_client:
-            ssh_client.close()
+        self._stop_monitoring_request.append("stop")
 
     def _send_monitor_error_message(self):
         self._wipe_monitor_error_message_if_needed()
         try:
             session = self.get_session()
             vmuuid = self.get_uuid()
-            cause = docker.determine_error_cause(session, vmuuid)
+            cause = remote_helper.determine_error_cause(session, vmuuid)
             log.info("_send_monitor_error_message for VM %s: %s"
                      % (vmuuid, cause))
             self._error_message = api_helper.send_message(
@@ -93,12 +87,16 @@ class MonitoredVM(api_helper.VM):
             try:
                 docker.update_docker_info(self)
                 docker.update_docker_version(self)
+                docker.update_docker_ps(self)
                 # if we got past the above, it's about time to delete the
                 # error message, as all appears to be working again
                 self._wipe_monitor_error_message_if_needed()
                 try:
                     try:
-                        self.__monitor_vm_events()
+                        for event in remote_helper.execute_docker_event_listen(
+                                self.get_session(), vmuuid,
+                                self._stop_monitoring_request):
+                            self.handle_docker_event(event)
                     finally:
                         docker.wipe_docker_other_config(self)
                 except (XenAPI.Failure, util.XSContainerException):
@@ -107,8 +105,8 @@ class MonitoredVM(api_helper.VM):
                     raise
             except (XenAPI.Failure, util.XSContainerException):
                 passed_time = time.time() - start_time
-                if (not self._error_message
-                        and passed_time >= MONITOR_TIMEOUT_WARNING_S):
+                if (not self._error_message and
+                        passed_time >= MONITOR_TIMEOUT_WARNING_S):
                     self._send_monitor_error_message()
                 log.info("Could not connect to VM %s, will retry" % (vmuuid))
             if not self._stop_monitoring_request:
@@ -117,67 +115,6 @@ class MonitoredVM(api_helper.VM):
         # not monitored anymore
         self._wipe_monitor_error_message_if_needed()
         log.info("monitor_loop returns from handling vm %s" % (vmuuid))
-
-    def __monitor_vm_events(self):
-        session = self.get_session()
-        vmuuid = self.get_uuid()
-        ssh_client = ssh_helper.prepare_ssh_client(session, vmuuid)
-        try:
-            cmd = docker.prepare_request_cmd()
-            log.info("__monitor_vm_events is running '%s' on VM '%s'"
-                     % (cmd, vmuuid))
-            stdin, stdout, _ = ssh_client.exec_command(cmd)
-            stdin.write(docker.prepare_request_stdin('GET', '/events'))
-            self._ssh_client = ssh_client
-            # Not that we are listening for events, get the latest state
-            docker.update_docker_ps(self)
-            # set unblocking io for select.select
-            stdout_fd = stdout.channel.fileno()
-            fcntl.fcntl(stdout_fd,
-                        fcntl.F_SETFL,
-                        os.O_NONBLOCK | fcntl.fcntl(stdout_fd, fcntl.F_GETFL))
-            # @todo: should make this more sane
-            skippedheader = False
-            openbrackets = 0
-            data = ""
-            while not self._stop_monitoring_request:
-                rlist, _, _ = select.select([stdout_fd], [], [],
-                                            MONITOR_EVENTS_POLL_INTERVAL)
-                if not rlist:
-                    continue
-                try:
-                    # @todo: should read more than one char at once
-                    lastread = stdout.read(1)
-                except IOError, exception:
-                    if exception[0] not in (errno.EAGAIN, errno.EINTR):
-                        raise
-                    sys.exc_clear()
-                    continue
-                if lastread == '':
-                    break
-                data = data + lastread
-                if (not skippedheader and lastread == "\n"
-                        and len(data) >= 4 and data[-4:] == "\r\n\r\n"):
-                    data = ""
-                    skippedheader = True
-                elif lastread == '{':
-                    openbrackets = openbrackets + 1
-                elif lastread == '}':
-                    openbrackets = openbrackets - 1
-                    if openbrackets == 0:
-                        event = simplejson.loads(data)
-                        self.handle_docker_event(event)
-                        data = ""
-                if len(data) >= 2048:
-                    raise util.XSContainerException('__monitor_vm_events' +
-                                                    'is full')
-        finally:
-            try:
-                ssh_client.close()
-            except Exception:
-                util.log.exception("Error when closing ssh_client for %r"
-                                   % ssh_client)
-        log.info('__monitor_vm_events (%s) exited' % cmd)
 
     def handle_docker_event(self, event):
         if 'status' in event:
@@ -204,6 +141,8 @@ class DockerMonitor(object):
     """
 
     host = None
+    # tls_secret_cache[VMREF][TLS_SECRET_UUID]
+    tls_secret_cache = {}
 
     def __init__(self, host=None):
         self.vms = {}
@@ -299,6 +238,13 @@ class DockerMonitor(object):
             self.start_monitoring(vmref)
         elif is_monitored and not should_monitor:
             self.stop_monitoring(vmref)
+        # Remember TLS secrets of VMs to tidy in process_vm_del
+        for key in tls_secret.XSCONTAINER_TLS_KEYS:
+            if key in vmrecord['other_config']:
+                if vmref not in self.tls_secret_cache:
+                    self.tls_secret_cache[vmref] = {}
+                secret_uuid = vmrecord['other_config'][key]
+                self.tls_secret_cache[vmref][key] = secret_uuid
 
     def tear_down_all(self):
         for entry in self.get_registered():
@@ -306,6 +252,18 @@ class DockerMonitor(object):
         # @todo: we could have wait for thread.join with timeout here
         # Wait for children
         time.sleep(2)
+
+    def process_vm_del(self, vm_ref):
+        """ Tidy TLS secrets after vm-destroy """
+        if vm_ref in self.tls_secret_cache:
+            for key in tls_secret.XSCONTAINER_TLS_KEYS:
+                if key in self.tls_secret_cache[vm_ref]:
+                    secret_uuid = self.tls_secret_cache[vm_ref][key]
+                    session = self.host.get_session()
+                    tls_secret.remove_if_refcount_less_or_equal(session,
+                                                                secret_uuid,
+                                                                0)
+            del(self.tls_secret_cache[vm_ref])
 
 
 def interrupt_handler(signum, frame):
@@ -356,20 +314,23 @@ def monitor_host():
                     token_from = event_from['token']
                     events = event_from['events']
                     for event in events:
-                        if (event['operation'] == 'mod'
-                                and 'snapshot' in event):
+                        if (event['operation'] == 'mod' and
+                                'snapshot' in event):
                             # At this point the monitor may need to
                             # refresh it's monitoring state of a particular
                             # vm.
                             DOCKER_MONITOR.process_vmrecord(event['ref'],
                                                             event['snapshot'])
+                        elif event['operation'] == 'del':
+                            DOCKER_MONITOR.process_vm_del(event['ref'])
             finally:
                 try:
                     session.xenapi.session.logout()
                 except XenAPI.Failure:
                     log.exception("Failed when trying to logout")
-        except (socket.error, XenAPI.Failure, xmlrpclib.ProtocolError):
+        except (socket.error, XenAPI.Failure, xmlrpclib.ProtocolError) as e:
             if session is not None:
+                log.exception(e)
                 log.error("Could not connect to XAPI - Is XAPI running? " +
                           "Will retry in %d" % (XAPIRETRYSLEEPINS))
             else:
@@ -377,3 +338,4 @@ def monitor_host():
                               "restarting? Will retry in %d."
                               % (XAPIRETRYSLEEPINS))
             time.sleep(XAPIRETRYSLEEPINS)
+            api_helper.reinit_global_xapi_session()
