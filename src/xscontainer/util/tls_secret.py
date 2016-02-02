@@ -15,7 +15,8 @@ XSCONTAINER_TLS_KEYS = [XSCONTAINER_TLS_CLIENT_CERT,
 TEMP_FILE_PATH = '/tmp/xscontainer/tls/'
 
 
-def consider_remove(session, tls_secret_uuid, refcount_threshold):
+def remove_if_refcount_less_or_equal(session, tls_secret_uuid,
+                                     refcount_threshold):
     """ removes TLS secrets if there is fewer VMs using a secret as specified
         in refcount_threshold """
     refcount = _get_refcount(session, tls_secret_uuid)
@@ -109,7 +110,7 @@ def _destroy_for_vm(session, vm_uuid):
         if key in other_config:
             tls_secret_uuid = other_config[key]
             # remove if there is no VMs other than this one who use the secret
-            consider_remove(session, tls_secret_uuid, 1)
+            remove_if_refcount_less_or_equal(session, tls_secret_uuid, 1)
     temptlspaths = _get_temptlspaths(vm_uuid)
     for path in temptlspaths:
         if os.path.exists(path):

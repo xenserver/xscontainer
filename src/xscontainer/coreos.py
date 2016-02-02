@@ -114,8 +114,7 @@ def load_cloud_config_template(template_path=None):
         template_path = CLOUD_CONFIG_OVERRIDE_PATH
     else:
         # Use the inbuilt default template
-        this_dir, _ = os.path.split(__file__)
-        template_path = os.path.join(this_dir, "data", "cloud-config.template")
+        template_path = util.get_data_file_path("cloud-config.template")
 
     log.info("load_cloud_config_template from %s" % (template_path))
 

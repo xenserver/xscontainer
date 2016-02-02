@@ -133,8 +133,7 @@ def generate_certs_and_return_iso(session, vm_uuid, ips):
             client_key_content=util.read_file(path_client_key),
             ca_cert_content=util.read_file(path_ca_cert))
         shutil.copy2(
-            '/usr/lib/python2.7/site-packages/xscontainer/data/' +
-            'configure_tls.cmd',
+            util.get_data_file_path('configure_tls.cmd'),
             os.path.join(tempdir, 'configure_tls.cmd'))
         targetiso = tempfile.mkstemp()[1]
         try:

@@ -598,6 +598,10 @@ def get_cd_vbd_ref(session, vm_uuid):
 
 
 def get_first_sr_uuid(session, vm_uuid):
+    """ Returns the SR of the first VBD of a VM. May be used as a suggestion
+        to place further disks for a VM, as the SR can asserted to be
+        reachable by the VM. It is not necessarilly the SR of the rootdisk of
+        the VM."""
     vm_record = get_vm_record_by_uuid(session, vm_uuid)
     for vbd_ref in vm_record['VBDs']:
         vbd_record = session.xenapi.VBD.get_record(vbd_ref)

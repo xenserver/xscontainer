@@ -132,3 +132,10 @@ def make_iso(label, sourcedirectory, targetiso):
            '-o', targetiso, sourcedirectory]
 
     runlocal(cmd)
+
+
+def get_data_file_path(filename):
+    this_dir, _ = os.path.split(__file__)
+    path = os.path.join(this_dir, os.pardir, "data", filename)
+    abspath = os.path.abspath(path)
+    return abspath

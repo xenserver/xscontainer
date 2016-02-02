@@ -259,8 +259,10 @@ class DockerMonitor(object):
             for key in tls_secret.XSCONTAINER_TLS_KEYS:
                 if key in self.tls_secret_cache[vm_ref]:
                     secret_uuid = self.tls_secret_cache[vm_ref][key]
-                    tls_secret.consider_remove(self.host.get_session(),
-                                               secret_uuid, 0)
+                    session = self.host.get_session()
+                    tls_secret.remove_if_refcount_less_or_equal(session,
+                                                                secret_uuid,
+                                                                0)
             del(self.tls_secret_cache[vm_ref])
 
 
