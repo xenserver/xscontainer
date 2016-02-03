@@ -16,7 +16,8 @@ ERROR_CAUSE_NETWORK = (
     "Error: Cannot find a valid IP that allows TLS connections to Docker "
     "on the VM. Please make sure that Tools are installed, a "
     "network route is set up, Docker is running and configured for TLS "
-    "and TLS is reachable from Dom0 on port %d." % (DOCKER_TLS_PORT))
+    "and TLS is reachable from Dom0 on port %d. Please " % (DOCKER_TLS_PORT) +
+    "particularly check the firewall configuration inside the VM.")
 
 
 class TlsException(util.XSContainerException):
