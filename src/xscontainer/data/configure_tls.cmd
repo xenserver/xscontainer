@@ -1,7 +1,7 @@
 @echo off
 net session >nul 2>&1
 if %errorLevel% NEQ 0 (
-    echo Please run this script with Administrator privileges
+    echo Please run this script with Administrator privileges.
     timeout 30
     EXIT /B 1
 )
@@ -12,9 +12,9 @@ if not exist c:\ProgramData\docker\ (
     timeout 30
     EXIT /B 1
 )
-echo Setting the system environment variable DOCKER_HOST
+echo Setting the system environment variable DOCKER_HOST.
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v DOCKER_HOST /t REG_SZ /d tcp://:2376 /f || goto :ERRORHANDLER
-echo Setting the system environment variable DOCKER_TLS
+echo Setting the system environment variable DOCKER_TLS.
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v DOCKER_TLS_VERIFY /t REG_SZ /d 1 /f || goto :ERRORHANDLER
 echo Configuring the Docker daemon for TLS using c:\ProgramData\Docker\certs.d
 if not exist c:\ProgramData\docker\certs.d\ (
@@ -28,11 +28,11 @@ if not exist %USERPROFILE%\.docker\ (
 )
 icacls.exe %USERPROFILE%\.docker\ /T /grant %USERDOMAIN%\%USERNAME%:(OI)(CI)F /inheritance:r || goto :ERRORHANDLER
 xcopy /O %cdpath%client\* %USERPROFILE%\.docker\ || goto :ERRORHANDLER
-echo Restarting Docker
+echo Restarting Docker.
 net stop Docker || goto :ERRORHANDLER
 net start Docker || goto :ERRORHANDLER
 echo All done. Docker is now configured for TLS.
-echo Please complete the preparation on the control domain console.
+echo Please press enter and complete the preparation on the control domain console.
 timeout 10 > NUL
 EXIT /b 0
 goto :EOF
