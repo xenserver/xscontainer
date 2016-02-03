@@ -177,22 +177,16 @@ def _run_container_cmd(session, vmuuid, container, command):
 
 def start(session, vmuuid, container):
     result = _run_container_cmd(session, vmuuid, container, 'start')
-    # Workaround for WS2016TP4
-    update_docker_ps_workaround(session, vmuuid)
     return result
 
 
 def stop(session, vmuuid, container):
     result = _run_container_cmd(session, vmuuid, container, 'stop')
-    # Workaround for WS2016TP4
-    update_docker_ps_workaround(session, vmuuid)
     return result
 
 
 def restart(session, vmuuid, container):
     result = _run_container_cmd(session, vmuuid, container, 'restart')
-    # Workaround for WS2016TP4
-    update_docker_ps_workaround(session, vmuuid)
     return result
 
 
