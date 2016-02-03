@@ -13,19 +13,30 @@ if not exist c:\ProgramData\docker\ (
     EXIT /B 1
 )
 echo Setting the system environment variable DOCKER_HOST
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v DOCKER_HOST /t REG_SZ /d tcp://:2376 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v DOCKER_HOST /t REG_SZ /d tcp://:2376 /f || goto :ERRORHANDLER
 echo Setting the system environment variable DOCKER_TLS
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v DOCKER_TLS_VERIFY /t REG_SZ /d 1 /f
-echo Configuring the Docker daemon for TLS
-if not exist c:\ProgramData\docker\certs.d\ mkdir c:\ProgramData\docker\certs.d\
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v DOCKER_TLS_VERIFY /t REG_SZ /d 1 /f || goto :ERRORHANDLER
+echo Configuring the Docker daemon for TLS using c:\ProgramData\Docker\certs.d
+if not exist c:\ProgramData\docker\certs.d\ (
+    mkdir c:\ProgramData\docker\certs.d\ || goto :ERRORHANDLER
+)
 xcopy /O %cdpath%server\* c:\ProgramData\docker\certs.d\
 echo Configuring the Docker client in %USERPROFILE%\.docker\ to connect using TLS for the current user.
-if not exist %USERPROFILE%\.docker\ mkdir %USERPROFILE%\.docker\
-xcopy /O %cdpath%client\* %USERPROFILE%\.docker\
+if not exist %USERPROFILE%\.docker\ (
+    mkdir %USERPROFILE%\.docker\ || goto :ERRORHANDLER
+)
+xcopy /O %cdpath%client\* %USERPROFILE%\.docker\ || goto :ERRORHANDLER
 echo Restarting Docker
-net stop Docker
-net start Docker
+net stop Docker || goto :ERRORHANDLER
+net start Docker || goto :ERRORHANDLER
 echo All done. Docker is now configured for TLS.
 echo Please complete the preparation on the control domain console.
 timeout 10 > NUL
 EXIT /b 0
+goto :EOF
+
+
+:ERRORHANDLER
+echo Error: Command failed with errorlevel #%errorlevel%.
+timeout 10 > NUL
+exit /B %errorlevel%
