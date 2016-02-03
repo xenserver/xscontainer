@@ -54,8 +54,8 @@ def execute_docker(session, vm_uuid, request):
     return result
 
 
-def execute_docker_listen_charbychar(session, vm_uuid, request,
-                                     stop_monitoring_request):
+def execute_docker_data_listen(session, vm_uuid, request,
+                               stop_monitoring_request):
     host = api_helper.get_suitable_vm_ip(session, vm_uuid, DOCKER_TLS_PORT)
     log.info("tls.execute_docker_listen_charbychar for VM %s, via %s"
              % (vm_uuid, host))
@@ -71,11 +71,10 @@ def execute_docker_listen_charbychar(session, vm_uuid, request,
             if not rlist:
                 continue
             try:
-                # @todo: should read more than one char at once
-                character = asocket.recv(1)
-                if character == "":
+                read_data = asocket.recv(1024)
+                if read_data == "":
                     break
-                yield character
+                yield read_data
             except IOError, exception:
                 if exception[0] not in (errno.EAGAIN, errno.EINTR):
                     raise

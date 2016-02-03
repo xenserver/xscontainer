@@ -143,8 +143,8 @@ def execute_ssh(session, vmuuid, cmd, stdin_input=None):
             client.close()
 
 
-def execute_docker_listen_charbychar(session, vmuuid, request,
-                                     stop_monitoring_request):
+def execute_docker_data_listen(session, vmuuid, request,
+                               stop_monitoring_request):
     ssh_client = prepare_ssh_client(session, vmuuid)
     try:
         cmd = prepare_request_cmd()
@@ -163,11 +163,10 @@ def execute_docker_listen_charbychar(session, vmuuid, request,
             if not rlist:
                 continue
             try:
-                # @todo: should read more than one char at once
-                character = stdout.read(1)
-                if character == "":
+                read_data = stdout.read(1024)
+                if read_data == "":
                     break
-                yield character
+                yield read_data
             except IOError, exception:
                 log.info("IOError")
                 if exception[0] not in (errno.EAGAIN, errno.EINTR):

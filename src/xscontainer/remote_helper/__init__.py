@@ -27,26 +27,27 @@ def execute_docker_event_listen(session, vmuuid, stoprequest):
     openbrackets = 0
     request = "GET /events HTTP/1.0\r\n\r\n"
     connector = _get_connector(session, vmuuid)
-    for character in connector.execute_docker_listen_charbychar(session,
-                                                                vmuuid,
-                                                                request,
-                                                                stoprequest):
-        data = data + character
-        if (not skippedheader and character == "\n" and
-                len(data) >= 4 and data[-4:] == "\r\n\r\n"):
-            data = ""
-            skippedheader = True
-        elif character == '{':
-            openbrackets = openbrackets + 1
-        elif character == '}':
-            openbrackets = openbrackets - 1
-            if openbrackets == 0:
-                event = simplejson.loads(data)
-                yield event
+    for read_data in connector.execute_docker_data_listen(session,
+                                                          vmuuid,
+                                                          request,
+                                                          stoprequest):
+        for character in read_data:
+            data = data + character
+            if (not skippedheader and character == "\n" and
+                    len(data) >= 4 and data[-4:] == "\r\n\r\n"):
                 data = ""
-    if len(data) >= 2048:
-        raise util.XSContainerException('__monitor_vm_events' +
-                                        'is full')
+                skippedheader = True
+            elif character == '{':
+                openbrackets = openbrackets + 1
+            elif character == '}':
+                openbrackets = openbrackets - 1
+                if openbrackets == 0:
+                    event = simplejson.loads(data)
+                    yield event
+                    data = ""
+            if len(read_data) >= 2048:
+                raise util.XSContainerException('execute_docker_event_listen' +
+                                                'is full')
 
 
 def determine_error_cause(session, vmuuid):
