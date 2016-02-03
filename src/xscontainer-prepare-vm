@@ -248,6 +248,13 @@ def main():
                 session, options.vmuuid, options.mode)
             resultcode = verify_monitoring(
                 session, options.vmuuid, options.username)
+            while resultcode!=0:
+                print "Retry?"
+                if ask_yes_or_no():
+                    resultcode = verify_monitoring(
+                        session, options.vmuuid, options.username)
+                else:
+                    break
         if resultcode == 0:
             register_vm_for_monitoring(session, options.vmuuid)
     except KeyboardInterrupt:
