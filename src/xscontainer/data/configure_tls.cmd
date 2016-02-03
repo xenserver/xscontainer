@@ -19,9 +19,9 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v D
 echo Configuring the Docker daemon for TLS
 if not exist c:\ProgramData\docker\certs.d\ mkdir c:\ProgramData\docker\certs.d\
 xcopy /O %cdpath%server\* c:\ProgramData\docker\certs.d\
-echo Configuring the Docker client to connect using TLS for the current user
-if not exist c:\Users\%username%\.docker\ mkdir c:\Users\%username%\.docker\
-xcopy /O %cdpath%client\* c:\Users\%username%\.docker\
+echo Configuring the Docker client in %USERPROFILE%\.docker\ to connect using TLS for the current user.
+if not exist %USERPROFILE%\.docker\ mkdir %USERPROFILE%\.docker\
+xcopy /O %cdpath%client\* %USERPROFILE%\.docker\
 echo Restarting Docker
 net stop Docker
 net start Docker
