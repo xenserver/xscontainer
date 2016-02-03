@@ -21,7 +21,7 @@ if not exist %PROGRAMDATA%\docker\certs.d\ (
     mkdir %PROGRAMDATA%\docker\certs.d\ || goto :ERRORHANDLER
 )
 icacls.exe %PROGRAMDATA%\docker\certs.d\ /T /grant BUILTIN\Administrators:(OI)(CI)F /grant SYSTEM:(OI)(CI)F /inheritance:r || goto :ERRORHANDLER
-xcopy /O %cdpath%server\* %PROGRAMDATA%\docker\certs.d\
+xcopy /O %cdpath%server\* %PROGRAMDATA%\docker\certs.d\ || goto :ERRORHANDLER
 echo Configuring the Docker client in %USERPROFILE%\.docker\ to connect using TLS for the current user.
 if not exist %USERPROFILE%\.docker\ (
     mkdir %USERPROFILE%\.docker\ || goto :ERRORHANDLER
