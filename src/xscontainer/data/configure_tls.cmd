@@ -6,6 +6,12 @@ if %errorLevel% NEQ 0 (
     EXIT /B 1
 )
 SET cdpath=%~dp0
+if not exist c:\ProgramData\docker\ (
+    echo Error: Could not find Docker in c:\ProgramData\docker\.
+    echo Please install Docker before running this script.
+    timeout 10 > NUL
+    EXIT /B 1
+)
 echo Setting the system environment variable DOCKER_HOST
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v DOCKER_HOST /t REG_SZ /d tcp://:2376 /f
 echo Setting the system environment variable DOCKER_TLS
