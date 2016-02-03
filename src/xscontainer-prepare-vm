@@ -250,6 +250,8 @@ def main():
                 session, options.vmuuid, options.username)
         if resultcode == 0:
             register_vm_for_monitoring(session, options.vmuuid)
+    except KeyboardInterrupt:
+        resultcode = 1
     finally:
         if session is not None:
             session.xenapi.session.logout()
