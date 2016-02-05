@@ -144,23 +144,25 @@ def _handle_ssh(session, options):
 def _get_tls_ips(session, options):
     ips = api_helper.get_vm_ips(session, options.vmuuid).values()
     if len(ips) == 0:
-        print("Error: The VM doesn't have appear to have any IPs assigned"
-              " right now.")
+        print("Error: The VM doesn't have appear to have any IPs assigned.")
         return 1
     ips.append("127.0.0.1")
-    print("The server certificate will be valid for the following IPs:")
+    print("The server certificate will be valid for the following server IPs:")
     for ip in ips:
         print("    - %s" % (ip))
-    print("Would you like to proceed?")
-    if not ask_yes_or_no():
-        return 1
     return ips
 
 
 def _generate_and_insert_certs(session, options):
+    print("Warning: The generated certificates will be injected into the VM\n"
+          "using a virtual CD. This is only safe for single-user VMs, as\n"
+          "all VM users have access to the CD and may copy the secret TLS\n"
+          "keys, while the CD is inserted.\n")
     ips = _get_tls_ips(session, options)
-    if ips == 1:
+    print("\nWould you like to proceed?")
+    if ips==1 or not ask_yes_or_no():
         return 1
+    print("---------------------")
     try:
         vbd_ref = api_helper.get_cd_vbd_ref(session, options.vmuuid)
     except XenAPI.Failure:
@@ -172,7 +174,7 @@ def _generate_and_insert_certs(session, options):
                                                        ips)
     vdi_ref = None
     try:
-        print "Deploying the TLS certificates to the VM"
+        print "Deploying the TLS configuration to the VM."
         sr_uuid = api_helper.get_first_sr_uuid(session, options.vmuuid)
         image_name = 'Temp Container Management Image'
         try:
@@ -188,7 +190,7 @@ def _generate_and_insert_certs(session, options):
             session.xenapi.VBD.insert(vbd_ref, vdi_ref)
         except XenAPI.Failure as failure:
             if failure.details[0] == "VBD_NOT_EMPTY":
-                print ("The CD drive already contains an ISO. "
+                print ("The CD drive already contains an ISO.\n"
                        "Do you wish to eject it?")
                 if not ask_yes_or_no():
                     return 1
@@ -199,9 +201,11 @@ def _generate_and_insert_certs(session, options):
                "Please run <cd-drive>:\\configure_tls.cmd\n"
                "as administrator on the VM to:\n"
                "    - Configure Docker for TLS\n"
+               "    - Stop all running containers\n"
                "    - Restart the Docker service\n"
-               "    - Configure the windows user account for client access\n"
-               "Type y once done.")
+               "    - Configure the windows user account for TLS client\n"
+               "      access following the next reboot.\n"
+               "Type y and enter once the script has been run.")
         while not ask_yes_or_no():
             pass
     finally:
@@ -248,8 +252,17 @@ def main():
                 session, options.vmuuid, options.mode)
             resultcode = verify_monitoring(
                 session, options.vmuuid, options.username)
+            while resultcode!=0:
+                print "Do you wish to retry?"
+                if ask_yes_or_no():
+                    resultcode = verify_monitoring(
+                        session, options.vmuuid, options.username)
+                else:
+                    break
         if resultcode == 0:
             register_vm_for_monitoring(session, options.vmuuid)
+    except KeyboardInterrupt:
+        resultcode = 1
     finally:
         if session is not None:
             session.xenapi.session.logout()
