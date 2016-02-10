@@ -119,14 +119,14 @@ $(SUPP_PACK): $(XSCONTAINER_STAMP) $(MY_SOURCES)/dependencies
 	mkdir -p $(MY_OBJ_DIR)/ISO-SOURCES
 	cp -f $(MY_OUTPUT_DIR)/$(SRPM) $(MY_OBJ_DIR)/ISO-SOURCES/
 	cp -f $(DOM0_SRPMS) $(MY_OBJ_DIR)/ISO-SOURCES/
-	mkisofs -A "Citrix" -V "xscontainer" -J -joliet-long -r -o $(SUPP_PACK_SOURCES) $(MY_OBJ_DIR)/ISO-SOURCES
+	mkisofs -A "xscontainer" -V "xscontainer" -J -joliet-long -r -o $(SUPP_PACK_SOURCES) $(MY_OBJ_DIR)/ISO-SOURCES
 	./make-supp-pack --out $(dir $@) \
-	                 --pdn $(PRODUCT_BRAND) \
-	                 --pdv $(COMPLETE_VERSION) \
+	                 --pln $(PLATFORM_NAME) \
+	                 --plv $(PLATFORM_VERSION) \
 	                 --bld $(RELEASE) \
 	                 --spn xscontainer \
-	                 --spd "XenServer Container Management" \
-	                 --rxv $(PRODUCT_VERSION) \
+	                 --spd "XSContainer Management" \
+	                 --ver $(COMPLETE_VERSION) \
 	                 $(MY_OUTPUT_DIR)/$(RPM) \
 	                 $(DOM0_RPMS)
 	mv $(dir $@)/xscontainer.iso $@.iso
