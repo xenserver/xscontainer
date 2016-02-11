@@ -13,7 +13,7 @@ import tempfile
 
 CLOUD_CONFIG_OVERRIDE_PATH = (
     "/opt/xensource/packages/files/xscontainer/cloud-config.template")
-XS_TOOLS_ISO_PATH = '/opt/xensource/packages/iso/xs-tools-*.iso'
+XS_TOOLS_ISO_PATH = '/opt/xensource/packages/iso/*tools-*.iso'
 OTHER_CONFIG_CONFIG_DRIVE_KEY = "config-drive"
 
 
@@ -80,29 +80,53 @@ def prepare_vm_for_config_drive(session, vmref, vmuuid):
 
 
 def filterxshinexists(text):
-    try:
-        xshinexists = text.index('%XSHINEXISTS%')
-        endxshinexists = text.index('%ENDXSHINEXISTS%')
-        if xshinexists and endxshinexists:
-            text = text[:xshinexists] + text[endxshinexists + 16:]
-    except ValueError:
-        pass
+    # Include legacy support for 'XS' prefixed keys
+    patterns = [r'(\%HINEXISTS\%(.)*\%ENDHINEXISTS\%)',
+                r'(\%XSHINEXISTS\%(.)*\%XSENDHINEXISTS\%)']
+
+    for p in patterns:
+        match = re.search(p, text, re.DOTALL)
+
+        if match:
+            text = text.replace(match.group(0), '')
+
     return text
 
 
-def customize_userdata(session, userdata, vmuuid):
+def _fmt_vm_name(session, vmuuid):
     vmname = api_helper.get_vm_record_by_uuid(session, vmuuid)['name_label']
     vmname = re.sub(r'[\W_]+', '', vmname).lower()
-    userdata = userdata.replace('%XSVMNAMETOHOSTNAME%', vmname)
-    userdata = userdata.replace(
-        '%XSCONTAINERRSAPUB%',
-        api_helper.get_idrsa_secret_public_keyonly(session))
-    mgmtnet_device = api_helper.get_hi_mgmtnet_device(session, vmuuid)
-    if mgmtnet_device:
-        userdata = userdata.replace('%XSHIN%', mgmtnet_device)
+    return vmname
+
+
+def get_template_data(session, vmuuid):
+    data = {
+        'vm_name': _fmt_vm_name(session, vmuuid),
+        'rsa_pub': api_helper.get_idrsa_secret_public_keyonly(session),
+        'mgmt_dev': api_helper.get_hi_mgmtnet_device(session, vmuuid),
+    }
+    return data
+
+
+def customize_userdata(template, data):
+
+    def sub(tpl, keys, value):
+        for key in keys:
+            tpl = tpl.replace(key, value)
+        return tpl
+
+    hostname_keys = ['%XSVMNAMETOHOSTNAME%', '%VMNAMETOHOSTNAME%']
+    rsa_pub_keys = ['%XSCONTAINERRSAPUB%', '%CONTAINERRSAPUB%']
+    mgmt_dev_keys = ['%XSHIN%', '%HIN%']
+
+    template = sub(template, hostname_keys, data['vm_name'])
+    template = sub(template, rsa_pub_keys, data['rsa_pub'])
+
+    if data['mgmt_dev']:
+        template = sub(template, mgmt_dev_keys, data['mgmt_dev'])
     else:
-        userdata = filterxshinexists(userdata)
-    return userdata
+        template = filterxshinexists(template)
+    return template
 
 
 def load_cloud_config_template(template_path=None):
@@ -178,7 +202,8 @@ def create_config_drive_iso(session, userdata_template, vmuuid):
         os.makedirs(latestfolder)
         userdatafile = os.path.join(latestfolder, 'user_data')
         userdatatemplatefile = "%s.template" % userdatafile
-        userdata = customize_userdata(session, userdata_template, vmuuid)
+        template_data = get_template_data(session, vmuuid)
+        userdata = customize_userdata(userdata_template, template_data)
         util.write_file(userdatafile, userdata)
         util.write_file(userdatatemplatefile, userdata_template)
         log.debug("Userdata: %s" % (userdata))
@@ -255,7 +280,7 @@ def create_config_drive(session, vmuuid, sruuid, userdata):
                                    other_config_keys=other_config_keys)
     if vmrecord['power_state'] == 'Running':
         session.xenapi.VBD.plug(vbdref)
-    if re.search("\n\s*- ssh-rsa %XSCONTAINERRSAPUB%", userdata):
+    if re.search("\n\s*- ssh-rsa %[XS]*CONTAINERRSAPUB%", userdata):
         # if %XSRSAPUB% isn't commented out, automatically mark the VM
         # as monitorable.
         docker_monitor_api.mark_monitorable_vm(vmuuid, session)

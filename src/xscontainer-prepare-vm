@@ -30,20 +30,19 @@ def ask_yes_or_no():
 
 
 def ask_before_starting_ssh():
-    print("Would you like to push a XenServer pool-specific public SSH key "
+    print("Would you like to push a pool-specific public SSH key "
           "into the ~/.ssh/authorized_keys file of the specified VM and "
-          "therefore authorize XenServer hosts to interact with the "
+          "therefore authorize hosts in the pool to interact with the "
           "containers inside the VM?")
     return ask_yes_or_no()
 
 
 def parse_options():
-    description = ("Prepares VMs for XenServer container management.")
+    description = ("Prepares VMs for container management.")
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("-v", "--vmuuid", required=True,
                         help="UUID of the VM "
-                        "that should be prepared for XenServer container "
-                        "management.")
+                        "that should be prepared for container management.")
     parser.add_argument("--mode", choices=["ssh", "tls"], default="ssh")
     # for SSH
     parser.add_argument("-u", "--username",
