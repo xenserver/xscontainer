@@ -25,6 +25,7 @@ class TestFindLatestToolsIsoPath(unittest.TestCase):
 
         self.assertEquals(tools_path, m_glob.return_value[1])
 
+
 class TestConfigDrive(unittest.TestCase):
 
     data = {
@@ -85,12 +86,14 @@ HIMN: 0
         self.assertEqual(result, template_truth)
 
     def test_filter_legacy_hin(self):
-        initial_template = "this is a test %XSHINEXISTS% this should disappear %XSENDHINEXISTS%more text"
+        initial_template = "this is a test %XSHINEXISTS% this should " + \
+                           "disappear %XSENDHINEXISTS%more text"
         result = coreos.filterxshinexists(initial_template)
         self.assertEqual(result, "this is a test more text")
 
     def test_filter_hin(self):
-        initial_template = "this is a test %HINEXISTS% this should disappear %ENDHINEXISTS%more text"
+        initial_template = "this is a test %HINEXISTS% this should " + \
+                           "disappear %ENDHINEXISTS%more text"
         result = coreos.filterxshinexists(initial_template)
         self.assertEqual(result, "this is a test more text")
 

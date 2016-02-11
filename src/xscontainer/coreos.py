@@ -88,7 +88,7 @@ def filterxshinexists(text):
         match = re.search(p, text, re.DOTALL)
 
         if match:
-            text = text.replace(match.group(0),'')
+            text = text.replace(match.group(0), '')
 
     return text
 
@@ -98,13 +98,15 @@ def _fmt_vm_name(session, vmuuid):
     vmname = re.sub(r'[\W_]+', '', vmname).lower()
     return vmname
 
+
 def get_template_data(session, vmuuid):
     data = {
-        'vm_name' : _fmt_vm_name(session, vmuuid),
-        'rsa_pub' : api_helper.get_idrsa_secret_public_keyonly(session),
-        'mgmt_dev' : api_helper.get_hi_mgmtnet_device(session, vmuuid),
+        'vm_name': _fmt_vm_name(session, vmuuid),
+        'rsa_pub': api_helper.get_idrsa_secret_public_keyonly(session),
+        'mgmt_dev': api_helper.get_hi_mgmtnet_device(session, vmuuid),
     }
     return data
+
 
 def customize_userdata(template, data):
 
@@ -115,7 +117,7 @@ def customize_userdata(template, data):
 
     hostname_keys = ['%XSVMNAMETOHOSTNAME%', '%VMNAMETOHOSTNAME%']
     rsa_pub_keys = ['%XSCONTAINERRSAPUB%', '%CONTAINERRSAPUB%']
-    mgmt_dev_keys = ['%XSHIN%','%HIN%']
+    mgmt_dev_keys = ['%XSHIN%', '%HIN%']
 
     template = sub(template, hostname_keys, data['vm_name'])
     template = sub(template, rsa_pub_keys, data['rsa_pub'])
