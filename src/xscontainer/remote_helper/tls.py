@@ -26,13 +26,27 @@ class TlsException(util.XSContainerException):
 
 def _get_socket(session, vm_uuid):
     temptlspaths = tls_secret.export_for_vm(session, vm_uuid)
-    return ssl.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM),
-                           keyfile=temptlspaths['client_key'],
-                           certfile=temptlspaths['client_cert'],
-                           ca_certs=temptlspaths['ca_cert'],
-                           cert_reqs=ssl.CERT_REQUIRED,
-                           do_handshake_on_connect=True,
-                           )
+    thesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if hasattr(ssl, 'PROTOCOL_TLSv1_2'):
+        # If we get here, python supports TLSv1.2 - so we'll force it
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.load_cert_chain(certfile=temptlspaths['client_cert'],
+                                keyfile=temptlspaths['client_key'])
+        context.load_verify_locations(cafile=temptlspaths['ca_cert'])
+        return context.wrap_socket(thesocket,
+                                   server_side=False,
+                                   do_handshake_on_connect=True)
+    else:
+        # Use the default
+        return ssl.wrap_socket(thesocket,
+                               server_side=False,
+                               keyfile=temptlspaths['client_key'],
+                               certfile=temptlspaths['client_cert'],
+                               ca_certs=temptlspaths['ca_cert'],
+                               cert_reqs=ssl.CERT_REQUIRED,
+                               do_handshake_on_connect=True,
+                               )
 
 
 def execute_docker(session, vm_uuid, request):
@@ -62,6 +76,10 @@ def execute_docker_data_listen(session, vm_uuid, request,
     asocket = _get_socket(session, vm_uuid)
     try:
         asocket.connect((host, DOCKER_TLS_PORT))
+        if hasattr(asocket, 'version'):
+            # Newer python versions provide the TLS version
+            log.info("Connected VM %s using %s" % (vm_uuid,
+                                                   asocket.version()))
         asocket.send(request)
         asocket.setblocking(0)
         while not stop_monitoring_request:
