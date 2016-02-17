@@ -163,7 +163,7 @@ def execute_docker_data_listen(session, vmuuid, request,
             if not rlist:
                 continue
             try:
-                read_data = stdout.read(1024)
+                read_data = stdout.read(1)
                 if read_data == "":
                     break
                 yield read_data
