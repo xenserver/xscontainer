@@ -11,6 +11,7 @@ import socket
 import sys
 
 DOCKER_TLS_PORT = 2376
+TLS_CIPHER = "AES128-SHA"
 
 ERROR_CAUSE_NETWORK = (
     "Error: Cannot find a valid IP that allows TLS connections to Docker "
@@ -27,9 +28,10 @@ class TlsException(util.XSContainerException):
 def _get_socket(session, vm_uuid):
     temptlspaths = tls_secret.export_for_vm(session, vm_uuid)
     thesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    if hasattr(ssl, 'PROTOCOL_TLSv1_2'):
+    if hasattr(ssl, 'PROTOCOL_TLSv1_2') and hasattr(ssl, 'SSLContext'):
         # If we get here, python supports TLSv1.2 - so we'll force it
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        context.set_ciphers(TLS_CIPHER)
         context.verify_mode = ssl.CERT_REQUIRED
         context.load_cert_chain(certfile=temptlspaths['client_cert'],
                                 keyfile=temptlspaths['client_key'])
@@ -38,7 +40,9 @@ def _get_socket(session, vm_uuid):
                                    server_side=False,
                                    do_handshake_on_connect=True)
     else:
-        # Use the default
+        log.warning("Running in legacy SSL mode. "
+                    "Not restricting SSL versions and ciphers.")
+        # Use the default ssl settings
         return ssl.wrap_socket(thesocket,
                                server_side=False,
                                keyfile=temptlspaths['client_key'],
