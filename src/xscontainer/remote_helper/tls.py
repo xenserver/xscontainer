@@ -28,29 +28,16 @@ class TlsException(util.XSContainerException):
 def _get_socket(session, vm_uuid):
     temptlspaths = tls_secret.export_for_vm(session, vm_uuid)
     thesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    if hasattr(ssl, 'PROTOCOL_TLSv1_2') and hasattr(ssl, 'SSLContext'):
-        # If we get here, python supports TLSv1.2 - so we'll force it
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        context.set_ciphers(TLS_CIPHER)
-        context.verify_mode = ssl.CERT_REQUIRED
-        context.load_cert_chain(certfile=temptlspaths['client_cert'],
-                                keyfile=temptlspaths['client_key'])
-        context.load_verify_locations(cafile=temptlspaths['ca_cert'])
-        return context.wrap_socket(thesocket,
-                                   server_side=False,
-                                   do_handshake_on_connect=True)
-    else:
-        log.warning("Running in legacy SSL mode. "
-                    "Not restricting SSL versions and ciphers.")
-        # Use the default ssl settings
-        return ssl.wrap_socket(thesocket,
+    # Force TLSv1.2 - as it is the safest choice
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context.set_ciphers(TLS_CIPHER)
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.load_cert_chain(certfile=temptlspaths['client_cert'],
+                            keyfile=temptlspaths['client_key'])
+    context.load_verify_locations(cafile=temptlspaths['ca_cert'])
+    return context.wrap_socket(thesocket,
                                server_side=False,
-                               keyfile=temptlspaths['client_key'],
-                               certfile=temptlspaths['client_cert'],
-                               ca_certs=temptlspaths['ca_cert'],
-                               cert_reqs=ssl.CERT_REQUIRED,
-                               do_handshake_on_connect=True,
-                               )
+                               do_handshake_on_connect=True)
 
 
 def execute_docker(session, vm_uuid, request):
