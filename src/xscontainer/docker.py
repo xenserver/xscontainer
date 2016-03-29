@@ -4,7 +4,7 @@ from xscontainer import util
 from xscontainer.util import log
 
 import re
-import simplejson
+import json
 
 
 def prepare_request_stdin(request_type, request):
@@ -49,7 +49,7 @@ def _interact_with_api(session, vmuuid, request_type, request,
 
 def _get_api_json(session, vmuuid, request):
     stdout = _interact_with_api(session, vmuuid, 'GET', request)
-    results = simplejson.loads(stdout)
+    results = util.convert_dict_to_ascii(json.loads(stdout))
     return results
 
 

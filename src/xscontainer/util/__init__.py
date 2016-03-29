@@ -139,3 +139,19 @@ def get_data_file_path(filename):
     path = os.path.join(this_dir, os.pardir, "data", filename)
     abspath = os.path.abspath(path)
     return abspath
+
+
+def convert_dict_to_ascii(item):
+    if isinstance(item, dict):
+        result = {}
+        for key, value in item.iteritems():
+            result[convert_dict_to_ascii(key)] = convert_dict_to_ascii(value)
+    elif isinstance(item, list):
+        result = list()
+        for contained in item:
+            result.append(convert_dict_to_ascii(contained))
+    elif isinstance(item, unicode):
+        result = str(item)
+    else:
+        result = item
+    return result
