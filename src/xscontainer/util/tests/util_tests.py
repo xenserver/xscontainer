@@ -1,5 +1,5 @@
 import unittest
-import simplejson
+import json
 import os
 
 
@@ -13,7 +13,7 @@ class TestUtil(unittest.TestCase):
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "docker_inspect_json.xml")
         with open(path) as filehandler:
-            filecontents = simplejson.load(filehandler)
+            filecontents = util.convert_dict_to_ascii(json.load(filehandler))
 
         xmloutput = util.converttoxml({'docker_inspect': filecontents})
 

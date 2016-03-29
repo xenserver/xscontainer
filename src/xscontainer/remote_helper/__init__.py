@@ -1,4 +1,4 @@
-import simplejson
+import json
 
 from xscontainer import api_helper
 from xscontainer import util
@@ -42,7 +42,7 @@ def execute_docker_event_listen(session, vmuuid, stoprequest):
             elif character == '}':
                 openbrackets = openbrackets - 1
                 if openbrackets == 0:
-                    event = simplejson.loads(data)
+                    event = util.convert_dict_to_ascii(json.loads(data))
                     yield event
                     data = ""
             if len(read_data) >= 2048:
