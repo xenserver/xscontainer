@@ -47,7 +47,13 @@ def execute_docker(session, vm_uuid, request):
     try:
         asocket.connect((host, DOCKER_TLS_PORT))
         asocket.send(request)
-        result = asocket.recv(constants.MAX_BUFFER_SIZE)
+        result = ""
+        while len(result) < constants.MAX_BUFFER_SIZE:
+            result_iteration = asocket.recv(
+                constants.MAX_BUFFER_SIZE - len(result))
+            if result_iteration == "":
+                break
+            result += result_iteration
     except ssl.SSLError, exception:
         raise TlsException("Failed to communicate with Docker via TLS: %s"
                            % exception, (sys.exc_info()[2]))
