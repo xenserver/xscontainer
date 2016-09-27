@@ -71,6 +71,11 @@ DOM0_SRPMS += /distfiles/xscontainer/epel/2016-02-12/7/SRPMS/libtommath-0.42.0-4
 
 endif
 
+GPG_KEY_FILE := RPM-GPG-KEY-XS-Eng-Test
+GPG_OPTIONS := --homedir=/.gpg --lock-never --batch --yes
+GPG_UID := $(shell gpg $(GPG_OPTIONS) -k --with-colons 2>/dev/null | awk -F: '$$1=="uid" {print $$10}')
+PACK_UUID := df95997f-0332-4f1e-afd6-dcec74940b82
+
 
 .PHONY: build
 build: $(XSCONTAINER_STAMP) $(SUPP_PACK)
@@ -124,14 +129,8 @@ $(SUPP_PACK): $(XSCONTAINER_STAMP) $(MY_SOURCES)/dependencies
 	cp -f $(MY_OUTPUT_DIR)/$(SRPM) $(MY_OBJ_DIR)/ISO-SOURCES/
 	cp -f $(DOM0_SRPMS) $(MY_OBJ_DIR)/ISO-SOURCES/
 	mkisofs -A "xscontainer" -V "xscontainer" -J -joliet-long -r -o $(SUPP_PACK_SOURCES) $(MY_OBJ_DIR)/ISO-SOURCES
-	./make-supp-pack --out $(dir $@) \
-	                 --pln $(PLATFORM_NAME) \
-	                 --plv $(PLATFORM_VERSION) \
-	                 --bld $(RELEASE) \
-	                 --spn xscontainer \
-	                 --spd "XSContainer Management" \
-	                 --ver $(COMPLETE_VERSION) \
-	                 $(MY_OUTPUT_DIR)/$(RPM) \
-	                 $(DOM0_RPMS)
-	mv $(dir $@)/xscontainer.iso $@.iso
-	mv $(dir $@)/xscontainer.iso.md5 $@.iso.md5
+	GNUPGHOME=/.gpg build-update --uuid $(PACK_UUID) --label "xscontainer" --version $(VERSION) \
+		--description "XSContainer Management" --base-requires "platform-version = $(PLATFORM_VERSION)" \
+		--key "$(GPG_UID)" --keyfile $(GPG_KEY_FILE) --no-passphrase \
+		-o $@.iso $(MY_OUTPUT_DIR)/$(RPM) $(DOM0_RPMS)
+	(cd $(@D) ; md5sum $(notdir $@.iso) ) >$@.iso.md5
