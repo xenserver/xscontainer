@@ -58,7 +58,7 @@ if __name__ == "__main__":
                     'xscontainer.remote_helper', 'xscontainer.util'],
           package_dir={'xscontainer': 'src/xscontainer'},
           package_data={'xscontainer': ['data/*.template', 'data/*.README',
-                                        'data/configure_tls.cmd', 'daemon.json']},
+                                        'data/configure_tls.cmd', 'data/daemon.json']},
           scripts=['src/xscontainer-prepare-vm',
                    'src/xscontainer-monitor',
                    # 'src/scripts/xscontainer-pluginexample',
