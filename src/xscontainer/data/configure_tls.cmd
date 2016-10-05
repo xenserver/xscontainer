@@ -26,12 +26,17 @@ echo Configuring the Docker client in %USERPROFILE%\.docker\ to connect using TL
 if not exist %USERPROFILE%\.docker\ (
     mkdir %USERPROFILE%\.docker\ || goto :ERRORHANDLER
 )
+
+echo Setting up the TLS configuration.
+xcopy %cdpath%daemon.json %PROGRAMDATA%\docker\config\ || goto :ERRORHANDLER
+
 icacls.exe %USERPROFILE%\.docker\ /T /grant %USERDOMAIN%\%USERNAME%:(OI)(CI)F /grant %USERDOMAIN%\%USERNAME%:F /inheritance:r || goto :ERRORHANDLER
 xcopy /O %cdpath%client\* %USERPROFILE%\.docker\ || goto :ERRORHANDLER
 echo Restarting Docker.
 net stop Docker || goto :ERRORHANDLER
 net start Docker || goto :ERRORHANDLER
 echo All done. Docker is now configured for TLS.
+echo Please ensure your firewall is turned off
 echo Please press enter and complete the preparation on the control domain console.
 timeout 10 > NUL
 EXIT /b 0

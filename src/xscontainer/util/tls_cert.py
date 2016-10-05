@@ -135,6 +135,9 @@ def generate_certs_and_return_iso(session, vm_uuid, ips):
         shutil.copy2(
             util.get_data_file_path('configure_tls.cmd'),
             os.path.join(tempdir, 'configure_tls.cmd'))
+        shutil.copy2(
+            util.get_data_file_path('daemon.json'),
+            os.path.join(tempdir, 'daemon.json'))
         targetiso = tempfile.mkstemp()[1]
         os.chmod(targetiso, 0600)
         try:
@@ -145,5 +148,5 @@ def generate_certs_and_return_iso(session, vm_uuid, ips):
         os.chmod(targetiso, 0400)
     finally:
         _wipe_certificates(tempdir)
-        os.rmdir(tempdir)
+        shutil.rmtree(tempdir)
     return targetiso
