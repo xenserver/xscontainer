@@ -36,7 +36,12 @@ echo Restarting Docker.
 net stop Docker || goto :ERRORHANDLER
 net start Docker || goto :ERRORHANDLER
 echo All done. Docker is now configured for TLS.
-echo Please ensure your firewall is turned off
+
+echo Checking firewall status.
+for /f "tokens=2*" %%a in ('REG QUERY HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\StandardProfile /v EnableFirewall') do set "AppPath=%%~b"
+if %AppPath%==0x1 (
+    echo Your firewall is currently enabled, please turn it off before continuing to the control domain console.
+)
 echo Please press enter and complete the preparation on the control domain console.
 timeout 10 > NUL
 EXIT /b 0
