@@ -27,8 +27,8 @@ if not exist %USERPROFILE%\.docker\ (
     mkdir %USERPROFILE%\.docker\ || goto :ERRORHANDLER
 )
 
-if not exist %PROGRAMDATA%\docker\config (
-    mkdir %PROGRAMDATA%\docker\config || goto :ERRORHANDLER
+if not exist %PROGRAMDATA%\docker\config\ (
+    mkdir %PROGRAMDATA%\docker\config\ || goto :ERRORHANDLER
 )
 echo Setting up the TLS configuration.
 xcopy %cdpath%daemon.json %PROGRAMDATA%\docker\config\ || goto :ERRORHANDLER
