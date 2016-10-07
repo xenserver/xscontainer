@@ -97,6 +97,7 @@ def _wipe_ca(parent_path):
 
 
 def _wipe_certificates(parent_path):
+    _delete_if_exists(parent_path, ['daemon.json'])
     _delete_if_exists(parent_path, ['configure_tls.cmd'])
     _delete_if_exists(parent_path, CERTIFICATE_FILES)
     for folder in ['client', 'server']:
@@ -135,6 +136,9 @@ def generate_certs_and_return_iso(session, vm_uuid, ips):
         shutil.copy2(
             util.get_data_file_path('configure_tls.cmd'),
             os.path.join(tempdir, 'configure_tls.cmd'))
+        shutil.copy2(
+            util.get_data_file_path('daemon.json'),
+            os.path.join(tempdir, 'daemon.json'))
         targetiso = tempfile.mkstemp()[1]
         os.chmod(targetiso, 0600)
         try:
