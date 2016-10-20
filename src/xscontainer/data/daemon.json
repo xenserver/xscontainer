@@ -1,0 +1,7 @@
+{
+    "hosts": ["tcp://0.0.0.0:2376", "npipe://"],
+    "tlsverify": true,
+    "tlscacert": "C:\\ProgramData\\docker\\certs.d\\ca.pem",
+    "tlscert": "C:\\ProgramData\\docker\\certs.d\\server-cert.pem",
+    "tlskey": "C:\\ProgramData\\docker\\certs.d\\server-key.pem"
+}
