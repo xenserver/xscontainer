@@ -36,7 +36,7 @@ xcopy %cdpath%daemon.json %PROGRAMDATA%\docker\config\ || goto :ERRORHANDLER
 icacls.exe %USERPROFILE%\.docker\ /T /grant %USERDOMAIN%\%USERNAME%:(OI)(CI)F /grant %USERDOMAIN%\%USERNAME%:F /inheritance:r || goto :ERRORHANDLER
 xcopy /O %cdpath%client\* %USERPROFILE%\.docker\ || goto :ERRORHANDLER
 echo Restarting Docker.
-net stop Docker || goto :ERRORHANDLER
+net stop Docker || echo Not stopping Docker as it is not running.
 net start Docker || goto :ERRORHANDLER
 echo All done. Docker is now configured for TLS.
 
