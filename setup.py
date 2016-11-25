@@ -38,6 +38,7 @@ def map_overlay_files(overlay_files):
 
     return mapping
 
+
 if __name__ == "__main__":
     version = '0.1'
     # Add forceversion option to specify the version via the command line

@@ -81,6 +81,7 @@ def handle_unhandled_exceptions(exception_type, exception_value,
                                 exception_traceback)
     sys.__excepthook__(exception_type, exception_value, exception_traceback)
 
+
 _LOGGER = logging.getLogger()
 configurelogging()
 sys.excepthook = handle_unhandled_exceptions
