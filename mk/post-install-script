@@ -1,7 +1,0 @@
-systemctl daemon-reload
-systemctl enable xscontainer-monitor.service
-if pidof xapi >/dev/null; then
-    # if xapi is running, let's automatically start for a better user experience
-    systemctl stop xscontainer-monitor
-    systemctl start xscontainer-monitor
-fi
