@@ -1,4 +1,0 @@
-if [ $1 -eq 0 ]; then
-    systemctl stop xscontainer-monitor
-    systemctl disable xscontainer-monitor.service
-fi
