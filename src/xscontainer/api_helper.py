@@ -207,9 +207,9 @@ def get_vm_ips(session, vmuuid):
 
 
 def get_vm_is_running(session, vm_uuid):
-        vm_ref = session.xenapi.VM.get_by_uuid(vm_uuid)
-        vm_record = session.xenapi.VM.get_record(vm_ref)
-        return (vm_record['power_state'] == 'Running')
+    vm_ref = session.xenapi.VM.get_by_uuid(vm_uuid)
+    vm_record = session.xenapi.VM.get_record(vm_ref)
+    return (vm_record['power_state'] == 'Running')
 
 
 def get_hi_preferene_on(session):

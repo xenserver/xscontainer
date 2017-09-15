@@ -71,5 +71,6 @@ def main():
     docker.stop(session, vmuuid, container)
     docker.start(session, vmuuid, container)
 
+
 if __name__ == "__main__":
     main()

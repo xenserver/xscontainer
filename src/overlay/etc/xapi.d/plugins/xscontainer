@@ -207,6 +207,7 @@ def redirect_operation_owned_by_other_slave(argv):
                                                 e.__class__.__name__, str(e)])
             sys.exit(1)
 
+
 if __name__ == "__main__":
     redirect_operation_owned_by_other_slave(sys.argv)
 
