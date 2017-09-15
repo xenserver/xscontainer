@@ -9,7 +9,7 @@ ssh_authorized_keys:
   - ssh-rsa %CONTAINERRSAPUB%
 coreos:
   units:
-    - name: etcd.service
+    - name: etcd2.service
       command: start
     - name: fleet.service
       command: start
@@ -37,10 +37,11 @@ coreos:
         [Service]
         ExecStartPre=/media/configdrive/agent/xe-linux-distribution /var/cache/xe-linux-distribution
         ExecStart=/media/configdrive/agent/xe-daemon
-  etcd:
+  etcd2:
     name: %VMNAMETOHOSTNAME%
-    # generate a new token for each unique cluster at https://discovery.etcd.io/new
-    # discovery: https://discovery.etcd.io/<token>
+    # generate a new token for each unique cluster from https://discovery.etcd.io/new?size=3
+    # specify the initial cluster size using ?size=X
+    # discovery: "https://discovery.etcd.io/<token>"
 write_files:
   # Enable ARP notifications for smooth network recovery after migrations
   - path: /etc/sysctl.d/10-enable-arp-notify.conf
