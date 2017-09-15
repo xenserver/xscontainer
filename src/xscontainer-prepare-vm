@@ -159,7 +159,7 @@ def _generate_and_insert_certs(session, options):
           "keys, while the CD is inserted.\n")
     ips = _get_tls_ips(session, options)
     print("\nWould you like to proceed?")
-    if ips==1 or not ask_yes_or_no():
+    if ips == 1 or not ask_yes_or_no():
         return 1
     print("---------------------")
     try:
@@ -251,7 +251,7 @@ def main():
                 session, options.vmuuid, options.mode)
             resultcode = verify_monitoring(
                 session, options.vmuuid, options.username)
-            while resultcode!=0:
+            while resultcode != 0:
                 print "Do you wish to retry?"
                 if ask_yes_or_no():
                     resultcode = verify_monitoring(
