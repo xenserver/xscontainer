@@ -9,7 +9,7 @@ ssh_authorized_keys:
   - ssh-rsa %CONTAINERRSAPUB%
 coreos:
   units:
-    - name: etcd2.service
+    - name: etcd-member.service
       command: start
     - name: fleet.service
       command: start
@@ -37,7 +37,7 @@ coreos:
         [Service]
         ExecStartPre=/media/configdrive/agent/xe-linux-distribution /var/cache/xe-linux-distribution
         ExecStart=/media/configdrive/agent/xe-daemon
-  etcd2:
+  etcd-member:
     name: %VMNAMETOHOSTNAME%
     # generate a new token for each unique cluster from https://discovery.etcd.io/new?size=3
     # specify the initial cluster size using ?size=X
