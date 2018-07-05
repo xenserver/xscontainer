@@ -11,7 +11,7 @@ import socket
 import sys
 
 DOCKER_TLS_PORT = 2376
-TLS_CIPHER = "AES128-SHA"
+TLS_CIPHER = "ECDHE-RSA-AES256-GCM-SHA384"
 
 ERROR_CAUSE_NETWORK = (
     "Error: Cannot find a valid IP that allows TLS connections to Docker "
