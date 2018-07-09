@@ -89,12 +89,12 @@ def prepare_ssh_client(session, vmuuid):
     except SshException:
         # This exception is already improved - leave it as it is
         raise
-    except paramiko.AuthenticationException, exception:
+    except paramiko.AuthenticationException as exception:
         message = ("prepare_ssh_client failed to authenticate with private key"
                    " on VM %s" % (vmuuid))
         log.info(message)
         raise AuthenticationException(message)
-    except (paramiko.SSHException, socket.error), exception:
+    except (paramiko.SSHException, socket.error) as exception:
         # reraise as SshException
         raise SshException("prepare_ssh_client: %s" % exception,
                            (sys.exc_info()[2]))
@@ -134,7 +134,7 @@ def execute_ssh(session, vmuuid, cmd, stdin_input=None):
         except SshException:
             # This exception is already improved - leave it as it is
             raise
-        except Exception, exception:
+        except Exception as exception:
             # reraise as SshException
             raise SshException("execute_ssh: %s" % exception,
                                (sys.exc_info()[2]))
@@ -167,7 +167,7 @@ def execute_docker_data_listen(session, vmuuid, request,
                 if read_data == "":
                     break
                 yield read_data
-            except IOError, exception:
+            except IOError as exception:
                 log.info("IOError")
                 if exception[0] not in (errno.EAGAIN, errno.EINTR):
                     log.info("Cleared")

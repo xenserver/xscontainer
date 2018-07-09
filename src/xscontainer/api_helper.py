@@ -26,7 +26,7 @@ def refresh_session_on_failure(func):
     def decorated(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except Exception, exception:
+        except Exception as exception:
             log.error("Caught exception '%s'. Retrying with new session."
                       % (str(exception)))
             reinit_global_xapi_session()
@@ -277,7 +277,7 @@ def _retry_device_exists(function, config, devicenumberfield):
         try:
             ref = function(config)
             return ref
-        except XenAPI.Failure, failure:
+        except XenAPI.Failure as failure:
             if (failure.details[0] != 'DEVICE_ALREADY_EXISTS' or
                     devicenumber > 20):
                 raise failure

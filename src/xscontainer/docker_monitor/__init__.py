@@ -123,13 +123,13 @@ class MonitoredVM(api_helper.VM):
                                    'start', 'stop', 'unpause']:
                 try:
                     docker.update_docker_ps(self)
-                except util.XSContainerException, exception:
+                except util.XSContainerException as exception:
                     # This can happen, when the docker daemon stops
                     log.exception(exception)
             elif event['status'] in ['create', 'destroy', 'delete']:
                 try:
                     docker.update_docker_info(self)
-                except util.XSContainerException, exception:
+                except util.XSContainerException as exception:
                     # This can happen, when the docker daemon stops
                     log.exception(exception)
 

@@ -101,7 +101,7 @@ def write_file(filepath, content):
     filehandle = open(filepath, "w+")
     filehandle.write(content)
     filehandle.close()
-    os.chmod(filepath, 0600)
+    os.chmod(filepath, 0o600)
 
 
 def file_old_or_none_existent(path_of_file):

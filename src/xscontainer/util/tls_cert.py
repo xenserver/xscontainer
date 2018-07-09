@@ -109,7 +109,7 @@ def _wipe_certificates(parent_path):
 def generate_certs_and_return_iso(session, vm_uuid, ips):
     tempdir = tempfile.mkdtemp()
     try:
-        os.chmod(tempdir, 0700)
+        os.chmod(tempdir, 0o700)
         sys.stdout.write("Generating TLS certificates")
         sys.stdout.flush()
         try:
@@ -140,13 +140,13 @@ def generate_certs_and_return_iso(session, vm_uuid, ips):
             util.get_data_file_path('daemon.json'),
             os.path.join(tempdir, 'daemon.json'))
         targetiso = tempfile.mkstemp()[1]
-        os.chmod(targetiso, 0600)
+        os.chmod(targetiso, 0o600)
         try:
             util.make_iso("Container TLS", tempdir, targetiso)
-        except:
+        except Exception:
             os.remove(targetiso)
             raise
-        os.chmod(targetiso, 0400)
+        os.chmod(targetiso, 0o400)
     finally:
         _wipe_certificates(tempdir)
         os.rmdir(tempdir)

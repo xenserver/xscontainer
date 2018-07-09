@@ -30,5 +30,5 @@ class TestUtil(unittest.TestCase):
 
         xmloutput = util.converttoxml(rec)
 
-        print xmloutput
+        print(xmloutput)
         self.assertEqual(xmloutput, expected_xml)

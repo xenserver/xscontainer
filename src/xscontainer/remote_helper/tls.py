@@ -54,7 +54,7 @@ def execute_docker(session, vm_uuid, request):
             if result_iteration == "":
                 break
             result += result_iteration
-    except ssl.SSLError, exception:
+    except ssl.SSLError as exception:
         raise TlsException("Failed to communicate with Docker via TLS: %s"
                            % exception, (sys.exc_info()[2]))
     finally:
@@ -90,21 +90,21 @@ def execute_docker_data_listen(session, vm_uuid, request,
                 if read_data == "":
                     break
                 yield read_data
-            except IOError, exception:
+            except IOError as exception:
                 if exception[0] not in (errno.EAGAIN, errno.EINTR):
                     raise
                 sys.exc_clear()
                 continue
-    except ssl.SSLError, exception:
+    except ssl.SSLError as exception:
         raise TlsException("Failed to communicate with Docker via TLS: %s"
                            % exception, (sys.exc_info()[2]))
-    except socket.error, exception:
+    except socket.error as exception:
         raise TlsException("The connection failed: %s"
                            % exception, (sys.exc_info()[2]))
     finally:
         try:
             asocket.close()
-        except:
+        except Exception:
             log.exception("Failed to close socket. Moving on.")
 
 
