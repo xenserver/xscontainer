@@ -99,11 +99,12 @@ class MonitoredVM(api_helper.VM):
                             self.handle_docker_event(event)
                     finally:
                         docker.wipe_docker_other_config(self)
-                except (XenAPI.Failure, util.XSContainerException):
+                except (XenAPI.Failure, util.XSContainerException, Exception) as e:
                     log.exception("__monitor_vm_events threw an exception, "
                                   "will retry")
                     raise
-            except (XenAPI.Failure, util.XSContainerException):
+            except (XenAPI.Failure, util.XSContainerException, Exception) as e:
+                log.exception(e)
                 passed_time = time.time() - start_time
                 if (not self._error_message and
                         passed_time >= MONITOR_TIMEOUT_WARNING_S):
@@ -272,6 +273,13 @@ def interrupt_handler(signum, frame):
     monitoring. We need to do this as we don't want threads to be hanging
     around, after the docker_monitor has quit.
     """
+
+    if signal.SIGPIPE == frame:
+        util.log.warning("SIGPIPE received, probably caused by too much socket connection. "
+                         "does not terminate the process")
+        return
+
+
     if DOCKER_MONITOR:
         util.log.warning("Signal %d received  - Tearing down monitoring"
                          % (signum))
@@ -289,6 +297,7 @@ def monitor_host():
 
     signal.signal(signal.SIGTERM, interrupt_handler)
     signal.signal(signal.SIGINT, interrupt_handler)
+    signal.signal(signal.SIGPIPE,interrupt_handler)
 
     while True:
         try:
