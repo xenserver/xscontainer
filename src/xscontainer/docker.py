@@ -214,8 +214,11 @@ def update_docker_version(thevm):
 
 
 def update_docker_ps(thevm):
-    thevm.update_other_config('docker_ps', get_ps_xml(thevm.get_session(),
+    try:
+        thevm.update_other_config('docker_ps', get_ps_xml(thevm.get_session(),
                                                       thevm.get_uuid()))
+    except Exception as e:
+        log.exception(e)
 
 
 def update_docker_ps_workaround(session, vm_uuid):
