@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
+from signal import signal, SIGPIPE
+
 import xscontainer.docker_monitor as docker_monitor
 
+def sig_handler(signo, frame):
+    raise IOError('Error: SIGPIPE received')
 
 def main():
+    signal(SIGPIPE, sig_handler)
     docker_monitor.monitor_host()
 
 
