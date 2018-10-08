@@ -85,7 +85,7 @@ def prepare_ssh_client(session, vmuuid):
     client.set_missing_host_key_policy(MyHostKeyPolicy(session, vmuuid))
     try:
         client.connect(host, port=SSH_PORT, username=username,
-                       pkey=pkey, look_for_keys=False)
+                       pkey=pkey, look_for_keys=False, banner_timeout=300)
     except SshException:
         # This exception is already improved - leave it as it is
         raise
