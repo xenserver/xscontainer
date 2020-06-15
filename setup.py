@@ -32,7 +32,7 @@ def map_overlay_files(overlay_files):
     if ROOTDIR_ENV_KEY in os.environ:
         root_dir = os.environ[ROOTDIR_ENV_KEY]
 
-    for dest, files in overlay_files.iteritems():
+    for dest, files in overlay_files.items():
         file_locs = [datapath("src/overlay/%s/%s" % (dest, f)) for f in files]
         mapping.append(("%s/%s" % (root_dir, dest), file_locs))
 

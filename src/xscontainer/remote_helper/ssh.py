@@ -91,7 +91,7 @@ def prepare_ssh_client(session, vmuuid):
         raise
     except paramiko.AuthenticationException as exception:
         message = ("prepare_ssh_client failed to authenticate with private key"
-                   " on VM %s" % (vmuuid))
+                   " on VM %s with error %s" % (vmuuid, exception))
         log.info(message)
         raise AuthenticationException(message)
     except (paramiko.SSHException, socket.error) as exception:

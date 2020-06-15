@@ -150,7 +150,7 @@ def convert_dict_to_ascii(item):
         result = list()
         for contained in item:
             result.append(convert_dict_to_ascii(contained))
-    elif isinstance(item, unicode):
+    elif isinstance(item, str):
         result = str(item)
     else:
         result = item
