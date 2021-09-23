@@ -151,7 +151,7 @@ def convert_dict_to_ascii(item):
         for contained in item:
             result.append(convert_dict_to_ascii(contained))
     elif isinstance(item, unicode):
-        result = str(item)
+        result = item.encode('utf-8')
     else:
         result = item
     return result
