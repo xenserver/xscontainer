@@ -107,16 +107,19 @@ class TestDockerMonitorThreads(unittest.TestCase):
 
     @patch("xscontainer.util.log.info")
     @patch("xscontainer.api_helper.XenAPIClient")
+    @patch("xscontainer.api_helper.init_local_api_session")
     @patch("thread.start_new_thread")
-    def test_start_monitoring(self, mstart_new_thread, mxenapiclient,
-                              log_info):
+    def test_start_monitoring(self, mstart_new_thread, minit_session,
+                              mxenapiclient, log_info):
         mvm_ref = MagicMock()
         dm = DockerMonitor(host=MagicMock())
 
         dm.start_monitoring(mvm_ref)
         registered = dm.get_registered()[0]
 
-        mstart_new_thread.assert_called_with(registered._monitoring_loop,
+        minit_session.assert_called_once_with()
+        mxenapiclient.assert_called_once_with(minit_session.return_value)
+        mstart_new_thread.assert_called_with(registered._monitoring_entry,
                                              tuple())
 
     @patch("xscontainer.util.log.info")

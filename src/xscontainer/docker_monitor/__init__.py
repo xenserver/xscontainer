@@ -42,7 +42,17 @@ class MonitoredVM(api_helper.VM):
 
     def start_monitoring(self):
         self._stop_monitoring_request = list()
-        thread.start_new_thread(self._monitoring_loop, tuple())
+        thread.start_new_thread(self._monitoring_entry, tuple())
+
+    def _monitoring_entry(self):
+        """Run a monitor with its dedicated XAPI session and close it."""
+        try:
+            self._monitoring_loop()
+        finally:
+            try:
+                self.get_session().xenapi.session.logout()
+            except XenAPI.Failure:
+                log.exception("Failed to close VM monitor XAPI session")
 
     def stop_monitoring(self):
         self._stop_monitoring_request.append("stop")
@@ -181,7 +191,12 @@ class DockerMonitor(object):
 
     def start_monitoring(self, vm_ref):
         log.info("Starting to monitor VM: %s" % vm_ref)
-        thevm = MonitoredVM(self.host.client, ref=vm_ref)
+        # XenAPI's HTTP connection is not thread-safe.  Every monitor thread
+        # therefore needs its own session/client instead of sharing the host
+        # client's global connection.
+        session = api_helper.init_local_api_session()
+        client = api_helper.XenAPIClient(session)
+        thevm = MonitoredVM(client, ref=vm_ref)
         self.register(thevm)
         thevm.start_monitoring()
         return

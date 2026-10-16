@@ -77,7 +77,7 @@ def push_ssh_key(session, vmuuid, username):
         host = api_helper.get_suitable_vm_ip(session, vmuuid,
                                              remote_helper.ssh.SSH_PORT)
     except util.XSContainerException:
-        print(docker.ERROR_CAUSE_NETWORK)
+        print(remote_helper.ssh.ERROR_CAUSE_NETWORK)
         return 1
     api_helper.set_vm_xscontainer_username(session, vmuuid, username)
     print('Attempting to push the public xscontainer key to %s@%s.'
